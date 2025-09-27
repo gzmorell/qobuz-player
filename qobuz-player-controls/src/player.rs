@@ -51,13 +51,18 @@ impl Player {
         audio_cache_dir: PathBuf,
         database: Arc<Database>,
     ) -> Result<Self> {
-        let sink = Sink::new(volume, broadcast.clone(), audio_cache_dir, database.clone())?;
+        let (volume, volume_receiver) = watch::channel(volume);
+        let sink = Sink::new(
+            volume_receiver,
+            broadcast.clone(),
+            audio_cache_dir,
+            database.clone(),
+        )?;
 
         let track_finished = sink.track_finished();
         let done_buffering = sink.done_buffering();
 
         let (position, _) = watch::channel(Default::default());
-        let (volume, _) = watch::channel(volume);
         let (target_status, _) = watch::channel(Default::default());
         let (tracklist_tx, tracklist_rx) = watch::channel(tracklist);
 
@@ -191,9 +196,9 @@ impl Player {
         Ok(())
     }
 
-    async fn set_volume(&mut self, volume: f32) -> Result<()> {
-        self.sink.set_volume(volume);
+    async fn set_volume(&self, volume: f32) -> Result<()> {
         self.volume.send(volume)?;
+        self.sink.sync_volume();
         self.database.set_volume(volume).await?;
         Ok(())
     }

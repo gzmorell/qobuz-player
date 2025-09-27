@@ -11,9 +11,9 @@ use tokio::fs;
 use tokio::sync::watch::{self, Receiver, Sender};
 use tokio::task::JoinHandle;
 
-use crate::Result;
 use crate::database::Database;
 use crate::notification::NotificationBroadcast;
+use crate::{Result, VolumeReceiver};
 
 pub struct Sink {
     stream_handle: Option<rodio::OutputStream>,
@@ -25,12 +25,12 @@ pub struct Sink {
     broadcast: Arc<NotificationBroadcast>,
     audio_cache_dir: PathBuf,
     database: Arc<Database>,
-    volume: f32,
+    volume: VolumeReceiver,
 }
 
 impl Sink {
     pub fn new(
-        volume: f32,
+        volume: VolumeReceiver,
         broadcast: Arc<NotificationBroadcast>,
         audio_cache_dir: PathBuf,
         database: Arc<Database>,
@@ -106,7 +106,7 @@ impl Sink {
             let (sender, receiver) = queue(true);
             let sink = rodio::Sink::connect_new(stream_handle.mixer());
             sink.append(receiver);
-            set_volume(&sink, self.volume);
+            set_volume(&sink, &self.volume.borrow());
             self.sink = Some(sink);
             self.sender = Some(sender);
             self.stream_handle = Some(stream_handle);
@@ -207,15 +207,14 @@ impl Sink {
         Ok(sample_rate == self.stream_handle.as_ref().unwrap().config().sample_rate())
     }
 
-    pub fn set_volume(&mut self, volume: f32) {
-        self.volume = volume;
+    pub fn sync_volume(&self) {
         if let Some(sink) = &self.sink {
-            set_volume(sink, volume);
+            set_volume(sink, &self.volume.borrow());
         }
     }
 }
 
-fn set_volume(sink: &rodio::Sink, volume: f32) {
+fn set_volume(sink: &rodio::Sink, volume: &f32) {
     let volume = volume.clamp(0.0, 1.0).powi(3);
     sink.set_volume(volume);
 }
