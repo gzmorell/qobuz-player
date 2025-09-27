@@ -106,7 +106,7 @@ impl Sink {
             let (sender, receiver) = queue(true);
             let sink = rodio::Sink::connect_new(stream_handle.mixer());
             sink.append(receiver);
-            sink.set_volume(self.volume);
+            set_volume(&sink, self.volume);
             self.sink = Some(sink);
             self.sender = Some(sender);
             self.stream_handle = Some(stream_handle);
