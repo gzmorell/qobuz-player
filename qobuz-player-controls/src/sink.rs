@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use qobuz_player_client::qobuz_models::TrackURL;
 use qobuz_player_models::Track;
+use rodio::cpal::traits::HostTrait;
 use rodio::{decoder::DecoderBuilder, queue::queue};
 use tokio::fs;
 use tokio::sync::watch::{self, Receiver, Sender};
@@ -99,9 +100,7 @@ impl Sink {
         let sample_rate = (track_url.sampling_rate * 1000.0) as u32;
 
         if self.stream_handle.is_none() || self.sink.is_none() || self.sender.is_none() {
-            let mut stream_handle = rodio::OutputStreamBuilder::from_default_device()?
-                .with_sample_rate(sample_rate)
-                .open_stream()?;
+            let mut stream_handle = open_default_stream(sample_rate)?;
             stream_handle.log_on_drop(false);
 
             let (sender, receiver) = queue(true);
@@ -254,4 +253,20 @@ fn sanitize_name(input: &str) -> String {
 
     const MAX: usize = 100;
     out.chars().take(MAX).collect()
+}
+
+fn open_default_stream(sample_rate: u32) -> Result<rodio::OutputStream> {
+    rodio::OutputStreamBuilder::from_default_device()
+        .and_then(|x| x.with_sample_rate(sample_rate).open_stream())
+        .or_else(|original_err| {
+            let mut devices = rodio::cpal::default_host().output_devices()?;
+
+            Ok(devices
+                .find_map(|d| {
+                    rodio::OutputStreamBuilder::from_device(d)
+                        .and_then(|x| x.with_sample_rate(sample_rate).open_stream_or_fallback())
+                        .ok()
+                })
+                .ok_or(original_err)?)
+        })
 }

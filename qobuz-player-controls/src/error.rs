@@ -99,6 +99,14 @@ impl From<rodio::StreamError> for Error {
     }
 }
 
+impl From<rodio::DevicesError> for Error {
+    fn from(value: rodio::DevicesError) -> Self {
+        Self::StreamError {
+            message: value.to_string(),
+        }
+    }
+}
+
 impl From<rodio::decoder::DecoderError> for Error {
     fn from(value: rodio::decoder::DecoderError) -> Self {
         Self::StreamError {
