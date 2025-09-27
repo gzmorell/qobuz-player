@@ -15,6 +15,7 @@ pub enum Error {
     },
     #[snafu(display("Unable to broadcast notification"))]
     Notification,
+    #[snafu(display("Unable to start stream: {message}"))]
     StreamError {
         message: String,
     },
