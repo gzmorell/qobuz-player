@@ -92,7 +92,7 @@ impl Sink {
         Ok(())
     }
 
-    pub fn query_track_url(&mut self, track_url: TrackURL, track: &Track) -> Result<bool> {
+    pub fn query_track(&mut self, track_url: TrackURL, track: &Track) -> Result<bool> {
         if let Some(handle) = self.current_download.lock()?.take() {
             handle.abort();
         }
@@ -139,7 +139,12 @@ impl Sink {
                 sanitize_name(album_title),
                 sanitize_name(album_id),
             );
-            let track_file = format!("{}_{}.mp3", track.number, sanitize_name(track_title));
+            let extension = guess_extension(&track_url.mime_type);
+            let track_file = format!(
+                "{}_{}.{extension}",
+                track.number,
+                sanitize_name(track_title)
+            );
             self.audio_cache_dir
                 .join(artist_dir)
                 .join(album_dir)
@@ -268,4 +273,13 @@ fn open_default_stream(sample_rate: u32) -> Result<rodio::OutputStream> {
                 })
                 .ok_or(original_err)?)
         })
+}
+
+fn guess_extension(mime: &str) -> String {
+    match mime {
+        m if m.contains("mp4") => "mp4".to_string(),
+        m if m.contains("mp3") => "mp3".to_string(),
+        m if m.contains("flac") => "flac".to_string(),
+        _ => "unknown".to_string(),
+    }
 }

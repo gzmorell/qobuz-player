@@ -1,4 +1,3 @@
-use qobuz_player_client::qobuz_models::TrackURL;
 use qobuz_player_models::{Album, Track, TrackStatus};
 use rand::seq::SliceRandom;
 use tokio::{
@@ -163,7 +162,7 @@ impl Player {
             && let Some(current_track) = track
         {
             self.set_target_status(Status::Buffering);
-            self.query_track_url(&current_track).await?;
+            self.query_track(&current_track).await?;
             self.first_track_queried = true;
         }
 
@@ -183,14 +182,9 @@ impl Player {
         self.target_status.send(status).expect("infailable");
     }
 
-    async fn track_url(&self, track_id: u32) -> Result<TrackURL> {
-        let track_url = self.client.track_url(track_id).await?;
-        Ok(track_url)
-    }
-
-    async fn query_track_url(&mut self, track: &Track) -> Result<()> {
-        let track_url = self.track_url(track.id).await?;
-        let next_track_has_other_sample_rate = self.sink.query_track_url(track_url, track)?;
+    async fn query_track(&mut self, track: &Track) -> Result<()> {
+        let track_url = self.client.track_url(track.id).await?;
+        let next_track_has_other_sample_rate = self.sink.query_track(track_url, track)?;
         self.next_track_has_same_sample_rate = next_track_has_other_sample_rate;
 
         Ok(())
@@ -283,7 +277,7 @@ impl Player {
         if let Some(next_track) = tracklist.skip_to_track(new_position) {
             self.sink.clear().await?;
             self.next_track_is_queried = false;
-            self.query_track_url(next_track).await?;
+            self.query_track(next_track).await?;
             self.first_track_queried = true;
             self.start_timer();
         } else {
@@ -325,7 +319,7 @@ impl Player {
         self.set_target_status(Status::Buffering);
 
         if let Some(first_track) = tracklist.current_track() {
-            self.query_track_url(first_track).await?;
+            self.query_track(first_track).await?;
             self.first_track_queried = true;
         }
 
@@ -451,7 +445,7 @@ impl Player {
                 let tracklist = self.tracklist_rx.borrow().clone();
 
                 if let Some(next_track) = tracklist.next_track() {
-                    self.query_track_url(next_track).await?;
+                    self.query_track(next_track).await?;
                     self.first_track_queried = true;
                     self.next_track_is_queried = true;
                 }
@@ -528,7 +522,7 @@ impl Player {
             Some(next_track) => {
                 if !self.next_track_has_same_sample_rate {
                     self.sink.clear().await?;
-                    self.query_track_url(next_track).await?;
+                    self.query_track(next_track).await?;
                 }
             }
             None => {
@@ -536,6 +530,7 @@ impl Player {
                 self.set_target_status(Status::Paused);
                 self.sink.pause();
                 self.position_timer.stop();
+                self.sink.clear().await?;
             }
         }
         self.next_track_is_queried = false;
