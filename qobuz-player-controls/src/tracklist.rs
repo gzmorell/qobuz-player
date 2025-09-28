@@ -109,11 +109,15 @@ impl Tracklist {
         self.queue.iter().find(|t| t.status == TrackStatus::Playing)
     }
 
-    pub(crate) fn skip_to_track(&mut self, new_position: u32) -> Option<&Track> {
+    pub(crate) fn skip_to_track(&mut self, new_position: i32) -> Option<&Track> {
+        if new_position < 0 {
+            return None;
+        }
+
         let mut new_track: Option<&Track> = None;
 
         for queue_item in self.queue.iter_mut().enumerate() {
-            let queue_item_position = queue_item.0 as u32;
+            let queue_item_position = queue_item.0 as i32;
 
             match queue_item_position.cmp(&new_position) {
                 std::cmp::Ordering::Less => {
