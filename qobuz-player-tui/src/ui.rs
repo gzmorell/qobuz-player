@@ -12,6 +12,23 @@ impl App {
     pub(crate) fn render(&mut self, frame: &mut Frame) {
         let area = frame.area();
 
+        self.render_inner(frame);
+
+        if matches!(self.app_state, AppState::Help) {
+            render_help(frame);
+        }
+
+        self.render_notifications(frame, area);
+    }
+
+    fn render_inner(&mut self, frame: &mut Frame) {
+        let area = frame.area();
+        if self.full_screen {
+            let area = center(area, Constraint::Percentage(80), Constraint::Length(10));
+            now_playing::render(frame, area, &mut self.now_playing, self.full_screen);
+            return;
+        }
+
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
@@ -39,7 +56,7 @@ impl App {
         frame.render_widget(tabs, chunks[0]);
 
         if self.now_playing.playing_track.is_some() {
-            now_playing::render(frame, chunks[2], &mut self.now_playing);
+            now_playing::render(frame, chunks[2], &mut self.now_playing, self.full_screen);
         }
 
         let tab_content_area = if self.now_playing.entity_title.is_some() {
@@ -58,69 +75,61 @@ impl App {
         if let AppState::Popup(popup) = &mut self.app_state {
             popup.render(frame);
         }
-
-        if matches!(self.app_state, AppState::Help) {
-            render_help(frame);
-        }
-
-        render_notifications(
-            frame,
-            area,
-            self.notifications.iter().map(|x| &x.0).collect(),
-        );
-    }
-}
-
-pub fn render_notifications(frame: &mut Frame, area: Rect, notifications: Vec<&Notification>) {
-    if notifications.is_empty() {
-        return;
     }
 
-    let messages = notifications
-        .into_iter()
-        .map(|notification| match notification {
-            Notification::Error(msg) => ("Error", msg, Color::Red),
-            Notification::Warning(msg) => ("Warning", msg, Color::Yellow),
-            Notification::Success(msg) => ("Success", msg, Color::Green),
-            Notification::Info(msg) => ("Info", msg, Color::Blue),
-        });
+    fn render_notifications(&self, frame: &mut Frame, area: Rect) {
+        let notifications: Vec<_> = self.notifications.iter().map(|x| &x.0).collect();
 
-    let inner_width = 60;
-    let box_width = inner_width;
-    let x = area.x + area.width.saturating_sub(box_width);
-    let mut y = area.y;
-
-    for msg in messages.rev() {
-        let lines = (msg.1.len() as u16).div_ceil(inner_width);
-        let box_height = lines + 2;
-
-        if y + box_height > area.y + area.height {
-            break;
+        if notifications.is_empty() {
+            return;
         }
 
-        let rect = Rect {
-            x,
-            y,
-            width: box_width,
-            height: box_height,
-        };
+        let messages = notifications
+            .into_iter()
+            .map(|notification| match notification {
+                Notification::Error(msg) => ("Error", msg, Color::Red),
+                Notification::Warning(msg) => ("Warning", msg, Color::Yellow),
+                Notification::Success(msg) => ("Success", msg, Color::Green),
+                Notification::Info(msg) => ("Info", msg, Color::Blue),
+            });
 
-        let paragraph = Paragraph::new(msg.1.as_str())
-            .block(
-                Block::new()
-                    .borders(Borders::ALL)
-                    .border_style(msg.2)
-                    .border_type(BorderType::Rounded)
-                    .title(msg.0)
-                    .title_alignment(Alignment::Center)
-                    .title_style(msg.2),
-            )
-            .wrap(Wrap { trim: true });
+        let inner_width = 60;
+        let box_width = inner_width;
+        let x = area.x + area.width.saturating_sub(box_width);
+        let mut y = area.y;
 
-        frame.render_widget(Clear, rect);
-        frame.render_widget(paragraph, rect);
+        for msg in messages.rev() {
+            let lines = (msg.1.len() as u16).div_ceil(inner_width);
+            let box_height = lines + 2;
 
-        y += box_height;
+            if y + box_height > area.y + area.height {
+                break;
+            }
+
+            let rect = Rect {
+                x,
+                y,
+                width: box_width,
+                height: box_height,
+            };
+
+            let paragraph = Paragraph::new(msg.1.as_str())
+                .block(
+                    Block::new()
+                        .borders(Borders::ALL)
+                        .border_style(msg.2)
+                        .border_type(BorderType::Rounded)
+                        .title(msg.0)
+                        .title_alignment(Alignment::Center)
+                        .title_style(msg.2),
+                )
+                .wrap(Wrap { trim: true });
+
+            frame.render_widget(Clear, rect);
+            frame.render_widget(paragraph, rect);
+
+            y += box_height;
+        }
     }
 }
 
@@ -134,27 +143,29 @@ pub(crate) fn center(area: Rect, horizontal: Constraint, vertical: Constraint) -
 
 fn render_help(frame: &mut Frame) {
     let rows = [
+        ["Toggle focus mode", "F"],
         ["Next song", "n"],
         ["Previous song", "p"],
         ["Jump forward", "f"],
         ["Jump backwards", "b"],
-        ["e", "Edit filter"],
-        ["esc", "Stop edit filter"],
-        ["Up/Down", "Select in list"],
-        ["Enter", "Select selected item"],
-        ["Left/right", "Cycle subgrup"],
-        ["q", "Exit"],
+        ["Edit filter", "e"],
+        ["Stop edit filter", "esc"],
+        ["Select in list", "Up/Down"],
+        ["Select selected item", "Enter"],
+        ["Cycle subgrup", "Left/right"],
+        ["Exit", "q"],
     ];
 
     let max_left = rows.iter().map(|x| x[0].len()).max().expect("infailable");
     let max_right = rows.iter().map(|x| x[1].len()).max().expect("infailable");
-    let max = max_left + max_right;
+    let max = std::cmp::max(max_left, max_right);
+    let max = max + max;
 
     let rows: Vec<_> = rows.into_iter().map(Row::new).collect();
 
     let area = center(
         frame.area(),
-        Constraint::Length(max as u16 + 2 + 9),
+        Constraint::Length(max as u16 + 2 + 1),
         Constraint::Length(rows.len() as u16 + 2),
     );
 

@@ -16,7 +16,12 @@ pub(crate) struct NowPlayingState {
     pub(crate) duration_ms: u32,
 }
 
-pub(crate) fn render(frame: &mut Frame, area: Rect, state: &mut NowPlayingState) {
+pub(crate) fn render(
+    frame: &mut Frame,
+    area: Rect,
+    state: &mut NowPlayingState,
+    full_screen: bool,
+) {
     let track = match &state.playing_track {
         Some(t) => t,
         None => return,
@@ -37,7 +42,9 @@ pub(crate) fn render(frame: &mut Frame, area: Rect, state: &mut NowPlayingState)
         .constraints([Constraint::Length(length), Constraint::Min(1)])
         .split(block.inner(area));
 
-    frame.render_widget(block, area);
+    if !full_screen {
+        frame.render_widget(block, area);
+    }
 
     if let Some(image) = &mut state.image {
         let stateful_image = StatefulImage::default();
