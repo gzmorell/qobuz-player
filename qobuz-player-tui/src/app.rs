@@ -36,6 +36,7 @@ pub(crate) struct App {
     pub(crate) discover: DiscoverState,
     pub(crate) broadcast: Arc<NotificationBroadcast>,
     pub(crate) notifications: Vec<(Notification, Instant)>,
+    pub(crate) full_screen: bool,
 }
 
 #[derive(Default, PartialEq)]
@@ -252,6 +253,10 @@ impl App {
                     }
                     KeyCode::Char('b') => {
                         self.controls.jump_backward();
+                        self.should_draw = true;
+                    }
+                    KeyCode::Char('F') => {
+                        self.full_screen = !self.full_screen;
                         self.should_draw = true;
                     }
                     _ => {}

@@ -76,6 +76,7 @@ pub async fn init(
         notifications: Default::default(),
         controls,
         now_playing,
+        full_screen: false,
         position: position_receiver,
         tracklist: tracklist_receiver,
         status: status_receiver,
