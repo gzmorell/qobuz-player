@@ -5,8 +5,10 @@ use crate::{
 use core::fmt;
 use image::load_from_memory;
 use qobuz_player_controls::{
-    PositionReceiver, Status, StatusReceiver, TracklistReceiver, controls::Controls,
-    notification::NotificationBroadcast, tracklist::Tracklist,
+    PositionReceiver, Status, StatusReceiver, TracklistReceiver,
+    controls::Controls,
+    notification::{Notification, NotificationBroadcast},
+    tracklist::Tracklist,
 };
 use ratatui::{
     DefaultTerminal,
@@ -15,7 +17,7 @@ use ratatui::{
 };
 use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
 use reqwest::Client;
-use std::{io, sync::Arc};
+use std::{io, sync::Arc, time::Instant};
 use tokio::time::{self, Duration};
 
 pub(crate) struct App {
@@ -33,6 +35,7 @@ pub(crate) struct App {
     pub(crate) queue: QueueState,
     pub(crate) discover: DiscoverState,
     pub(crate) broadcast: Arc<NotificationBroadcast>,
+    pub(crate) notifications: Vec<(Notification, Instant)>,
 }
 
 #[derive(Default, PartialEq)]
@@ -96,6 +99,7 @@ pub(crate) struct UnfilteredListState<T> {
 impl App {
     pub(crate) async fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         let mut tick_interval = time::interval(Duration::from_millis(10));
+        let mut receiver = self.broadcast.subscribe();
 
         while !self.exit {
             tokio::select! {
@@ -123,6 +127,22 @@ impl App {
                         self.handle_events().await.expect("infailable");
                     }
                 }
+
+                notification = receiver.recv() => {
+                    if let Ok(message) = notification {
+                        self.notifications.push((message, Instant::now()));
+                        self.should_draw = true;
+                    }
+                }
+            }
+
+            let notifications_before_clean = self.notifications.len();
+            self.notifications
+                .retain(|notification| notification.1.elapsed() < Duration::from_secs(5));
+            let notifications_after_clean = self.notifications.len();
+
+            if notifications_before_clean != notifications_after_clean {
+                self.should_draw = true;
             }
 
             if self.should_draw {

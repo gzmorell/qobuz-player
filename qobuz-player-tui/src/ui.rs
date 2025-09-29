@@ -1,3 +1,4 @@
+use qobuz_player_controls::notification::Notification;
 use qobuz_player_models::{Album, AlbumSimple};
 use ratatui::{layout::Flex, prelude::*, widgets::*};
 use tui_input::Input;
@@ -61,6 +62,65 @@ impl App {
         if matches!(self.app_state, AppState::Help) {
             render_help(frame);
         }
+
+        render_notifications(
+            frame,
+            area,
+            self.notifications.iter().map(|x| &x.0).collect(),
+        );
+    }
+}
+
+pub fn render_notifications(frame: &mut Frame, area: Rect, notifications: Vec<&Notification>) {
+    if notifications.is_empty() {
+        return;
+    }
+
+    let messages = notifications
+        .into_iter()
+        .map(|notification| match notification {
+            Notification::Error(msg) => ("Error", msg, Color::Red),
+            Notification::Warning(msg) => ("Warning", msg, Color::Yellow),
+            Notification::Success(msg) => ("Success", msg, Color::Green),
+            Notification::Info(msg) => ("Info", msg, Color::Blue),
+        });
+
+    let inner_width = 60;
+    let box_width = inner_width;
+    let x = area.x + area.width.saturating_sub(box_width);
+    let mut y = area.y;
+
+    for msg in messages.rev() {
+        let lines = (msg.1.len() as u16).div_ceil(inner_width);
+        let box_height = lines + 2;
+
+        if y + box_height > area.y + area.height {
+            break;
+        }
+
+        let rect = Rect {
+            x,
+            y,
+            width: box_width,
+            height: box_height,
+        };
+
+        let paragraph = Paragraph::new(msg.1.as_str())
+            .block(
+                Block::new()
+                    .borders(Borders::ALL)
+                    .border_style(msg.2)
+                    .border_type(BorderType::Rounded)
+                    .title(msg.0)
+                    .title_alignment(Alignment::Center)
+                    .title_style(msg.2),
+            )
+            .wrap(Wrap { trim: true });
+
+        frame.render_widget(Clear, rect);
+        frame.render_widget(paragraph, rect);
+
+        y += box_height;
     }
 }
 

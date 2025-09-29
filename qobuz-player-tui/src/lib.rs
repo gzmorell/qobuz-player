@@ -73,6 +73,7 @@ pub async fn init(
 
     let mut app = App {
         broadcast,
+        notifications: Default::default(),
         controls,
         now_playing,
         position: position_receiver,
