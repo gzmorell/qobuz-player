@@ -92,12 +92,14 @@ impl Sink {
         Ok(())
     }
 
-    pub fn query_track(&mut self, track_url: TrackURL, track: &Track) -> Result<bool> {
+    pub fn query_track(&mut self, track_url: TrackURL, track: &Track) -> Result<QueryTrackResult> {
         if let Some(handle) = self.current_download.lock()?.take() {
             handle.abort();
         }
 
         let sample_rate = (track_url.sampling_rate * 1000.0) as u32;
+        let same_sample_rate =
+            sample_rate == self.stream_handle.as_ref().unwrap().config().sample_rate();
 
         if self.stream_handle.is_none() || self.sink.is_none() || self.sender.is_none() {
             let mut stream_handle = open_default_stream(sample_rate)?;
@@ -196,10 +198,13 @@ impl Sink {
                 return;
             };
 
-            let signal = sender.append_with_signal(source);
-
             done_buffering_tx.send(()).expect("infailable");
 
+            if !same_sample_rate {
+                return;
+            }
+
+            let signal = sender.append_with_signal(source);
             tokio::task::spawn_blocking(move || {
                 if signal.recv().is_ok() {
                     track_finished_tx.send(()).expect("infailable");
@@ -209,7 +214,10 @@ impl Sink {
 
         *self.current_download.lock()? = Some(handle);
 
-        Ok(sample_rate == self.stream_handle.as_ref().unwrap().config().sample_rate())
+        Ok(match same_sample_rate {
+            true => QueryTrackResult::Queued,
+            false => QueryTrackResult::NotQueued,
+        })
     }
 
     pub fn sync_volume(&self) {
@@ -282,4 +290,9 @@ fn guess_extension(mime: &str) -> String {
         m if m.contains("flac") => "flac".to_string(),
         _ => "unknown".to_string(),
     }
+}
+
+pub enum QueryTrackResult {
+    Queued,
+    NotQueued,
 }

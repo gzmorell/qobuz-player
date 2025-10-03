@@ -38,7 +38,7 @@ pub struct Player {
     controls_rx: tokio::sync::mpsc::UnboundedReceiver<ControlCommand>,
     controls: Controls,
     database: Arc<Database>,
-    next_track_has_same_sample_rate: bool,
+    next_track_in_queue: bool,
 }
 
 impl Player {
@@ -85,7 +85,7 @@ impl Player {
             track_finished,
             done_buffering,
             database,
-            next_track_has_same_sample_rate: false,
+            next_track_in_queue: false,
         })
     }
 
@@ -185,7 +185,11 @@ impl Player {
     async fn query_track(&mut self, track: &Track) -> Result<()> {
         let track_url = self.client.track_url(track.id).await?;
         let next_track_has_other_sample_rate = self.sink.query_track(track_url, track)?;
-        self.next_track_has_same_sample_rate = next_track_has_other_sample_rate;
+
+        self.next_track_in_queue = match next_track_has_other_sample_rate {
+            crate::sink::QueryTrackResult::Queued => true,
+            crate::sink::QueryTrackResult::NotQueued => false,
+        };
 
         Ok(())
     }
@@ -506,7 +510,7 @@ impl Player {
 
         match next_track {
             Some(next_track) => {
-                if !self.next_track_has_same_sample_rate {
+                if !self.next_track_in_queue {
                     self.sink.clear().await?;
                     self.query_track(next_track).await?;
                 }
