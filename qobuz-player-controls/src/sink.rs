@@ -98,8 +98,6 @@ impl Sink {
         }
 
         let sample_rate = (track_url.sampling_rate * 1000.0) as u32;
-        let same_sample_rate =
-            sample_rate == self.stream_handle.as_ref().unwrap().config().sample_rate();
 
         if self.stream_handle.is_none() || self.sink.is_none() || self.sender.is_none() {
             let mut stream_handle = open_default_stream(sample_rate)?;
@@ -113,6 +111,9 @@ impl Sink {
             self.sender = Some(sender);
             self.stream_handle = Some(stream_handle);
         }
+
+        let same_sample_rate =
+            sample_rate == self.stream_handle.as_ref().unwrap().config().sample_rate();
 
         let track_url_url = track_url.url;
         let sender = self.sender.as_ref().unwrap().clone();

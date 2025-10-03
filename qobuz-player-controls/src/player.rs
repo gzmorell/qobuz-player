@@ -31,14 +31,15 @@ pub struct Player {
     volume: Sender<f32>,
     position_timer: Timer,
     position: Sender<Duration>,
-    next_track_is_queried: bool,
-    first_track_queried: bool,
     track_finished: Receiver<()>,
     done_buffering: Receiver<()>,
     controls_rx: tokio::sync::mpsc::UnboundedReceiver<ControlCommand>,
     controls: Controls,
     database: Arc<Database>,
+    next_track_is_queried: bool,
+    first_track_queried: bool,
     next_track_in_queue: bool,
+    next_track_is_ready: bool,
 }
 
 impl Player {
@@ -80,12 +81,13 @@ impl Player {
             volume,
             position_timer: Default::default(),
             position,
-            next_track_is_queried: false,
-            first_track_queried: false,
             track_finished,
             done_buffering,
             database,
             next_track_in_queue: false,
+            next_track_is_queried: false,
+            first_track_queried: false,
+            next_track_is_ready: false,
         })
     }
 
@@ -141,13 +143,6 @@ impl Player {
             .expect("infailable");
     }
 
-    fn reset_timer(&mut self) {
-        self.position_timer.reset();
-        self.position
-            .send(self.position_timer.elapsed())
-            .expect("infailable");
-    }
-
     fn set_timer(&mut self, duration: Duration) {
         self.position_timer.set_time(duration);
         self.position
@@ -185,6 +180,7 @@ impl Player {
     async fn query_track(&mut self, track: &Track) -> Result<()> {
         let track_url = self.client.track_url(track.id).await?;
         let next_track_has_other_sample_rate = self.sink.query_track(track_url, track)?;
+        self.next_track_is_ready = false;
 
         self.next_track_in_queue = match next_track_has_other_sample_rate {
             crate::sink::QueryTrackResult::Queued => true,
@@ -498,9 +494,7 @@ impl Player {
     }
 
     async fn track_finished(&mut self) -> Result<()> {
-        self.reset_timer();
-        self.position_timer.reset();
-
+        self.stop_timer();
         let mut tracklist = self.tracklist_rx.borrow().clone();
 
         let current_position = tracklist.current_position();
@@ -513,6 +507,12 @@ impl Player {
                 if !self.next_track_in_queue {
                     self.sink.clear().await?;
                     self.query_track(next_track).await?;
+                }
+
+                if self.next_track_is_ready {
+                    self.start_timer();
+                } else {
+                    self.set_target_status(Status::Buffering);
                 }
             }
             None => {
@@ -552,6 +552,7 @@ impl Player {
                 }
 
                 Ok(_) = self.done_buffering.changed() => {
+                    self.next_track_is_ready = true;
                     if *self.target_status.borrow() != Status::Playing {
                         self.position_timer.reset();
                         self.start_timer();
