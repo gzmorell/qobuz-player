@@ -143,7 +143,7 @@ impl FavoritesState {
                                 let index = self.albums.state.selected();
 
                                 let id = index
-                                    .map(|index| &self.albums.filter[index])
+                                    .and_then(|index| self.albums.filter.get(index))
                                     .map(|album| album.id.clone());
 
                                 if let Some(id) = id {
@@ -153,7 +153,8 @@ impl FavoritesState {
                             }
                             SubTab::Artists => {
                                 let index = self.artists.state.selected();
-                                let selected = index.map(|index| &self.artists.filter[index]);
+                                let selected =
+                                    index.and_then(|index| self.artists.filter.get(index));
 
                                 let Some(selected) = selected else {
                                     return Output::Consumed;
@@ -173,7 +174,8 @@ impl FavoritesState {
                             }
                             SubTab::Playlists => {
                                 let index = self.playlists.state.selected();
-                                let selected = index.map(|index| &self.playlists.filter[index]);
+                                let selected =
+                                    index.and_then(|index| self.playlists.filter.get(index));
 
                                 let Some(selected) = selected else {
                                     return Output::Consumed;

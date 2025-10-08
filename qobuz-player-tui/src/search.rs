@@ -158,7 +158,7 @@ impl SearchState {
                                 let index = self.albums.state.selected();
 
                                 let id = index
-                                    .map(|index| &self.albums.items[index])
+                                    .and_then(|index| self.albums.items.get(index))
                                     .map(|album| album.id.clone());
 
                                 if let Some(id) = id {
@@ -168,7 +168,8 @@ impl SearchState {
                             }
                             SubTab::Artists => {
                                 let index = self.artists.state.selected();
-                                let selected = index.map(|index| &self.artists.items[index]);
+                                let selected =
+                                    index.and_then(|index| self.artists.items.get(index));
 
                                 let Some(selected) = selected else {
                                     return Output::Consumed;
@@ -188,7 +189,8 @@ impl SearchState {
                             }
                             SubTab::Playlists => {
                                 let index = self.playlists.state.selected();
-                                let selected = index.map(|index| &self.playlists.items[index]);
+                                let selected =
+                                    index.and_then(|index| self.playlists.items.get(index));
 
                                 let Some(selected) = selected else {
                                     return Output::Consumed;
@@ -204,7 +206,7 @@ impl SearchState {
                                 let index = self.tracks.state.selected();
 
                                 let id = index
-                                    .map(|index| &self.tracks.items[index])
+                                    .and_then(|index| self.tracks.items.get(index))
                                     .map(|track| track.id);
 
                                 if let Some(id) = id {

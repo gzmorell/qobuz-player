@@ -77,8 +77,17 @@ impl DiscoverState {
 
                             match is_abum {
                                 true => {
-                                    let items = &self.featured_albums[self.sub_tab].1.items;
-                                    let id = items[selected_index].id.clone();
+                                    let items = self.featured_albums.get(self.sub_tab);
+                                    let Some(items) = items else {
+                                        return Output::NotConsumed;
+                                    };
+
+                                    let id =
+                                        items.1.items.get(selected_index).map(|x| x.id.clone());
+
+                                    let Some(id) = id else {
+                                        return Output::NotConsumed;
+                                    };
 
                                     return Output::PlayOutcome(PlayOutcome::Album(id));
                                 }

@@ -78,19 +78,16 @@ impl Popup {
                     None
                 }
                 KeyCode::Enter => {
-                    if artist_popup_state.albums.is_empty() {
-                        return None;
-                    }
-
                     let index = artist_popup_state.state.selected();
 
                     let id = index
-                        .map(|index| &artist_popup_state.albums[index])
+                        .and_then(|index| artist_popup_state.albums.get(index))
                         .map(|album| album.id.clone());
 
                     if let Some(id) = id {
                         return Some(PlayOutcome::Album(id));
                     }
+
                     None
                 }
                 _ => None,
