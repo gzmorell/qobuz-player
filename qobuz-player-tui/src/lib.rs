@@ -163,5 +163,5 @@ fn draw_loading_screen<B: Backend>(terminal: &mut Terminal<B>) {
                 .wrap(Wrap { trim: false });
             f.render_widget(paragraph, area);
         })
-        .expect("infailable");
+        .expect("infallible");
 }

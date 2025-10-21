@@ -68,7 +68,7 @@ pub async fn init(
     )
     .await;
 
-    axum::serve(listener, router).await.expect("infailable");
+    axum::serve(listener, router).await.expect("infallible");
     Ok(())
 }
 
@@ -225,7 +225,7 @@ async fn sse_handler(
     });
 
     let mut headers = axum::http::HeaderMap::new();
-    headers.insert("X-Accel-Buffering", "no".parse().expect("infailable"));
+    headers.insert("X-Accel-Buffering", "no".parse().expect("infallible"));
 
     (headers, Sse::new(stream))
 }
@@ -306,7 +306,7 @@ fn ok_or_broadcast<T>(
 
             let mut response = render(html! { <div></div> });
             let headers = response.headers_mut();
-            headers.insert("HX-Reswap", "none".try_into().expect("infailable"));
+            headers.insert("HX-Reswap", "none".try_into().expect("infallible"));
 
             Err(response)
         }

@@ -50,7 +50,7 @@ impl SubTab {
         let index = Self::VALUES
             .iter()
             .position(|&x| x == self)
-            .expect("infailable");
+            .expect("infallible");
         Self::VALUES[(index + 1) % Self::VALUES.len()]
     }
 
@@ -58,7 +58,7 @@ impl SubTab {
         let index = Self::VALUES
             .iter()
             .position(|&x| x == self)
-            .expect("infailable");
+            .expect("infallible");
         let len = Self::VALUES.len();
         Self::VALUES[(index + len - 1) % len]
     }

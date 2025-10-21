@@ -45,3 +45,24 @@ impl<T> SimpleCache<T> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::SimpleCache;
+    use time::Duration;
+    use tokio::time::sleep;
+
+    #[tokio::test]
+    async fn test_cache_expires_after_ttl() {
+        let ttl = Duration::milliseconds(100);
+        let cache = SimpleCache::new(ttl);
+
+        cache.set("test_value".to_string()).await;
+
+        assert_eq!(cache.get().await, Some("test_value".to_string()));
+
+        sleep(Duration::milliseconds(150).try_into().unwrap()).await;
+
+        assert_eq!(cache.get().await, None);
+    }
+}

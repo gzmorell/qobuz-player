@@ -156,8 +156,8 @@ fn render_help(frame: &mut Frame) {
         ["Exit", "q"],
     ];
 
-    let max_left = rows.iter().map(|x| x[0].len()).max().expect("infailable");
-    let max_right = rows.iter().map(|x| x[1].len()).max().expect("infailable");
+    let max_left = rows.iter().map(|x| x[0].len()).max().expect("infallible");
+    let max_right = rows.iter().map(|x| x[1].len()).max().expect("infallible");
     let max = std::cmp::max(max_left, max_right);
     let max = max + max;
 

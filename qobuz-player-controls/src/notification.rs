@@ -21,13 +21,13 @@ impl NotificationBroadcast {
     }
 
     pub fn send(&self, notification: Notification) {
-        self.tx.send(notification).expect("infailable");
+        self.tx.send(notification).expect("infallible");
     }
 
     pub fn send_error(&self, message: String) {
         self.tx
             .send(Notification::Error(message))
-            .expect("infailable");
+            .expect("infallible");
     }
 
     pub fn subscribe(&self) -> Receiver<Notification> {

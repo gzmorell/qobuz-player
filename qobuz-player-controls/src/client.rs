@@ -67,7 +67,7 @@ impl Client {
             password,
             max_audio_quality,
             client_initiated: Mutex::new(false),
-            favorites_cache: SimpleCache::new(Duration::weeks(1)),
+            favorites_cache: SimpleCache::new(Duration::days(1)),
             featured_albums_cache: SimpleCache::new(Duration::days(1)),
             featured_playlists_cache: SimpleCache::new(Duration::days(1)),
             album_cache,
@@ -88,7 +88,6 @@ impl Client {
         )
         .await?;
 
-        tracing::info!("Done");
         Ok(client)
     }
 

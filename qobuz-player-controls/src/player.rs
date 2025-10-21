@@ -126,28 +126,28 @@ impl Player {
         self.position_timer.start();
         self.position
             .send(self.position_timer.elapsed())
-            .expect("infailable");
+            .expect("infallible");
     }
 
     fn pause_timer(&mut self) {
         self.position_timer.pause();
         self.position
             .send(self.position_timer.elapsed())
-            .expect("infailable");
+            .expect("infallible");
     }
 
     fn stop_timer(&mut self) {
         self.position_timer.stop();
         self.position
             .send(self.position_timer.elapsed())
-            .expect("infailable");
+            .expect("infallible");
     }
 
     fn set_timer(&mut self, duration: Duration) {
         self.position_timer.set_time(duration);
         self.position
             .send(self.position_timer.elapsed())
-            .expect("infailable");
+            .expect("infallible");
     }
 
     async fn play(&mut self) -> Result<()> {
@@ -174,7 +174,7 @@ impl Player {
     }
 
     fn set_target_status(&self, status: Status) {
-        self.target_status.send(status).expect("infailable");
+        self.target_status.send(status).expect("infallible");
     }
 
     async fn query_track(&mut self, track: &Track) -> Result<()> {

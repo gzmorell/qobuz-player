@@ -199,7 +199,7 @@ impl Sink {
                 return;
             };
 
-            done_buffering_tx.send(()).expect("infailable");
+            done_buffering_tx.send(()).expect("infallible");
 
             if !same_sample_rate {
                 return;
@@ -208,7 +208,7 @@ impl Sink {
             let signal = sender.append_with_signal(source);
             tokio::task::spawn_blocking(move || {
                 if signal.recv().is_ok() {
-                    track_finished_tx.send(()).expect("infailable");
+                    track_finished_tx.send(()).expect("infallible");
                 }
             });
         });

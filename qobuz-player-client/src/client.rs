@@ -77,7 +77,7 @@ pub async fn new(
     let http_client = reqwest::Client::builder()
         .cookie_store(true)
         .build()
-        .expect("infailable");
+        .expect("infallible");
 
     let Secrets { secrets, app_id } = get_secrets(&http_client).await?;
 
@@ -759,25 +759,25 @@ fn client_headers(app_id: &str, user_token: Option<&str>) -> HeaderMap {
     tracing::debug!("adding app_id to request headers: {}", app_id);
     headers.insert(
         "X-App-Id",
-        HeaderValue::from_str(app_id).expect("infailable"),
+        HeaderValue::from_str(app_id).expect("infallible"),
     );
 
     if let Some(token) = user_token {
         tracing::debug!("adding token to request headers: {}", token);
         headers.insert(
             "X-User-Auth-Token",
-            HeaderValue::from_str(token).expect("infailable"),
+            HeaderValue::from_str(token).expect("infallible"),
         );
     }
 
     headers.insert(
         "Access-Control-Request-Headers",
-        HeaderValue::from_str("x-app-id,x-user-auth-token").expect("infailable"),
+        HeaderValue::from_str("x-app-id,x-user-auth-token").expect("infallible"),
     );
 
     headers.insert(
         "Accept-Language",
-        HeaderValue::from_str("en,en-US;q=0.8,ko;q=0.6,zh;q=0.4,zh-CN;q=0.2").expect("infailable"),
+        HeaderValue::from_str("en,en-US;q=0.8,ko;q=0.6,zh;q=0.4,zh-CN;q=0.2").expect("infallible"),
     );
 
     headers

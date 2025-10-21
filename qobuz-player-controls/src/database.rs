@@ -246,7 +246,7 @@ impl Database {
         let cutoff = time::OffsetDateTime::now_utc() - older_than;
         let cutoff_str = cutoff
             .format(&time::format_description::well_known::Rfc3339)
-            .expect("infailable");
+            .expect("infallible");
 
         let rows = sqlx::query!(
             "SELECT path FROM cache_entries WHERE last_opened < ?",
@@ -273,7 +273,7 @@ impl Database {
     pub async fn set_cache_entry(&self, path: &Path) {
         let now = time::OffsetDateTime::now_utc()
             .format(&time::format_description::well_known::Rfc3339)
-            .expect("infailable");
+            .expect("infallible");
 
         let path_str: String = path.to_string_lossy().into_owned();
 
@@ -290,7 +290,7 @@ impl Database {
         )
         .execute(&self.pool)
         .await
-        .expect("infailable");
+        .expect("infallible");
     }
 }
 
