@@ -54,19 +54,19 @@ impl DiscoverState {
         match event {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 match key_event.code {
-                    KeyCode::Left => {
+                    KeyCode::Left | KeyCode::Char('h') => {
                         self.cycle_subtab_backwards();
                         Output::Consumed
                     }
-                    KeyCode::Right => {
+                    KeyCode::Right | KeyCode::Char('l') => {
                         self.cycle_subtab();
                         Output::Consumed
                     }
-                    KeyCode::Down => {
+                    KeyCode::Down | KeyCode::Char('j') => {
                         self.current_list_state().select_next();
                         Output::Consumed
                     }
-                    KeyCode::Up => {
+                    KeyCode::Up | KeyCode::Char('k') => {
                         self.current_list_state().select_previous();
                         Output::Consumed
                     }

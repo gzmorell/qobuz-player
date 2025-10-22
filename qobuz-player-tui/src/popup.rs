@@ -69,11 +69,11 @@ impl Popup {
     pub(crate) async fn handle_event(&mut self, key: KeyCode) -> Option<PlayOutcome> {
         match self {
             Popup::Artist(artist_popup_state) => match key {
-                KeyCode::Up => {
+                KeyCode::Up | KeyCode::Char('k') => {
                     artist_popup_state.state.select_previous();
                     None
                 }
-                KeyCode::Down => {
+                KeyCode::Down | KeyCode::Char('j') => {
                     artist_popup_state.state.select_next();
                     None
                 }
@@ -93,11 +93,11 @@ impl Popup {
                 _ => None,
             },
             Popup::Playlist(playlist_popup_state) => match key {
-                KeyCode::Left => {
+                KeyCode::Left | KeyCode::Char('h') => {
                     playlist_popup_state.shuffle = !playlist_popup_state.shuffle;
                     None
                 }
-                KeyCode::Right => {
+                KeyCode::Right | KeyCode::Char('l') => {
                     playlist_popup_state.shuffle = !playlist_popup_state.shuffle;
                     None
                 }

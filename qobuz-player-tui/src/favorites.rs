@@ -122,19 +122,19 @@ impl FavoritesState {
                             self.start_editing();
                             Output::Consumed
                         }
-                        KeyCode::Left => {
+                        KeyCode::Left | KeyCode::Char('h') => {
                             self.cycle_subtab_backwards();
                             Output::Consumed
                         }
-                        KeyCode::Right => {
+                        KeyCode::Right | KeyCode::Char('l') => {
                             self.cycle_subtab();
                             Output::Consumed
                         }
-                        KeyCode::Down => {
+                        KeyCode::Down | KeyCode::Char('j') => {
                             self.current_list_state().select_next();
                             Output::Consumed
                         }
-                        KeyCode::Up => {
+                        KeyCode::Up | KeyCode::Char('k') => {
                             self.current_list_state().select_previous();
                             Output::Consumed
                         }

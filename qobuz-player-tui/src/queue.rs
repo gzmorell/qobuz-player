@@ -46,11 +46,11 @@ impl QueueState {
         match event {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 match key_event.code {
-                    KeyCode::Down => {
+                    KeyCode::Down | KeyCode::Char('j') => {
                         self.queue.state.select_next();
                         Output::Consumed
                     }
-                    KeyCode::Up => {
+                    KeyCode::Up | KeyCode::Char('k') => {
                         self.queue.state.select_previous();
                         Output::Consumed
                     }
