@@ -218,12 +218,15 @@ pub(crate) fn block(title: &str, selectable: bool) -> Block<'_> {
         .border_type(BorderType::Rounded)
 }
 
+const MAX_ROW_LENGTH: usize = 50;
+
 pub(crate) fn album_table<'a>(rows: &[Album], title: &'a str) -> Table<'a> {
     let max_title_length = rows
         .iter()
         .map(|album| album.title.len())
         .max()
-        .unwrap_or(0);
+        .unwrap_or(0)
+        .min(MAX_ROW_LENGTH);
 
     let max_artist_name_length = rows
         .iter()
