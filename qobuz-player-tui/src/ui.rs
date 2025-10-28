@@ -218,22 +218,7 @@ pub(crate) fn block(title: &str, selectable: bool) -> Block<'_> {
         .border_type(BorderType::Rounded)
 }
 
-const MAX_ROW_LENGTH: usize = 50;
-
 pub(crate) fn album_table<'a>(rows: &[Album], title: &'a str) -> Table<'a> {
-    let max_title_length = rows
-        .iter()
-        .map(|album| album.title.len())
-        .max()
-        .unwrap_or(0)
-        .min(MAX_ROW_LENGTH);
-
-    let max_artist_name_length = rows
-        .iter()
-        .map(|album| album.artist.name.len())
-        .max()
-        .unwrap_or(0);
-
     let rows: Vec<_> = rows
         .iter()
         .map(|album| {
@@ -249,8 +234,8 @@ pub(crate) fn album_table<'a>(rows: &[Album], title: &'a str) -> Table<'a> {
     let mut table = Table::new(
         rows,
         [
-            Constraint::Min(max_title_length as u16),
-            Constraint::Min(max_artist_name_length as u16),
+            Constraint::Ratio(1, 2),
+            Constraint::Ratio(1, 2),
             Constraint::Length(4),
         ],
     )
