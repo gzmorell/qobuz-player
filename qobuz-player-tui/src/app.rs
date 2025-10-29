@@ -211,7 +211,7 @@ impl App {
                 }
 
                 match key_event.code {
-                    KeyCode::Char('h') | KeyCode::Char('?') => {
+                    KeyCode::Char('?') => {
                         self.app_state = AppState::Help;
                         self.should_draw = true;
                     }
