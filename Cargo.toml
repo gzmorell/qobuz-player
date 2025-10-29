@@ -34,7 +34,7 @@ leptos = { version = "*", default-features = false, features = ["ssr"] }
 md5 = "*"
 mime = "*"
 mime_guess = "*"
-rand = "*"
+rand = "0.9"
 regex = "*"
 reqwest = { version = "*", features = ["rustls-tls", "cookies"] }
 serde = { version = "*", features = ["derive"] }
