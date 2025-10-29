@@ -150,7 +150,7 @@ async fn background_task(
                 _ = tracklist.borrow_and_update();
                 let event = ServerSentEvent {
                     event_name: "tracklist".into(),
-                    event_data: Default::default(),
+                    event_data: "new tracklist".into(),
                 };
                 _ = tx.send(event);
             },
