@@ -4,7 +4,7 @@
 
 Powered by [Qobuz](https://www.qobuz.com). Requires a paid subscription. This does not allow you to listen for free.
 
-The player includes a terminal ui, a webui and a RFID player. 
+The player includes a terminal ui, a web-ui and a RFID player. 
 The web interface is ideal for a setup with a single board computer, e.g. Raspberry Pi, connected to the speaker system and controlled with a smartphone or tablet.
 
 ### Terminal UI
@@ -25,7 +25,7 @@ Read more [in the wiki](https://github.com/SofusA/qobuz-player/wiki/RFID-player)
 
 - High resolution audio: Supports up to 24bit/192Khz (max quality Qobuz offers)
 - MPRIS support (control via [playerctl](https://github.com/altdesktop/playerctl) or other D-Bus client)
-- Gapless playback
+- Gap-less playback
 - Web UI 
 - Terminal UI 
 
@@ -34,6 +34,13 @@ Read more [in the wiki](https://github.com/SofusA/qobuz-player/wiki/RFID-player)
 ### Download Release
 
 Download the tar.gz file for your supported OS from the releases page, extract the file and execute `qobuz-player` or copy it to your `$PATH`.
+
+### Build from source
+
+Linux dependencies: `alsa-sys-devel`, `just`.
+
+1. `just build-all`
+2. Move build executable to somewhere on `PATH`
 
 ## Get started
 

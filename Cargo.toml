@@ -50,3 +50,7 @@ moka = { version = "*", features = ["future"]}
 rodio = "*"
 ratatui = "*"
 tokio_schedule = "*"
+rppal = "*"
+ratatui-image = "*"
+tui-input = "*"
+image = "*"

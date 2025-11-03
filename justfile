@@ -1,11 +1,14 @@
 init-database:
     cargo sqlx db create && cargo sqlx migrate run --source qobuz-player-controls/migrations
 
-git-reset:
-    git fetch && git reset --hard origin
-
-build-gpio:
-    cargo build --release --features gpio
-
+[working-directory: 'qobuz-player-web']
 build-styles:
-    tailwindcss -i qobuz-player-web/assets/tailwind.css -o qobuz-player-web/assets/styles.css --minify
+    npm i
+    npm run build
+
+create-env-file:
+    echo 'DATABASE_URL="sqlite:///tmp/qobuz-player.db"' > .env
+
+build-all:
+    just build-styles
+    cargo build --release

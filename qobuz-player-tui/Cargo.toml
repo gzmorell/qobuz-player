@@ -11,8 +11,8 @@ qobuz-player-controls = { version = "*", path = "../qobuz-player-controls" }
 qobuz-player-models = { version = "*", path = "../qobuz-player-models" }
 
 ratatui = { workspace = true }
-ratatui-image = "*"
-tui-input = "*"
-image = "*"
+ratatui-image = { workspace = true }
+tui-input = { workspace = true }
+image = { workspace = true }
 reqwest = { workspace = true }
 tokio = { workspace = true }

@@ -7,7 +7,7 @@ pub enum Error {
     FailedToPlay {
         message: String,
     },
-    #[snafu(display("failed to seek"))]
+    #[snafu(display("Failed to seek"))]
     Seek,
     #[snafu(display("{message}"))]
     Client {
