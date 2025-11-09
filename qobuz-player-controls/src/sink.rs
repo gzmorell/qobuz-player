@@ -1,3 +1,4 @@
+use std::fs;
 use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -7,7 +8,6 @@ use qobuz_player_client::qobuz_models::TrackURL;
 use qobuz_player_models::Track;
 use rodio::cpal::traits::HostTrait;
 use rodio::{decoder::DecoderBuilder, queue::queue};
-use tokio::fs;
 use tokio::sync::watch::{self, Receiver, Sender};
 use tokio::task::JoinHandle;
 
@@ -157,7 +157,7 @@ impl Sink {
         let handle = tokio::spawn(async move {
             database.set_cache_entry(cache_path.as_path()).await;
 
-            let maybe_cached_bytes = (fs::read(&cache_path).await).ok();
+            let maybe_cached_bytes = fs::read(&cache_path).ok();
 
             let bytes: Vec<u8> = if let Some(bytes) = maybe_cached_bytes {
                 bytes
@@ -173,16 +173,16 @@ impl Sink {
                 let bytes = body.to_vec();
 
                 if let Some(parent) = cache_path.parent()
-                    && let Err(e) = fs::create_dir_all(parent).await
+                    && let Err(e) = fs::create_dir_all(parent)
                 {
                     broadcast.send_error(format!("Unable to create cache directory: {e}"));
                 }
 
                 let tmp = cache_path.with_extension("partial");
-                if let Err(e) = fs::write(&tmp, &bytes).await {
+                if let Err(e) = fs::write(&tmp, &bytes) {
                     broadcast.send_error(format!("Unable to write cache temp file: {e}"));
-                } else if let Err(e) = fs::rename(&tmp, cache_path).await {
-                    let _ = fs::remove_file(&tmp).await;
+                } else if let Err(e) = fs::rename(&tmp, cache_path) {
+                    let _ = fs::remove_file(&tmp);
                     broadcast.send_error(format!("Unable to finalize cache file: {e}"));
                 }
 
