@@ -21,7 +21,7 @@ struct MprisPlayer {
 
 impl RootInterface for MprisPlayer {
     async fn identity(&self) -> fdo::Result<String> {
-        Ok("Quboz-player".into())
+        Ok("quboz-player".into())
     }
     async fn raise(&self) -> fdo::Result<()> {
         Err(fdo::Error::NotSupported("Not supported".into()))
