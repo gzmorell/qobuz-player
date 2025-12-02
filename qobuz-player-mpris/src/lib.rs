@@ -48,7 +48,7 @@ impl RootInterface for MprisPlayer {
         Ok(false)
     }
     async fn desktop_entry(&self) -> fdo::Result<String> {
-        Ok("com.github.sofusa-quboz-player".into())
+        Ok("qobuz-player".into())
     }
     async fn supported_uri_schemes(&self) -> fdo::Result<Vec<String>> {
         Ok(vec![])
@@ -204,7 +204,7 @@ pub async fn init(
     controls: Controls,
 ) -> Result<()> {
     let Ok(server) = Server::new(
-        "com.github.sofusa-quboz-player",
+        "qobuz-player",
         MprisPlayer {
             controls,
             position_receiver,
