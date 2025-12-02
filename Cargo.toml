@@ -13,7 +13,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.4.2"
+version = "0.4.3"
 edition = "2024"
 license-file = "LICENSE"
 repository = "https://github.com/sofusa/qobuz-player"
@@ -30,7 +30,6 @@ clap = { version = "*", features = ["derive", "env"] }
 rust-embed = { version = "*", features = ["axum", "tokio", "mime_guess"] }
 dirs = "*"
 futures = "*"
-leptos = { version = "*", default-features = false, features = ["ssr"] }
 md5 = "*"
 mime = "*"
 mime_guess = "*"

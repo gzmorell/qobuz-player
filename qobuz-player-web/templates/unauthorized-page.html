@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en" class="h-full dark">
+  @include (head.html) {}
+  <body class="flex flex-col justify-between h-full text-gray-50 bg-black">
+    <div class="flex justify-center items-center w-full h-full">
+      <form class="flex flex-col gap-4" action="/auth/login" method="post">
+        <input
+          class="p-2 w-full text-black bg-white rounded"
+          type="password"
+          id="secret"
+          name="secret"
+          placeholder="Secret"
+        />
+        <button class="button" type="submit">Submit</button>
+      </form>
+    </div>
+  </body>
+</html>
