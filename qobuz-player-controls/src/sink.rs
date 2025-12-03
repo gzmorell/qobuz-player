@@ -20,7 +20,6 @@ pub struct Sink {
     sink: Option<rodio::Sink>,
     sender: Option<Arc<rodio::queue::SourcesQueueInput>>,
     current_download: Arc<Mutex<Option<JoinHandle<()>>>>,
-    track_finished_tx: Sender<()>,
     done_buffering_tx: Sender<()>,
     broadcast: Arc<NotificationBroadcast>,
     audio_cache_dir: PathBuf,
@@ -35,7 +34,6 @@ impl Sink {
         audio_cache_dir: PathBuf,
         database: Arc<Database>,
     ) -> Result<Self> {
-        let (track_finished_tx, _) = watch::channel(());
         let (done_buffering_tx, _) = watch::channel(());
 
         Ok(Self {
@@ -43,17 +41,12 @@ impl Sink {
             stream_handle: Default::default(),
             sender: Default::default(),
             current_download: Default::default(),
-            track_finished_tx,
             done_buffering_tx,
             broadcast,
             audio_cache_dir,
             database,
             volume,
         })
-    }
-
-    pub fn track_finished(&self) -> Receiver<()> {
-        self.track_finished_tx.subscribe()
     }
 
     pub fn done_buffering(&self) -> Receiver<()> {
@@ -117,7 +110,6 @@ impl Sink {
 
         let track_url_url = track_url.url;
         let sender = self.sender.as_ref().unwrap().clone();
-        let track_finished_tx = self.track_finished_tx.clone();
         let done_buffering_tx = self.done_buffering_tx.clone();
         let broadcast = self.broadcast.clone();
         let database = self.database.clone();
@@ -205,12 +197,7 @@ impl Sink {
                 return;
             }
 
-            let signal = sender.append_with_signal(source);
-            tokio::task::spawn_blocking(move || {
-                if signal.recv().is_ok() {
-                    track_finished_tx.send(()).expect("infallible");
-                }
-            });
+            sender.append(source);
         });
 
         *self.current_download.lock()? = Some(handle);

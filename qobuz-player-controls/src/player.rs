@@ -31,7 +31,6 @@ pub struct Player {
     volume: Sender<f32>,
     position_timer: Timer,
     position: Sender<Duration>,
-    track_finished: Receiver<()>,
     done_buffering: Receiver<()>,
     controls_rx: tokio::sync::mpsc::UnboundedReceiver<ControlCommand>,
     controls: Controls,
@@ -59,7 +58,6 @@ impl Player {
             database.clone(),
         )?;
 
-        let track_finished = sink.track_finished();
         let done_buffering = sink.done_buffering();
 
         let (position, _) = watch::channel(Default::default());
@@ -81,7 +79,6 @@ impl Player {
             volume,
             position_timer: Default::default(),
             position,
-            track_finished,
             done_buffering,
             database,
             next_track_in_queue: false,
@@ -425,6 +422,12 @@ impl Player {
 
         if let Some(duration) = duration {
             let position = position.as_secs();
+
+            if (duration as i16) <= (position as i16) {
+                self.track_finished().await?;
+                return Ok(());
+            }
+
             let track_about_to_finish = (duration as i16 - position as i16) < 60;
 
             if track_about_to_finish && !self.next_track_is_queried {
@@ -541,12 +544,6 @@ impl Player {
 
                 Some(notification) = self.controls_rx.recv() => {
                     if let Err(err) = self.handle_message(notification).await {
-                        self.broadcast.send_error(format!("{err}"));
-                    };
-                }
-
-                Ok(_) = self.track_finished.changed() => {
-                    if let Err(err) = self.track_finished().await {
                         self.broadcast.send_error(format!("{err}"));
                     };
                 }

@@ -46,7 +46,7 @@ tracing = "*"
 tracing-subscriber = { version = "*" }
 url = "*"
 moka = { version = "*", features = ["future"]}
-rodio = "*"
+rodio = {version = "*", default-features = false, features = ["flac", "playback"] }
 ratatui = "*"
 tokio_schedule = "*"
 rppal = "*"
