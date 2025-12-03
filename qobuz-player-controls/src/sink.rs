@@ -1,6 +1,6 @@
 use std::fs;
 use std::io::Cursor;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -114,37 +114,7 @@ impl Sink {
         let broadcast = self.broadcast.clone();
         let database = self.database.clone();
 
-        let cache_path = {
-            let artist_name = track.artist_name.as_deref().unwrap_or("unknown");
-            let artist_id = track
-                .artist_id
-                .map(|id| id.to_string())
-                .unwrap_or_else(|| "unknown".to_string());
-            let album_title = track.album_title.as_deref().unwrap_or("unknown");
-            let album_id = track.album_id.as_deref().unwrap_or("unknown");
-            let track_title = &track.title;
-
-            let artist_dir = format!(
-                "{} ({})",
-                sanitize_name(artist_name),
-                sanitize_name(&artist_id),
-            );
-            let album_dir = format!(
-                "{} ({})",
-                sanitize_name(album_title),
-                sanitize_name(album_id),
-            );
-            let extension = guess_extension(&track_url.mime_type);
-            let track_file = format!(
-                "{}_{}.{extension}",
-                track.number,
-                sanitize_name(track_title)
-            );
-            self.audio_cache_dir
-                .join(artist_dir)
-                .join(album_dir)
-                .join(track_file)
-        };
+        let cache_path: PathBuf = cache_path(track, &track_url.mime_type, &self.audio_cache_dir);
 
         let handle = tokio::spawn(async move {
             database.set_cache_entry(cache_path.as_path()).await;
@@ -283,4 +253,37 @@ fn guess_extension(mime: &str) -> String {
 pub enum QueryTrackResult {
     Queued,
     NotQueued,
+}
+
+fn cache_path(track: &Track, mime: &str, audio_cache_dir: &Path) -> PathBuf {
+    let artist_name = track.artist_name.as_deref().unwrap_or("unknown");
+    let artist_id = track
+        .artist_id
+        .map(|id| id.to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+    let album_title = track.album_title.as_deref().unwrap_or("unknown");
+    let album_id = track.album_id.as_deref().unwrap_or("unknown");
+    let track_title = &track.title;
+
+    let artist_dir = format!(
+        "{} ({})",
+        sanitize_name(artist_name),
+        sanitize_name(&artist_id),
+    );
+    let album_dir = format!(
+        "{} ({})",
+        sanitize_name(album_title),
+        sanitize_name(album_id),
+    );
+    let extension = guess_extension(mime);
+    let track_file = format!(
+        "{}_{}.{extension}",
+        track.number,
+        sanitize_name(track_title)
+    );
+
+    audio_cache_dir
+        .join(artist_dir)
+        .join(album_dir)
+        .join(track_file)
 }
