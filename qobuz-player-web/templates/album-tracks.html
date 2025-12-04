@@ -6,7 +6,7 @@
   data-sse="tracklist"
   hx-swap="morph:outerHTML"
 >
-  @include (
+  @defer (
     list-tracks.html;
     now_playing_id=playing_info.now_playing_id;
     tracks=album.tracks;

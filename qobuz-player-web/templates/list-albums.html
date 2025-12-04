@@ -1,6 +1,6 @@
-@include (list.html) {
+@defer (list.html) {
   @for (album in albums) {
-    @include (list-item.html) {
+    @defer (list-item.html) {
       <a
         class="flex gap-4 items-center w-full"
         hx-push-url="true"
@@ -17,7 +17,7 @@
         <div class="overflow-hidden w-full">
           <div class="flex justify-between">
             <h3 class="text-lg truncate">{{ album.title }}</h3>
-            @include (
+            @defer (
               info.html;
               hires_available=album.hires_available;
               explicit=album.explicit

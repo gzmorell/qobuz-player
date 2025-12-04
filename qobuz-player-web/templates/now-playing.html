@@ -1,4 +1,4 @@
-@include (
+@defer (
   base.html;
   partial=partial;
   active_page="NowPlaying";
@@ -49,13 +49,13 @@
       <div class="flex flex-col gap-y-4 w-full">
         <div class="flex gap-2 justify-between items-center">
           <span class="text-lg truncate">{{ playing_info.title }}</span>
-          @include (
+          @defer (
             info.html;
             hires_available=playing_info.hires_available;
             explicit=playing_info.explicit
           ) {}
         </div>
-        @include (
+        @defer (
           progress.html;
           position_mseconds=position_mseconds;
           duration_mseconds=duration_mseconds;
@@ -65,11 +65,11 @@
       </div>
       <div class="flex flex-col gap-4">
         <div class="flex flex-row gap-2 justify-center h-10">
-          @include (previous.html) {}
-          @include (player-state.html; playing_info=playing_info) {}
-          @include (next.html) {}
+          @defer (previous.html) {}
+          @defer (player-state.html; playing_info=playing_info) {}
+          @defer (next.html) {}
         </div>
-        @include (volume-slider.html; current_volume=current_volume) {}
+        @defer (volume-slider.html; current_volume=current_volume) {}
       </div>
     </div>
   </div>

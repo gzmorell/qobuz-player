@@ -6,7 +6,7 @@
   hx-swap="morph:outerHTML"
   hx-get="/playlist/{{ playlist.id }}/tracks"
 >
-  @include (
+  @defer (
     list-tracks.html;
     now_playing_id=playing_info.now_playing_id;
     tracks=playlist.tracks;

@@ -1,6 +1,6 @@
-@include (list.html) {
+@defer (list.html) {
   @for (artist in artists) {
-    @include (list-item.html) {
+    @defer (list-item.html) {
       <a
         class="flex gap-4 items-center"
         hx-push-url="true"
@@ -18,7 +18,7 @@
             class="flex justify-center items-center bg-gray-500 rounded-full aspect-square size-12"
           >
             <div class="w-8">
-              @include (icons/user.html) {}
+              @defer (icons/user.html) {}
             </div>
           </div>
         }

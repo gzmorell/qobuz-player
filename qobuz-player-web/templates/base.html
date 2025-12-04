@@ -3,7 +3,7 @@
 } @else {
   <!doctype html>
   <html lang="en" class="dark">
-    @include (head.html) {}
+    @defer (head.html) {}
     <body
       class="text-gray-50 bg-black touch-pan-y"
       hx-ext="preload, remove-me, morph"
@@ -14,7 +14,7 @@
         hx-preserve
         class="fixed top-8 right-8 z-10 p-2 rounded-lg pointer-events-none m-safe bg-gray-900/20 my-indicator backdrop-blur size-12"
       >
-        @include (icons/loading-spinner.html) {}
+        @defer (icons/loading-spinner.html) {}
       </div>
 
       <div
@@ -25,10 +25,10 @@
       {{ content }}
 
       @if (active_page != "NowPlaying") {
-        @include (controls.html; playing_info=playing_info) {}
+        @defer (controls.html; playing_info=playing_info) {}
       }
 
-      @include (navigation.html; active_page=active_page) {}
+      @defer (navigation.html; active_page=active_page) {}
     </body>
   </html>
 }

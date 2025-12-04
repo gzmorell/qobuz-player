@@ -1,4 +1,4 @@
-@include (
+@defer (
   base.html;
   partial=partial;
   active_page="Search";
@@ -27,7 +27,7 @@
           hx-swap="morph:innerHTML"
         />
         <span class="size-8">
-          @include (icons/magnifying-glass.html) {}
+          @defer (icons/magnifying-glass.html) {}
         </span>
         <script>
           loadSearchInput();
@@ -82,21 +82,21 @@
 
     <div class="overflow-auto h-full">
       @if (tab == "albums") {
-        @include (list-albums.html; albums=search_results.albums) {}
+        @defer (list-albums.html; albums=search_results.albums) {}
       }
 
       @if (tab == "artists") {
-        @include (list-artists.html; artists=search_results.artists) {}
+        @defer (list-artists.html; artists=search_results.artists) {}
       }
 
       @if (tab == "playlists") {
-        @include (list-playlists.html; playlists=search_results.playlists) {}
+        @defer (list-playlists.html; playlists=search_results.playlists) {}
       }
 
       @if (tab == "tracks") {
-        @include (list.html) {
+        @defer (list.html) {
           @for (track in search_results.tracks) {
-            @include (list-item.html) {
+            @defer (list-item.html) {
               <button
                 class="flex gap-4 items-center w-full cursor-pointer"
                 hx-put="/api/play-track/{{ track.id }}"
@@ -111,7 +111,7 @@
                 <div class="overflow-hidden w-full">
                   <div class="flex justify-between items-center">
                     <h3 class="text-lg truncate">{{ track.title }}</h3>
-                    @include (
+                    @defer (
                       info.html;
                       explicit=track.explicit;
                       hires_available=track.hires_available

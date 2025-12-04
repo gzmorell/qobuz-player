@@ -414,7 +414,7 @@ impl Client {
 
         let Favorites {
             albums,
-            tracks: _,
+            tracks,
             artists,
         } = response;
 
@@ -433,6 +433,11 @@ impl Client {
                 .collect(),
             artists: artists.into_iter().map(parse_artist).collect(),
             playlists: favorite_playlists,
+            tracks: tracks
+                .items
+                .into_iter()
+                .map(|track| parse_track(track, &self.max_audio_quality))
+                .collect(),
         })
     }
 

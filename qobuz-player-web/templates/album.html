@@ -25,15 +25,15 @@
       </span>
     </div>
 
-    @include (button-group.html) {
+    @defer (button-group.html) {
       <button class="button" hx-swap="none" hx-put="/album/{{ album.id }}/play">
         <span class="size-6">
-          @include (icons/play.html) {}
+          @defer (icons/play.html) {}
         </span>
         <span>Play</span>
       </button>
 
-      @include (
+      @defer (
         toggle-favorite.html;
         id=album.id;
         is_favorite=is_favorite;
@@ -42,7 +42,7 @@
       @if (rfid) {
         <button class="button" hx-swap="none" hx-put="{{ album.id }}/link">
           <span class="size-6">
-            @include (icons/link.html) {}
+            @defer (icons/link.html) {}
           </span>
           <span>Link RFID</span>
         </button>
@@ -52,7 +52,7 @@
 </div>
 <div class="flex flex-col gap-4 w-full">
   <div class="sm:p-4">
-    @include (
+    @defer (
       album-tracks.html;
       album=album;
       playing_info=playing_info;
@@ -63,10 +63,10 @@
   @if (suggested_albums) {
     <div class="flex flex-col gap-2 w-full">
       <h3 class="px-4 text-lg">Album suggestions</h3>
-      @include (list-albums-vertical.html; albums=suggested_albums) {}
+      @defer (list-albums-vertical.html; albums=suggested_albums) {}
     </div>
   }
-  @include (
+  @defer (
     description.html;
     description=album.description;
     title=album.title

@@ -9,9 +9,9 @@
 >
   <span class="size-6">
     @if (is_favorite) {
-      @include (icons/star-solid.html) {}
+      @defer (icons/star-solid.html) {}
     } @else {
-      @include (icons/star.html) {}
+      @defer (icons/star.html) {}
     }
   </span>
   <span>Favorite</span>

@@ -10,14 +10,14 @@
     preload-images="true"
     class="@if(active_page == "NowPlaying"){text-blue-500}@else {text-gray-500}"
   >
-    @include (icons/play-circle.html){} Now Playing
+    @defer (icons/play-circle.html){} Now Playing
   </a>
 
   <a
     href="/queue"
     class="@if(active_page == "Queue"){text-blue-500}@else {text-gray-500}"
   >
-    @include (icons/queue-list.html){} Queue
+    @defer (icons/queue-list.html){} Queue
   </a>
   <a
     href="/discover"
@@ -25,7 +25,7 @@
     preload-images="true"
     class="@if(active_page == "Discover"){text-blue-500}@else {text-gray-500}"
   >
-    @include (icons/megaphone.html){} Discover
+    @defer (icons/megaphone.html){} Discover
   </a>
   <a
     href="/favorites/albums"
@@ -33,16 +33,16 @@
     preload="mouseover"
     class="@if(active_page == "Favorites"){text-blue-500}@else {text-gray-500}"
   >
-    @include (icons/star-solid.html){} Favorites
+    @defer (icons/star-solid.html){} Favorites
   </a>
 
   @if (active_page == "Search") {
     <button class="text-blue-500" onclick="focusSearchInput()">
-      @include (icons/magnifying-glass.html){} Search
+      @defer (icons/magnifying-glass.html){} Search
     </button>
   } @else {
     <a href="/search/albums" class="text-gray-500">
-      @include (icons/magnifying-glass.html){} Search
+      @defer (icons/magnifying-glass.html){} Search
     </a>
   }
 </nav>

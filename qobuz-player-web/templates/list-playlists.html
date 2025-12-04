@@ -1,6 +1,6 @@
-@include (list.html) {
+@defer (list.html) {
   @for (playlist in playlists) {
-    @include (list-item.html) {
+    @defer (list-item.html) {
       <a
         class="flex gap-4 items-center w-full text-lg text-left"
         href="/playlist/{{ playlist.id }}"

@@ -1,9 +1,11 @@
-@include (list.html) {
+@defer (list.html) {
   @for (track in tracks) {
-    @include (list-item.html) {
+    @defer (list-item.html) {
       <button
         hx-swap="none"
-        hx-put="{{ click }}{{ index }}"
+        hx-put="@if(api_by_id){{{click}}{{ track.id }}} @else {{{ click }}{{
+          index
+        }}}"
         class="flex justify-between items-center w-full text-left cursor-pointer disabled:text-gray-500 disabled:cursor-default"
         @if(!track.available){disabled}
       >
@@ -13,7 +15,7 @@
           >
             @if (track.id == now_playing_id) {
               <div class="text-blue-500 size-5">
-                @include (icons/play.html) {}
+                @defer (icons/play.html) {}
               </div>
             } @else if (show_track_cover) {
               <div
@@ -37,7 +39,7 @@
             <h2 class="w-full truncate">{{ track.title }}</h2>
           }
         </div>
-        @include (
+        @defer (
           info.html;
           hires_available=track.hires_available;
           explicit=track.explicit

@@ -27,13 +27,13 @@
       </a>
       <div class="flex gap-4 items-center">
         <span class="hidden w-8 sm:flex">
-          @include (previous.html) {}
+          @defer (previous.html) {}
         </span>
         <span class="flex w-8">
-          @include (player-state.html; playing_info=playing_info) {}
+          @defer (player-state.html; playing_info=playing_info) {}
         </span>
         <span class="flex w-8">
-          @include (next.html) {}
+          @defer (next.html) {}
         </span>
       </div>
     </div>

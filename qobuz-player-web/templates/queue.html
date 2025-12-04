@@ -1,4 +1,4 @@
-@include (
+@defer (
   base.html;
   partial=partial;
   active_page="Queue";
@@ -22,7 +22,7 @@
         </a>
       </div>
 
-      @include (
+      @defer (
         list-tracks.html;
         tracks=tracks;
         show_track_cover=true;

@@ -15,6 +15,7 @@ enum Tab {
     Albums,
     Artists,
     Playlists,
+    Tracks,
 }
 
 pub(crate) fn routes() -> Router<std::sync::Arc<crate::AppState>> {

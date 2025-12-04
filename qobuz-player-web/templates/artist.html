@@ -9,19 +9,19 @@
 
   <div class="flex flex-col grow gap-4 items-center p-4 w-full">
     <h1 class="text-2xl">{{ artist.name }}</h1>
-    @include (button-group.html) {
+    @defer (button-group.html) {
       <button
         class="button"
         hx-swap="none"
         hx-put="{{ artist.id }}/play-top-track/0"
       >
         <span class="size-6">
-          @include (icons/play.html) {}
+          @defer (icons/play.html) {}
         </span>
         <span>Play</span>
       </button>
 
-      @include (
+      @defer (
         toggle-favorite.html;
         id=artist.id;
         is_favorite=is_favorite;
@@ -43,7 +43,7 @@
         id="top-tracks"
         class="flex overflow-x-auto flex-col flex-wrap gap-4 p-4 max-h-92"
       >
-        @include (
+        @defer (
           artist-tracks.html;
           artist=artist;
           playing_info=playing_info
@@ -53,7 +53,7 @@
 
     <div class="flex flex-col gap-2">
       <h3 class="px-4 text-lg">Albums</h3>
-      @include (list-albums-vertical.html; albums=albums) {}
+      @defer (list-albums-vertical.html; albums=albums) {}
     </div>
     @if (similar_artists) {
       <div class="flex flex-col gap-2">
@@ -61,7 +61,7 @@
         <ListArtistsVertical artists="similar_artists" />
       </div>
     }
-    @include (
+    @defer (
       description.html;
       description=artist.description title=artist.name
     ) {}
