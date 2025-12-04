@@ -58,8 +58,8 @@ pub(crate) fn render(
 
     let mut lines = vec![];
 
-    if let Some(album) = &track.album_title {
-        lines.push(Line::from(album.clone()).style(Style::new().bold()));
+    if let Some(entity) = &state.entity_title {
+        lines.push(Line::from(entity.clone()).style(Style::new().bold()));
     }
 
     if let Some(artist) = &track.artist_name {

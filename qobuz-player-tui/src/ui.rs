@@ -1,5 +1,5 @@
 use qobuz_player_controls::notification::Notification;
-use qobuz_player_models::{Album, AlbumSimple};
+use qobuz_player_models::{Album, AlbumSimple, Track};
 use ratatui::{layout::Flex, prelude::*, widgets::*};
 use tui_input::Input;
 
@@ -59,7 +59,7 @@ impl App {
             now_playing::render(frame, chunks[2], &mut self.now_playing, self.full_screen);
         }
 
-        let tab_content_area = if self.now_playing.entity_title.is_some() {
+        let tab_content_area = if self.now_playing.playing_track.is_some() {
             chunks[1]
         } else {
             chunks[1].union(chunks[2])
@@ -274,4 +274,34 @@ pub(crate) fn basic_list_table<'a>(rows: Vec<Row<'a>>, title: &'a str) -> Table<
     Table::new(rows, [Constraint::Min(1)])
         .block(block(title, true))
         .row_highlight_style(ROW_HIGHLIGHT_STYLE)
+}
+
+pub(crate) fn track_table<'a>(rows: &[Track], title: &'a str) -> Table<'a> {
+    let rows: Vec<_> = rows
+        .iter()
+        .map(|track| {
+            Row::new(vec![
+                Span::from(track.title.clone()),
+                Span::from(track.artist_name.clone().unwrap_or_default()),
+                Span::from(track.album_title.clone().unwrap_or_default()),
+            ])
+        })
+        .collect();
+
+    let is_empty = rows.is_empty();
+    let mut table = Table::new(
+        rows,
+        [
+            Constraint::Ratio(1, 3),
+            Constraint::Ratio(1, 3),
+            Constraint::Ratio(1, 3),
+        ],
+    )
+    .block(block(title, true))
+    .row_highlight_style(ROW_HIGHLIGHT_STYLE);
+
+    if !is_empty {
+        table = table.header(Row::new(["Title", "Artist", "Album"]).add_modifier(Modifier::BOLD));
+    }
+    table
 }

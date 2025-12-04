@@ -1,7 +1,7 @@
 use std::{fmt, sync::Arc};
 
 use qobuz_player_controls::client::Client;
-use qobuz_player_models::{Album, Artist, Playlist};
+use qobuz_player_models::{Album, Artist, Playlist, Track};
 use ratatui::{
     crossterm::event::{Event, KeyCode, KeyEventKind},
     prelude::*,
@@ -12,7 +12,7 @@ use tui_input::{Input, backend::crossterm::EventHandler};
 use crate::{
     app::{FilteredListState, Output, PlayOutcome},
     popup::{ArtistPopupState, PlaylistPopupState, Popup},
-    ui::{album_table, basic_list_table, render_input},
+    ui::{album_table, basic_list_table, render_input, track_table},
 };
 
 pub(crate) struct FavoritesState {
@@ -22,6 +22,7 @@ pub(crate) struct FavoritesState {
     pub albums: FilteredListState<Album>,
     pub artists: FilteredListState<Artist>,
     pub playlists: FilteredListState<Playlist>,
+    pub tracks: FilteredListState<Track>,
     pub sub_tab: SubTab,
 }
 
@@ -31,6 +32,7 @@ pub(crate) enum SubTab {
     Albums,
     Artists,
     Playlists,
+    Tracks,
 }
 
 impl fmt::Display for SubTab {
@@ -39,12 +41,14 @@ impl fmt::Display for SubTab {
             Self::Albums => write!(f, "Albums"),
             Self::Artists => write!(f, "Artists"),
             Self::Playlists => write!(f, "Playlists"),
+            Self::Tracks => write!(f, "Tracks"),
         }
     }
 }
 
 impl SubTab {
-    pub(crate) const VALUES: [Self; 3] = [Self::Albums, Self::Artists, Self::Playlists];
+    pub(crate) const VALUES: [Self; 4] =
+        [Self::Albums, Self::Artists, Self::Playlists, Self::Tracks];
 
     pub(crate) fn next(self) -> Self {
         let index = Self::VALUES
@@ -107,6 +111,10 @@ impl FavoritesState {
                     title.as_str(),
                 ),
                 &mut self.playlists.state,
+            ),
+            SubTab::Tracks => (
+                track_table(&self.tracks.filter, &title),
+                &mut self.tracks.state,
             ),
         };
 
@@ -187,6 +195,17 @@ impl FavoritesState {
                                     shuffle: false,
                                 }))
                             }
+                            SubTab::Tracks => {
+                                let index = self.tracks.state.selected();
+                                let selected =
+                                    index.and_then(|index| self.tracks.filter.get(index));
+
+                                let Some(selected) = selected else {
+                                    return Output::Consumed;
+                                };
+
+                                Output::PlayOutcome(PlayOutcome::Track(selected.id))
+                            }
                         },
                         _ => Output::NotConsumed,
                     },
@@ -259,6 +278,7 @@ impl FavoritesState {
             SubTab::Albums => &mut self.albums.state,
             SubTab::Artists => &mut self.artists.state,
             SubTab::Playlists => &mut self.playlists.state,
+            SubTab::Tracks => &mut self.tracks.state,
         }
     }
 

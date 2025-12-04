@@ -12,7 +12,7 @@ use tui_input::{Input, backend::crossterm::EventHandler};
 use crate::{
     app::{Output, PlayOutcome, UnfilteredListState},
     popup::{ArtistPopupState, PlaylistPopupState, Popup},
-    ui::{album_table, basic_list_table, render_input},
+    ui::{album_table, basic_list_table, render_input, track_table},
 };
 
 pub(crate) struct SearchState {
@@ -113,14 +113,7 @@ impl SearchState {
                 &mut self.playlists.state,
             ),
             SubTab::Tracks => (
-                basic_list_table(
-                    self.tracks
-                        .items
-                        .iter()
-                        .map(|track| Row::new(Line::from(track.title.clone())))
-                        .collect::<Vec<_>>(),
-                    &title,
-                ),
+                track_table(&self.tracks.items, &title),
                 &mut self.tracks.state,
             ),
         };

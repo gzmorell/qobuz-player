@@ -103,6 +103,11 @@ pub async fn init(
                 all_items: favorites.playlists,
                 state: Default::default(),
             },
+            tracks: FilteredListState {
+                filter: favorites.tracks.clone(),
+                all_items: favorites.tracks,
+                state: Default::default(),
+            },
             sub_tab: Default::default(),
         },
         search: SearchState {
