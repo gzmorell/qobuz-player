@@ -6,8 +6,9 @@ use axum::{
     response::IntoResponse,
     routing::{post, put},
 };
+use qobuz_player_controls::notification::Notification;
 
-use crate::AppState;
+use crate::{AppState, ResponseResult, ok_or_broadcast};
 
 pub(crate) fn routes() -> Router<Arc<AppState>> {
     Router::new()
@@ -19,6 +20,29 @@ pub(crate) fn routes() -> Router<Arc<AppState>> {
         .route("/api/position", post(set_position))
         .route("/api/skip-to/{track_number}", put(skip_to))
         .route("/api/play-track/{track_id}", put(play_track))
+        .route("/api/track/{id}/set-favorite", put(set_track_favorite))
+        .route("/api/track/{id}/unset-favorite", put(unset_track_favorite))
+}
+
+async fn set_track_favorite(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<u32>,
+) -> ResponseResult {
+    ok_or_broadcast(&state.broadcast, state.client.add_favorite_track(id).await)?;
+    state.send_sse("tracklist".into(), "New favorite track".into());
+    Ok(state.send_toast(Notification::Success("Track added to favorites".into())))
+}
+
+async fn unset_track_favorite(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<u32>,
+) -> ResponseResult {
+    ok_or_broadcast(
+        &state.broadcast,
+        state.client.remove_favorite_track(id).await,
+    )?;
+    state.send_sse("tracklist".into(), "Removed favorite track".into());
+    Ok(state.send_toast(Notification::Info("Track removed from favorites".into())))
 }
 
 async fn play_track(

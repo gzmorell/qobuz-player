@@ -96,16 +96,16 @@ impl Client {
             return Ok(client);
         }
 
-        let mut inititiated = self.client_initiated.lock().await;
+        let mut initiated = self.client_initiated.lock().await;
 
-        if !*inititiated {
+        if !*initiated {
             let client = self.init_client().await?;
 
             self.qobuz_client.set(client).or(Err(Error::Client {
                 message: "Unable to set client".into(),
             }))?;
-            *inititiated = true;
-            drop(inititiated);
+            *initiated = true;
+            drop(initiated);
         }
 
         self.qobuz_client.get().ok_or_else(|| Error::Client {
@@ -233,6 +233,20 @@ impl Client {
         self.artist_albums_cache.insert(id, albums.clone()).await;
 
         Ok(albums)
+    }
+
+    pub async fn add_favorite_track(&self, id: u32) -> Result<()> {
+        let client = self.get_client().await?;
+        client.add_favorite_track(id).await?;
+        self.favorites_cache.clear().await;
+        Ok(())
+    }
+
+    pub async fn remove_favorite_track(&self, id: u32) -> Result<()> {
+        let client = self.get_client().await?;
+        client.remove_favorite_track(id).await?;
+        self.favorites_cache.clear().await;
+        Ok(())
     }
 
     pub async fn add_favorite_album(&self, id: &str) -> Result<()> {

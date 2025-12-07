@@ -1,12 +1,15 @@
-use axum::response::{Html, IntoResponse};
+use axum::response::{Html, IntoResponse, Response};
 use futures::try_join;
 use qobuz_player_controls::{
     PositionReceiver, Result, Status, StatusReceiver, TracklistReceiver, VolumeReceiver,
-    client::Client, controls::Controls, notification::NotificationBroadcast,
+    client::Client,
+    controls::Controls,
+    notification::{Notification, NotificationBroadcast},
     tracklist::TracklistType,
 };
 use qobuz_player_models::Favorites;
 use qobuz_player_rfid::RfidState;
+use serde_json::json;
 use skabelon::Templates;
 use std::sync::Arc;
 use tokio::sync::{broadcast::Sender, watch};
@@ -28,7 +31,7 @@ pub(crate) struct AppState {
 }
 
 impl AppState {
-    pub(crate) fn render<T>(&self, view: &str, context: &T) -> axum::response::Response
+    pub(crate) fn render<T>(&self, view: &str, context: &T) -> Response
     where
         T: serde::Serialize,
     {
@@ -95,6 +98,29 @@ impl AppState {
         let result = templates.render(view, &context);
 
         Html(result).into_response()
+    }
+
+    pub(crate) fn send_toast(&self, message: Notification) -> Response {
+        let (message_string, severity) = match &message {
+            Notification::Error(message) => (message, 1),
+            Notification::Warning(message) => (message, 2),
+            Notification::Success(message) => (message, 3),
+            Notification::Info(message) => (message, 4),
+        };
+
+        self.render(
+            "send-toast.html",
+            &json!({"message": message_string, "severity": severity}),
+        )
+    }
+
+    pub(crate) fn send_sse(&self, event: String, data: String) {
+        let event = ServerSentEvent {
+            event_name: event,
+            event_data: data,
+        };
+
+        _ = self.tx.send(event);
     }
 
     pub(crate) async fn get_favorites(&self) -> Result<Favorites> {

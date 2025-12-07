@@ -441,6 +441,24 @@ impl Client {
         })
     }
 
+    pub async fn add_favorite_track(&self, id: u32) -> Result<SuccessfulResponse> {
+        let endpoint = format!("{}{}", self.base_url, Endpoint::FavoriteAdd);
+        let mut form_data = HashMap::new();
+        let id = id.to_string();
+        form_data.insert("track_ids", id.as_str());
+
+        post!(self, &endpoint, form_data)
+    }
+
+    pub async fn remove_favorite_track(&self, id: u32) -> Result<SuccessfulResponse> {
+        let endpoint = format!("{}{}", self.base_url, Endpoint::FavoriteRemove);
+        let mut form_data = HashMap::new();
+        let id = id.to_string();
+        form_data.insert("track_ids", id.as_str());
+
+        post!(self, &endpoint, form_data)
+    }
+
     pub async fn add_favorite_album(&self, id: &str) -> Result<SuccessfulResponse> {
         let endpoint = format!("{}{}", self.base_url, Endpoint::FavoriteAdd);
         let mut form_data = HashMap::new();

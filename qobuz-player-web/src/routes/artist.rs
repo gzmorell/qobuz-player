@@ -42,7 +42,6 @@ async fn play_top_track(
     State(state): State<Arc<AppState>>,
     Path((artist_id, track_id)): Path<(u32, u32)>,
 ) -> impl IntoResponse {
-    // TODO: find track index
     let track_index = track_id;
     state.controls.play_top_tracks(artist_id, track_index);
 }

@@ -1,50 +1,71 @@
 @defer (list.html) {
   @for (track in tracks) {
     @defer (list-item.html) {
-      <button
-        hx-swap="none"
-        hx-put="@if(api_by_id){{{click}}{{ track.id }}} @else {{{ click }}{{
-          index
-        }}}"
-        class="flex justify-between items-center w-full text-left cursor-pointer disabled:text-gray-500 disabled:cursor-default"
-        @if(!track.available){disabled}
-      >
-        <div class="flex overflow-hidden gap-4 items-center w-full">
-          <div
-            class="flex justify-center items-center @if(show_track_cover) {size-12 aspect-square}"
-          >
-            @if (track.id == now_playing_id) {
-              <div class="text-blue-500 size-5">
-                @defer (icons/play.html) {}
+      <div class="track flex gap-4" data-track_id="{{ track.id }}">
+        <button
+          hx-swap="none"
+          hx-put="@if(api_by_id){{{click}}{{ track.id }}} @else {{{ click }}{{
+            index
+          }}}"
+          class="flex justify-between items-center w-full text-left cursor-pointer disabled:text-gray-500 disabled:cursor-default"
+          @if(!track.available){disabled}
+        >
+          <div class="flex overflow-hidden gap-4 items-center w-full">
+            <div
+              class="flex justify-center items-center @if(show_track_cover) {size-12 aspect-square}"
+            >
+              @if (track.id == now_playing_id) {
+                <div class="text-blue-500 size-5">
+                  @defer (icons/play.html) {}
+                </div>
+              } @else if (show_track_cover) {
+                <div
+                  class="bg-gray-800 bg-center bg-no-repeat bg-cover rounded-md aspect-square size-12"
+                  style="background-image: url({{ track.image }});"
+                ></div>
+              } @else {
+                <span class="w-5 text-center text-gray-400">
+                  {{ track.number }}
+                </span>
+              }
+            </div>
+            @if (show_artist && track.artist_name) {
+              <div class="flex overflow-hidden flex-col">
+                <h2 class="truncate">{{ track.title }}</h2>
+                <h3 class="text-sm text-gray-400 truncate">
+                  {{ track.artist_name }}
+                </h3>
               </div>
-            } @else if (show_track_cover) {
-              <div
-                class="bg-gray-800 bg-center bg-no-repeat bg-cover rounded-md aspect-square size-12"
-                style="background-image: url({{ track.image }});"
-              ></div>
             } @else {
-              <span class="w-5 text-center text-gray-400">
-                {{ track.number }}
-              </span>
+              <h2 class="w-full truncate">{{ track.title }}</h2>
             }
           </div>
-          @if (show_artist && track.artist_name) {
-            <div class="flex overflow-hidden flex-col">
-              <h2 class="truncate">{{ track.title }}</h2>
-              <h3 class="text-sm text-gray-400 truncate">
-                {{ track.artist_name }}
-              </h3>
-            </div>
-          } @else {
-            <h2 class="w-full truncate">{{ track.title }}</h2>
-          }
+          @defer (
+            info.html;
+            hires_available=track.hires_available;
+            explicit=track.explicit
+          ) {}
+        </button>
+
+        <div class="relative w-12">
+          <span
+            class="pointer-events-none absolute inset-y-0 left-0 flex items-center w-full justify-center text-white"
+          >
+            @defer (icons/bars-4.html) {}
+          </span>
+          <select
+            class="appearance-none text-transparent size-full cursor-pointer"
+            onchange="track_action(event)"
+          >
+            <option value="" disabled selected hidden></option>
+            @if (is_favorite) {
+              <option value="remove_favorite">Remove from favorite</option>
+            } @else {
+              <option value="add_favorite">Add to favorite</option>
+            }
+          </select>
         </div>
-        @defer (
-          info.html;
-          hires_available=track.hires_available;
-          explicit=track.explicit
-        ) {}
-      </button>
+      </div>
     }
   }
 }
