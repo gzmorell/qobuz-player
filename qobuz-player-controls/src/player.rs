@@ -336,13 +336,13 @@ impl Player {
         self.new_queue(tracklist).await
     }
 
-    async fn play_album(&mut self, album_id: &str, index: u32) -> Result<()> {
+    async fn play_album(&mut self, album_id: &str, index: usize) -> Result<()> {
         let album: Album = self.client.album(album_id).await?;
 
         let unstreamable_tracks_to_index = album
             .tracks
             .iter()
-            .take(index as usize)
+            .take(index)
             .filter(|t| !t.available)
             .count() as i32;
 
@@ -359,14 +359,11 @@ impl Player {
         self.new_queue(tracklist).await
     }
 
-    async fn play_top_tracks(&mut self, artist_id: u32, index: u32) -> Result<()> {
+    async fn play_top_tracks(&mut self, artist_id: u32, index: usize) -> Result<()> {
         let artist = self.client.artist_page(artist_id).await?;
         let tracks = artist.top_tracks;
-        let unstreambale_tracks_to_index = tracks
-            .iter()
-            .take(index as usize)
-            .filter(|t| !t.available)
-            .count() as i32;
+        let unstreambale_tracks_to_index =
+            tracks.iter().take(index).filter(|t| !t.available).count() as i32;
 
         let mut tracklist = Tracklist {
             queue: tracks.into_iter().filter(|t| t.available).collect(),
@@ -381,13 +378,13 @@ impl Player {
         self.new_queue(tracklist).await
     }
 
-    async fn play_playlist(&mut self, playlist_id: u32, index: u32, shuffle: bool) -> Result<()> {
+    async fn play_playlist(&mut self, playlist_id: u32, index: usize, shuffle: bool) -> Result<()> {
         let playlist = self.client.playlist(playlist_id).await?;
 
         let unstreambale_tracks_to_index = playlist
             .tracks
             .iter()
-            .take(index as usize)
+            .take(index)
             .filter(|t| !t.available)
             .count() as i32;
 
@@ -414,10 +411,10 @@ impl Player {
         self.new_queue(tracklist).await
     }
 
-    async fn remove_index_from_queue(&mut self, index: u32) -> Result<()> {
+    async fn remove_index_from_queue(&mut self, index: usize) -> Result<()> {
         let mut tracklist = self.tracklist_rx.borrow().clone();
 
-        tracklist.queue.remove(index as usize);
+        tracklist.queue.remove(index);
         self.update_queue(tracklist).await
     }
 

@@ -59,7 +59,7 @@ pub(crate) enum PlayOutcome {
     Album(String),
     Playlist((u32, bool)),
     Track(u32),
-    SkipToPosition(u32),
+    SkipToPosition(usize),
 }
 
 #[derive(Default, PartialEq)]

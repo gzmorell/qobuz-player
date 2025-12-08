@@ -58,7 +58,7 @@ impl QueueState {
                         let index = self.queue.state.selected();
 
                         if let Some(index) = index {
-                            return Output::PlayOutcome(PlayOutcome::SkipToPosition(index as u32));
+                            return Output::PlayOutcome(PlayOutcome::SkipToPosition(index));
                         }
                         Output::Consumed
                     }

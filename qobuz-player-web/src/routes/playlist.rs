@@ -25,7 +25,7 @@ pub(crate) fn routes() -> Router<std::sync::Arc<crate::AppState>> {
 
 async fn play_track(
     State(state): State<Arc<AppState>>,
-    Path((id, track_position)): Path<(u32, u32)>,
+    Path((id, track_position)): Path<(u32, usize)>,
 ) -> impl IntoResponse {
     state.controls.play_playlist(id, track_position, false);
 }

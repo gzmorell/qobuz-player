@@ -2,11 +2,26 @@ use std::time::Duration;
 
 #[derive(Debug)]
 pub enum ControlCommand {
-    Album { id: String, index: u32 },
-    Playlist { id: u32, index: u32, shuffle: bool },
-    ArtistTopTracks { artist_id: u32, index: u32 },
-    Track { id: u32 },
-    SkipToPosition { new_position: u32, force: bool },
+    Album {
+        id: String,
+        index: usize,
+    },
+    Playlist {
+        id: u32,
+        index: usize,
+        shuffle: bool,
+    },
+    ArtistTopTracks {
+        artist_id: u32,
+        index: usize,
+    },
+    Track {
+        id: u32,
+    },
+    SkipToPosition {
+        new_position: usize,
+        force: bool,
+    },
     Next,
     Previous,
     PlayPause,
@@ -14,12 +29,24 @@ pub enum ControlCommand {
     Pause,
     JumpForward,
     JumpBackward,
-    Seek { time: Duration },
-    SetVolume { volume: f32 },
-    AddTrackToQueue { id: u32 },
-    RemoveIndexFromQueue { index: u32 },
-    PlayTrackNext { id: u32 },
-    ReorderQueue { new_order: Vec<usize> },
+    Seek {
+        time: Duration,
+    },
+    SetVolume {
+        volume: f32,
+    },
+    AddTrackToQueue {
+        id: u32,
+    },
+    RemoveIndexFromQueue {
+        index: usize,
+    },
+    PlayTrackNext {
+        id: u32,
+    },
+    ReorderQueue {
+        new_order: Vec<usize>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -52,7 +79,7 @@ impl Controls {
         self.tx.send(ControlCommand::Pause).expect("infallible");
     }
 
-    pub fn play_album(&self, id: &str, index: u32) {
+    pub fn play_album(&self, id: &str, index: usize) {
         self.tx
             .send(ControlCommand::Album {
                 id: id.to_string(),
@@ -61,7 +88,7 @@ impl Controls {
             .expect("infallible");
     }
 
-    pub fn play_playlist(&self, id: u32, index: u32, shuffle: bool) {
+    pub fn play_playlist(&self, id: u32, index: usize, shuffle: bool) {
         self.tx
             .send(ControlCommand::Playlist { id, index, shuffle })
             .expect("infallible");
@@ -79,7 +106,7 @@ impl Controls {
             .expect("infallible");
     }
 
-    pub fn remove_index_from_queue(&self, index: u32) {
+    pub fn remove_index_from_queue(&self, index: usize) {
         self.tx
             .send(ControlCommand::RemoveIndexFromQueue { index })
             .expect("infallible");
@@ -91,13 +118,13 @@ impl Controls {
             .expect("infallible");
     }
 
-    pub fn play_top_tracks(&self, artist_id: u32, index: u32) {
+    pub fn play_top_tracks(&self, artist_id: u32, index: usize) {
         self.tx
             .send(ControlCommand::ArtistTopTracks { artist_id, index })
             .expect("infallible");
     }
 
-    pub fn skip_to_position(&self, index: u32, force: bool) {
+    pub fn skip_to_position(&self, index: usize, force: bool) {
         self.tx
             .send(ControlCommand::SkipToPosition {
                 new_position: index,

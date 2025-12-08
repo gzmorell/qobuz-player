@@ -39,7 +39,7 @@ enum FavoriteTrackAction {
 struct FavoriteTrackParammeters {
     track_id: u32,
     action: FavoriteTrackAction,
-    queue_index: u32,
+    queue_index: usize,
 }
 async fn track_favorite(
     State(state): State<Arc<AppState>>,
@@ -117,7 +117,7 @@ async fn next(State(state): State<Arc<AppState>>) -> impl IntoResponse {
 
 async fn skip_to(
     State(state): State<Arc<AppState>>,
-    Path(track_number): Path<u32>,
+    Path(track_number): Path<usize>,
 ) -> impl IntoResponse {
     state.controls.skip_to_position(track_number, true);
 }
