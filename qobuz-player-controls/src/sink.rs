@@ -85,6 +85,12 @@ impl Sink {
         Ok(())
     }
 
+    pub fn clear_queue(&self) {
+        if let Some(sender) = self.sender.as_ref() {
+            sender.clear();
+        }
+    }
+
     pub fn query_track(&mut self, track_url: TrackURL, track: &Track) -> Result<QueryTrackResult> {
         if let Some(handle) = self.current_download.lock()?.take() {
             handle.abort();

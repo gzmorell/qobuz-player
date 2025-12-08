@@ -1,7 +1,7 @@
 @defer (list.html) {
   @for (track in tracks) {
     @defer (list-item.html) {
-      <div class="track flex gap-4" data-track_id="{{ track.id }}">
+      <div class="flex gap-4">
         <button
           hx-swap="none"
           hx-put="@if(api_by_id){{{click}}{{ track.id }}} @else {{{ click }}{{
@@ -47,27 +47,33 @@
           ) {}
         </button>
 
-        <div class="relative w-12">
+        <div class="relative w-12 action-group">
           <span
             class="pointer-events-none absolute inset-y-0 left-0 flex items-center w-full justify-center text-white"
           >
             @defer (icons/bars-4.html) {}
           </span>
           <input type="hidden" name="track_id" value="{{ track.id }}" />
+          <input type="hidden" name="queue_index" value="{{ index }}" />
           <select
             name="action"
             class="appearance-none text-transparent size-full cursor-pointer"
             hx-trigger="change"
             hx-put="/api/track/favorite"
             hx-swap="none"
-            hx-include="closest .track"
+            hx-include="closest .action-group"
             hx-on::after-request="this.value=''"
           >
-            <option value="" selected hidden></option>
             @if (is_favorite) {
               <option value="remove_favorite">Remove from favorite</option>
             } @else {
               <option value="add_favorite">Add to favorite</option>
+            }
+            @if (is_queue) {
+              <option value="remove_from_queue">Remove</option>
+            } @else {
+              <option value="add_to_queue">Add to queue</option>
+              <option value="play_next">Play next</option>
             }
           </select>
         </div>

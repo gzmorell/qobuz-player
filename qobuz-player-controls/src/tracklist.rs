@@ -55,8 +55,8 @@ impl Tracklist {
         &self.queue
     }
 
-    pub fn total(&self) -> u32 {
-        self.queue.len() as u32
+    pub fn total(&self) -> usize {
+        self.queue.len()
     }
 
     pub fn currently_playing(&self) -> Option<u32> {
@@ -66,12 +66,12 @@ impl Tracklist {
             .map(|x| x.id)
     }
 
-    pub fn current_position(&self) -> u32 {
+    pub fn current_position(&self) -> usize {
         self.queue
             .iter()
             .enumerate()
             .find(|t| t.1.status == TrackStatus::Playing)
-            .map(|x| x.0 as u32)
+            .map(|x| x.0)
             .unwrap_or(0)
     }
 
@@ -102,7 +102,7 @@ impl Tracklist {
             return None;
         }
 
-        Some(self.queue.index(next_position as usize))
+        Some(self.queue.index(next_position))
     }
 
     pub fn current_track(&self) -> Option<&Track> {

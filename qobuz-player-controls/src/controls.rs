@@ -16,6 +16,9 @@ pub enum ControlCommand {
     JumpBackward,
     Seek { time: Duration },
     SetVolume { volume: f32 },
+    AddTrackToQueue { id: u32 },
+    RemoveIndexFromQueue { index: u32 },
+    PlayTrackNext { id: u32 },
 }
 
 #[derive(Debug, Clone)]
@@ -66,6 +69,24 @@ impl Controls {
     pub fn play_track(&self, id: u32) {
         self.tx
             .send(ControlCommand::Track { id })
+            .expect("infallible");
+    }
+
+    pub fn add_track_to_queue(&self, id: u32) {
+        self.tx
+            .send(ControlCommand::AddTrackToQueue { id })
+            .expect("infallible");
+    }
+
+    pub fn remove_index_from_queue(&self, index: u32) {
+        self.tx
+            .send(ControlCommand::RemoveIndexFromQueue { index })
+            .expect("infallible");
+    }
+
+    pub fn play_track_next(&self, id: u32) {
+        self.tx
+            .send(ControlCommand::PlayTrackNext { id })
             .expect("infallible");
     }
 

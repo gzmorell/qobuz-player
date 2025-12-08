@@ -9,8 +9,8 @@ pub(crate) struct NowPlayingState {
     pub(crate) image: Option<(StatefulProtocol, f32)>,
     pub(crate) entity_title: Option<String>,
     pub(crate) playing_track: Option<Track>,
-    pub(crate) tracklist_length: u32,
-    pub(crate) tracklist_position: u32,
+    pub(crate) tracklist_length: usize,
+    pub(crate) tracklist_position: usize,
     pub(crate) show_tracklist_position: bool,
     pub(crate) status: Status,
     pub(crate) duration_ms: u32,
@@ -69,7 +69,7 @@ pub(crate) fn render(
     lines.push(Line::from(track.title.clone()));
 
     let track_number = if state.show_tracklist_position {
-        state.tracklist_position + 1
+        state.tracklist_position as u32 + 1
     } else {
         track.number
     };

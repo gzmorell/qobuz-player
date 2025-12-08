@@ -313,6 +313,13 @@ impl Player {
         Ok(())
     }
 
+    async fn update_queue(&mut self, tracklist: Tracklist) -> Result<()> {
+        self.next_track_is_queried = false;
+        self.sink.clear_queue();
+        self.broadcast_tracklist(tracklist).await?;
+        Ok(())
+    }
+
     async fn play_track(&mut self, track_id: u32) -> Result<()> {
         let mut track: Track = self.client.track(track_id).await?;
         track.status = TrackStatus::Playing;
@@ -332,7 +339,7 @@ impl Player {
     async fn play_album(&mut self, album_id: &str, index: u32) -> Result<()> {
         let album: Album = self.client.album(album_id).await?;
 
-        let unstreambale_tracks_to_index = album
+        let unstreamable_tracks_to_index = album
             .tracks
             .iter()
             .take(index as usize)
@@ -348,7 +355,7 @@ impl Player {
             }),
         };
 
-        tracklist.skip_to_track(index as i32 - unstreambale_tracks_to_index);
+        tracklist.skip_to_track(index as i32 - unstreamable_tracks_to_index);
         self.new_queue(tracklist).await
     }
 
@@ -405,6 +412,30 @@ impl Player {
 
         tracklist.skip_to_track(index as i32 - unstreambale_tracks_to_index);
         self.new_queue(tracklist).await
+    }
+
+    async fn remove_index_from_queue(&mut self, index: u32) -> Result<()> {
+        let mut tracklist = self.tracklist_rx.borrow().clone();
+
+        tracklist.queue.remove(index as usize);
+        self.update_queue(tracklist).await
+    }
+
+    async fn add_track_to_queue(&mut self, id: u32) -> Result<()> {
+        let mut tracklist = self.tracklist_rx.borrow().clone();
+        let track = self.client.track(id).await?;
+
+        tracklist.queue.push(track);
+        self.update_queue(tracklist).await
+    }
+
+    async fn play_track_next(&mut self, id: u32) -> Result<()> {
+        let mut tracklist = self.tracklist_rx.borrow().clone();
+        let track = self.client.track(id).await?;
+
+        let current_index = tracklist.current_position();
+        tracklist.queue.insert(current_index + 1, track);
+        self.update_queue(tracklist).await
     }
 
     async fn tick(&mut self) -> Result<()> {
@@ -494,6 +525,11 @@ impl Player {
             ControlCommand::SetVolume { volume } => {
                 self.set_volume(volume).await?;
             }
+            ControlCommand::AddTrackToQueue { id } => self.add_track_to_queue(id).await?,
+            ControlCommand::RemoveIndexFromQueue { index } => {
+                self.remove_index_from_queue(index).await?
+            }
+            ControlCommand::PlayTrackNext { id } => self.play_track_next(id).await?,
         }
         Ok(())
     }

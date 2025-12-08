@@ -29,11 +29,15 @@ pub(crate) fn routes() -> Router<Arc<AppState>> {
 enum FavoriteTrackAction {
     AddFavorite,
     RemoveFavorite,
+    AddToQueue,
+    RemoveFromQueue,
+    PlayNext,
 }
 #[derive(Deserialize)]
 struct FavoriteTrackParammeters {
     track_id: u32,
     action: FavoriteTrackAction,
+    queue_index: u32,
 }
 async fn track_favorite(
     State(state): State<Arc<AppState>>,
@@ -46,7 +50,7 @@ async fn track_favorite(
                 state.client.add_favorite_track(req.track_id).await,
             )?;
             state.send_sse("tracklist".into(), "New favorite track".into());
-            Ok(state.send_toast(Notification::Success("Track added to favorites".into())))
+            Ok(state.send_toast(Notification::Info("Track added to favorites".into())))
         }
         FavoriteTrackAction::RemoveFavorite => {
             ok_or_broadcast(
@@ -55,6 +59,21 @@ async fn track_favorite(
             )?;
             state.send_sse("tracklist".into(), "Removed favorite track".into());
             Ok(state.send_toast(Notification::Info("Track removed from favorites".into())))
+        }
+        FavoriteTrackAction::AddToQueue => {
+            state.controls.add_track_to_queue(req.track_id);
+            state.send_sse("tracklist".into(), "Track added to queue".into());
+            Ok(state.send_toast(Notification::Info("Track added to queue".into())))
+        }
+        FavoriteTrackAction::RemoveFromQueue => {
+            state.controls.remove_index_from_queue(req.queue_index);
+            state.send_sse("tracklist".into(), "Track removed from queue".into());
+            Ok(state.send_toast(Notification::Info("Track removed from queue".into())))
+        }
+        FavoriteTrackAction::PlayNext => {
+            state.controls.play_track_next(req.track_id);
+            state.send_sse("tracklist".into(), "Track queued next".into());
+            Ok(state.send_toast(Notification::Info("Track queued next".into())))
         }
     }
 }
