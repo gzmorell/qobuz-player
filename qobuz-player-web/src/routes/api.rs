@@ -1,11 +1,12 @@
 use std::{sync::Arc, time::Duration};
 
 use axum::{
-    Form, Router,
+    Router,
     extract::{Path, State},
     response::IntoResponse,
     routing::{post, put},
 };
+use axum_extra::extract::Form;
 use qobuz_player_controls::notification::Notification;
 use serde::Deserialize;
 
@@ -22,6 +23,7 @@ pub(crate) fn routes() -> Router<Arc<AppState>> {
         .route("/api/skip-to/{track_number}", put(skip_to))
         .route("/api/play-track/{track_id}", put(play_track))
         .route("/api/track/favorite", put(track_favorite))
+        .route("/api/queue/reorder", put(reorder_queue))
 }
 
 #[derive(Debug, Deserialize)]
@@ -76,6 +78,18 @@ async fn track_favorite(
             Ok(state.send_toast(Notification::Info("Track queued next".into())))
         }
     }
+}
+
+#[derive(Deserialize)]
+struct ReorderQueueParameters {
+    new_order: Vec<usize>,
+}
+
+async fn reorder_queue(
+    State(state): State<Arc<AppState>>,
+    Form(req): Form<ReorderQueueParameters>,
+) -> impl IntoResponse {
+    state.controls.reorder_queue(req.new_order);
 }
 
 async fn play_track(

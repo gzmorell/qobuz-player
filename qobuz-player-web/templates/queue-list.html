@@ -1,0 +1,55 @@
+@defer (list.html) {
+  <form
+    class="sortable"
+    hx-put="/api/queue/reorder"
+    hx-trigger="end"
+    hx-swap="none"
+  >
+    @for (track in tracks) {
+      @defer (list-item.html) {
+        <button
+          hx-swap="none"
+          hx-put="/api/skip-to/{{ index }}"
+          class="flex justify-between items-center w-full text-left cursor-pointer disabled:text-gray-500 disabled:cursor-default"
+          @if(!track.available){disabled}
+        >
+          <div class="flex overflow-hidden gap-4 items-center w-full">
+            <div class="flex justify-center items-center size-12 aspect-square">
+              @if (track.id == now_playing_id) {
+                <div class="text-blue-500 size-5">
+                  @defer (icons/play.html) {}
+                </div>
+              } @else {
+                <div
+                  class="bg-gray-800 bg-center bg-no-repeat bg-cover rounded-md aspect-square size-12"
+                  style="background-image: url({{ track.image }});"
+                ></div>
+              }
+            </div>
+            @if (track.artist_name) {
+              <div class="flex overflow-hidden flex-col">
+                <h2 class="truncate">{{ track.title }}</h2>
+                <h3 class="text-sm text-gray-400 truncate">
+                  {{ track.artist_name }}
+                </h3>
+              </div>
+            } @else {
+              <h2 class="w-full truncate">{{ track.title }}</h2>
+            }
+          </div>
+
+          @defer (
+            info.html;
+            hires_available=track.hires_available;
+            explicit=track.explicit
+          ) {}
+
+          <input type="hidden" name="new_order" value="{{ index }}" />
+          <span class="handle p-2">
+            @defer (icons/bars-2.html) {}
+          </span>
+        </button>
+      }
+    }
+  </form>
+}

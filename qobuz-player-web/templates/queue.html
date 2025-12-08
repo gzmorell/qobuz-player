@@ -23,12 +23,9 @@
       </div>
 
       @defer (
-        list-tracks.html;
+        queue-list.html;
         tracks=tracks;
-        show_track_cover=true;
-        show_artist=true;
         now_playing_id=playing_info.now_playing_id;
-        click="/api/skip-to/"
         is_queue=true
       ) {}
     </div>

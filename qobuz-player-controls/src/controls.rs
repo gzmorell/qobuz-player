@@ -19,6 +19,7 @@ pub enum ControlCommand {
     AddTrackToQueue { id: u32 },
     RemoveIndexFromQueue { index: u32 },
     PlayTrackNext { id: u32 },
+    ReorderQueue { new_order: Vec<usize> },
 }
 
 #[derive(Debug, Clone)]
@@ -126,6 +127,12 @@ impl Controls {
     pub fn jump_backward(&self) {
         self.tx
             .send(ControlCommand::JumpBackward)
+            .expect("infallible");
+    }
+
+    pub fn reorder_queue(&self, new_order: Vec<usize>) {
+        self.tx
+            .send(ControlCommand::ReorderQueue { new_order })
             .expect("infallible");
     }
 }

@@ -438,6 +438,19 @@ impl Player {
         self.update_queue(tracklist).await
     }
 
+    async fn reorder_queue(&mut self, new_order: Vec<usize>) -> Result<()> {
+        let mut tracklist = self.tracklist_rx.borrow().clone();
+
+        let reordered: Vec<_> = new_order
+            .iter()
+            .map(|&i| tracklist.queue[i].clone())
+            .collect();
+
+        tracklist.queue = reordered;
+
+        self.update_queue(tracklist).await
+    }
+
     async fn tick(&mut self) -> Result<()> {
         if *self.target_status.borrow() != Status::Playing {
             return Ok(());
@@ -530,6 +543,7 @@ impl Player {
                 self.remove_index_from_queue(index).await?
             }
             ControlCommand::PlayTrackNext { id } => self.play_track_next(id).await?,
+            ControlCommand::ReorderQueue { new_order } => self.reorder_queue(new_order).await?,
         }
         Ok(())
     }
