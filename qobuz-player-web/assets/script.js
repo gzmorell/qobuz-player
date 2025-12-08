@@ -1,29 +1,5 @@
 let evtSource;
 
-function track_action(event) {
-  let parent = htmx.closest(event.target, "div.track");
-  let track_id = parent.getAttribute("data-track_id");
-
-  let action = event.target.value;
-  let url;
-
-  switch (action) {
-    case "add_favorite":
-      url = `/api/track/${track_id}/set-favorite`;
-      break;
-
-    case "remove_favorite":
-      url = `/api/track/${track_id}/unset-favorite`;
-      break;
-  }
-
-  htmx.ajax("PUT", url, {
-    swap: "none",
-  });
-
-  event.target.value = "";
-}
-
 function initSse() {
   evtSource = new EventSource("/sse");
 

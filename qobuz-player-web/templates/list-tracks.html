@@ -53,11 +53,17 @@
           >
             @defer (icons/bars-4.html) {}
           </span>
+          <input type="hidden" name="track_id" value="{{ track.id }}" />
           <select
+            name="action"
             class="appearance-none text-transparent size-full cursor-pointer"
-            onchange="track_action(event)"
+            hx-trigger="change"
+            hx-put="/api/track/favorite"
+            hx-swap="none"
+            hx-include="closest .track"
+            hx-on::after-request="this.value=''"
           >
-            <option value="" disabled selected hidden></option>
+            <option value="" selected hidden></option>
             @if (is_favorite) {
               <option value="remove_favorite">Remove from favorite</option>
             } @else {

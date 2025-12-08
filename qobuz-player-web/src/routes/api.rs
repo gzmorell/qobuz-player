@@ -1,12 +1,13 @@
 use std::{sync::Arc, time::Duration};
 
 use axum::{
-    Router,
+    Form, Router,
     extract::{Path, State},
     response::IntoResponse,
     routing::{post, put},
 };
 use qobuz_player_controls::notification::Notification;
+use serde::Deserialize;
 
 use crate::{AppState, ResponseResult, ok_or_broadcast};
 
@@ -20,29 +21,42 @@ pub(crate) fn routes() -> Router<Arc<AppState>> {
         .route("/api/position", post(set_position))
         .route("/api/skip-to/{track_number}", put(skip_to))
         .route("/api/play-track/{track_id}", put(play_track))
-        .route("/api/track/{id}/set-favorite", put(set_track_favorite))
-        .route("/api/track/{id}/unset-favorite", put(unset_track_favorite))
+        .route("/api/track/favorite", put(track_favorite))
 }
 
-async fn set_track_favorite(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<u32>,
-) -> ResponseResult {
-    ok_or_broadcast(&state.broadcast, state.client.add_favorite_track(id).await)?;
-    state.send_sse("tracklist".into(), "New favorite track".into());
-    Ok(state.send_toast(Notification::Success("Track added to favorites".into())))
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum FavoriteTrackAction {
+    AddFavorite,
+    RemoveFavorite,
 }
-
-async fn unset_track_favorite(
+#[derive(Deserialize)]
+struct FavoriteTrackParammeters {
+    track_id: u32,
+    action: FavoriteTrackAction,
+}
+async fn track_favorite(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<u32>,
+    Form(req): Form<FavoriteTrackParammeters>,
 ) -> ResponseResult {
-    ok_or_broadcast(
-        &state.broadcast,
-        state.client.remove_favorite_track(id).await,
-    )?;
-    state.send_sse("tracklist".into(), "Removed favorite track".into());
-    Ok(state.send_toast(Notification::Info("Track removed from favorites".into())))
+    match req.action {
+        FavoriteTrackAction::AddFavorite => {
+            ok_or_broadcast(
+                &state.broadcast,
+                state.client.add_favorite_track(req.track_id).await,
+            )?;
+            state.send_sse("tracklist".into(), "New favorite track".into());
+            Ok(state.send_toast(Notification::Success("Track added to favorites".into())))
+        }
+        FavoriteTrackAction::RemoveFavorite => {
+            ok_or_broadcast(
+                &state.broadcast,
+                state.client.remove_favorite_track(req.track_id).await,
+            )?;
+            state.send_sse("tracklist".into(), "Removed favorite track".into());
+            Ok(state.send_toast(Notification::Info("Track removed from favorites".into())))
+        }
+    }
 }
 
 async fn play_track(
