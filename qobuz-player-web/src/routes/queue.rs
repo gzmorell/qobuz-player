@@ -25,13 +25,16 @@ async fn queue_partial(State(state): State<Arc<AppState>>) -> impl IntoResponse 
 }
 
 fn queue(state: &AppState, partial: bool) -> Response {
-    let tracks = state.tracklist_receiver.borrow().queue().to_vec();
+    let tracklist = state.tracklist_receiver.borrow();
+    let tracks = tracklist.queue().to_vec();
+    let currently_playing_position = tracklist.current_position();
 
     state.render(
         "queue.html",
         &json! ({
             "partial": partial,
             "tracks": tracks,
+            "currently_playing_position": currently_playing_position
         }),
     )
 }

@@ -15,7 +15,7 @@
         >
           <div class="flex overflow-hidden gap-4 items-center w-full">
             <div class="flex justify-center items-center size-12 aspect-square">
-              @if (track.id == now_playing_id) {
+              @if (index == currently_playing_position) {
                 <div class="text-blue-500 size-5">
                   @defer (icons/play.html) {}
                 </div>
