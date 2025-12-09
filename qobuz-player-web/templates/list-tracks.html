@@ -63,6 +63,7 @@
             hx-include="closest .action-group"
             hx-on::after-request="this.value=''"
           >
+            <option value="" disabled hidden selected></option>
             @if (is_favorite) {
               <option value="remove_favorite">Remove from favorite</option>
             } @else {

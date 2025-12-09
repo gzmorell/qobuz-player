@@ -263,28 +263,28 @@ impl Client {
         Ok(())
     }
 
-    pub async fn add_favorite_artist(&self, id: &str) -> Result<()> {
+    pub async fn add_favorite_artist(&self, id: u32) -> Result<()> {
         let client = self.get_client().await?;
         client.add_favorite_artist(id).await?;
         self.favorites_cache.clear().await;
         Ok(())
     }
 
-    pub async fn remove_favorite_artist(&self, id: &str) -> Result<()> {
+    pub async fn remove_favorite_artist(&self, id: u32) -> Result<()> {
         let client = self.get_client().await?;
         client.remove_favorite_artist(id).await?;
         self.favorites_cache.clear().await;
         Ok(())
     }
 
-    pub async fn add_favorite_playlist(&self, id: &str) -> Result<()> {
+    pub async fn add_favorite_playlist(&self, id: u32) -> Result<()> {
         let client = self.get_client().await?;
         client.add_favorite_playlist(id).await?;
         self.favorites_cache.clear().await;
         Ok(())
     }
 
-    pub async fn remove_favorite_playlist(&self, id: &str) -> Result<()> {
+    pub async fn remove_favorite_playlist(&self, id: u32) -> Result<()> {
         let client = self.get_client().await?;
         client.remove_favorite_playlist(id).await?;
         self.favorites_cache.clear().await;

@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use qobuz_player_controls::client::Client;
 use qobuz_player_models::{AlbumSimple, Playlist};
 use ratatui::{
     crossterm::event::{Event, KeyCode, KeyEventKind},
@@ -12,6 +15,7 @@ use crate::{
 };
 
 pub(crate) struct DiscoverState {
+    pub(crate) client: Arc<Client>,
     pub(crate) featured_albums: Vec<(String, UnfilteredListState<AlbumSimple>)>,
     pub(crate) featured_playlists: Vec<(String, UnfilteredListState<Playlist>)>,
     pub(crate) sub_tab: usize,
@@ -104,6 +108,43 @@ impl DiscoverState {
                                         playlist_id: playlist.id,
                                         shuffle: false,
                                     }));
+                                }
+                            }
+                        }
+                        Output::Consumed
+                    }
+                    KeyCode::Char('A') => {
+                        let selected_index = self.current_list_state().selected();
+                        if let Some(selected_index) = selected_index {
+                            let is_abum = self.album_selected();
+
+                            match is_abum {
+                                true => {
+                                    let items = self.featured_albums.get(self.sub_tab);
+                                    let Some(items) = items else {
+                                        return Output::NotConsumed;
+                                    };
+
+                                    let id =
+                                        items.1.items.get(selected_index).map(|x| x.id.clone());
+
+                                    if let Some(id) = id {
+                                        _ = self.client.add_favorite_album(&id).await;
+                                        return Output::UpdateFavorites;
+                                    };
+
+                                    return Output::Consumed;
+                                }
+                                false => {
+                                    let items = &self.featured_playlists
+                                        [self.sub_tab - self.featured_albums.len()]
+                                    .1
+                                    .items;
+
+                                    let playlist = &items[selected_index];
+
+                                    _ = self.client.add_favorite_playlist(playlist.id).await;
+                                    return Output::UpdateFavorites;
                                 }
                             }
                         }

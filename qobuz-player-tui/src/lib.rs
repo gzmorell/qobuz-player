@@ -73,6 +73,7 @@ pub async fn init(
     let client_clone = client.clone();
 
     let mut app = App {
+        client: client_clone.clone(),
         broadcast,
         notifications: Default::default(),
         controls,
@@ -112,7 +113,7 @@ pub async fn init(
             sub_tab: Default::default(),
         },
         search: SearchState {
-            client: client_clone,
+            client: client_clone.clone(),
             editing: Default::default(),
             filter: Default::default(),
             albums: UnfilteredListState {
@@ -140,6 +141,7 @@ pub async fn init(
             },
         },
         discover: discover::DiscoverState {
+            client: client_clone,
             featured_albums,
             featured_playlists,
             sub_tab: Default::default(),

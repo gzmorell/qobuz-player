@@ -50,13 +50,10 @@ async fn shuffle(State(state): State<Arc<AppState>>, Path(id): Path<u32>) -> imp
     state.controls.play_playlist(id, 0, true);
 }
 
-async fn set_favorite(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<String>,
-) -> ResponseResult {
+async fn set_favorite(State(state): State<Arc<AppState>>, Path(id): Path<u32>) -> ResponseResult {
     ok_or_broadcast(
         &state.broadcast,
-        state.client.add_favorite_artist(&id).await,
+        state.client.add_favorite_playlist(id).await,
     )?;
 
     Ok(state.render(
@@ -65,13 +62,10 @@ async fn set_favorite(
     ))
 }
 
-async fn unset_favorite(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<String>,
-) -> ResponseResult {
+async fn unset_favorite(State(state): State<Arc<AppState>>, Path(id): Path<u32>) -> ResponseResult {
     ok_or_broadcast(
         &state.broadcast,
-        state.client.remove_favorite_artist(&id).await,
+        state.client.remove_favorite_playlist(id).await,
     )?;
 
     Ok(state.render(

@@ -158,6 +158,8 @@ fn render_help(frame: &mut Frame) {
         ["Delete from queue", "D"],
         ["Move up in queue", "u"],
         ["Move down in queue", "d"],
+        ["Remove from favorites", "D"],
+        ["Add to favorites", "A"],
         ["Exit", "q"],
     ];
 

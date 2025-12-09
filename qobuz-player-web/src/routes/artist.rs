@@ -45,14 +45,8 @@ async fn play_top_track(
     state.controls.play_top_tracks(artist_id, track_index);
 }
 
-async fn set_favorite(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<String>,
-) -> ResponseResult {
-    ok_or_broadcast(
-        &state.broadcast,
-        state.client.add_favorite_artist(&id).await,
-    )?;
+async fn set_favorite(State(state): State<Arc<AppState>>, Path(id): Path<u32>) -> ResponseResult {
+    ok_or_broadcast(&state.broadcast, state.client.add_favorite_artist(id).await)?;
 
     Ok(state.render(
         "toggle-favorite.html",
@@ -60,13 +54,10 @@ async fn set_favorite(
     ))
 }
 
-async fn unset_favorite(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<String>,
-) -> ResponseResult {
+async fn unset_favorite(State(state): State<Arc<AppState>>, Path(id): Path<u32>) -> ResponseResult {
     ok_or_broadcast(
         &state.broadcast,
-        state.client.remove_favorite_artist(&id).await,
+        state.client.remove_favorite_artist(id).await,
     )?;
 
     Ok(state.render(

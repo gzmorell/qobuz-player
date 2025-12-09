@@ -6,6 +6,7 @@ use core::fmt;
 use image::load_from_memory;
 use qobuz_player_controls::{
     PositionReceiver, Status, StatusReceiver, TracklistReceiver,
+    client::Client,
     controls::Controls,
     notification::{Notification, NotificationBroadcast},
     tracklist::Tracklist,
@@ -16,11 +17,11 @@ use ratatui::{
     widgets::*,
 };
 use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
-use reqwest::Client;
 use std::{io, sync::Arc, time::Instant};
 use tokio::time::{self, Duration};
 
 pub(crate) struct App {
+    pub(crate) client: Arc<Client>,
     pub(crate) controls: Controls,
     pub(crate) position: PositionReceiver,
     pub(crate) tracklist: TracklistReceiver,
@@ -49,6 +50,7 @@ pub(crate) enum AppState {
 
 pub(crate) enum Output {
     Consumed,
+    UpdateFavorites,
     NotConsumed,
     Popup(Popup),
     PlayOutcome(PlayOutcome),
@@ -202,6 +204,26 @@ impl App {
 
                 match screen_output {
                     Output::Consumed => {
+                        self.should_draw = true;
+                        return Ok(());
+                    }
+                    Output::UpdateFavorites => {
+                        let favorites = self.client.favorites().await;
+                        let Ok(favorites) = favorites else {
+                            return Ok(());
+                        };
+
+                        self.favorites.albums.all_items = favorites.albums;
+                        self.favorites.albums.filter = self.favorites.albums.all_items.clone();
+                        self.favorites.artists.all_items = favorites.artists;
+                        self.favorites.artists.filter = self.favorites.artists.all_items.clone();
+                        self.favorites.playlists.all_items = favorites.playlists;
+                        self.favorites.playlists.filter =
+                            self.favorites.playlists.all_items.clone();
+                        self.favorites.tracks.all_items = favorites.tracks;
+                        self.favorites.tracks.filter = self.favorites.tracks.all_items.clone();
+                        self.favorites.filter.reset();
+
                         self.should_draw = true;
                         return Ok(());
                     }
@@ -365,7 +387,7 @@ impl App {
 }
 
 async fn fetch_image(image_url: &str) -> Option<(StatefulProtocol, f32)> {
-    let client = Client::new();
+    let client = reqwest::Client::new();
     let response = client.get(image_url).send().await.ok()?;
     let img_bytes = response.bytes().await.ok()?;
 

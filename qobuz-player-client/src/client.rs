@@ -475,34 +475,38 @@ impl Client {
         post!(self, &endpoint, form_data)
     }
 
-    pub async fn add_favorite_artist(&self, id: &str) -> Result<SuccessfulResponse> {
+    pub async fn add_favorite_artist(&self, id: u32) -> Result<SuccessfulResponse> {
+        let id = id.to_string();
         let endpoint = format!("{}{}", self.base_url, Endpoint::FavoriteAdd);
         let mut form_data = HashMap::new();
-        form_data.insert("artist_ids", id);
+        form_data.insert("artist_ids", id.as_str());
 
         post!(self, &endpoint, form_data)
     }
 
-    pub async fn remove_favorite_artist(&self, id: &str) -> Result<SuccessfulResponse> {
+    pub async fn remove_favorite_artist(&self, id: u32) -> Result<SuccessfulResponse> {
+        let id = id.to_string();
         let endpoint = format!("{}{}", self.base_url, Endpoint::FavoriteRemove);
         let mut form_data = HashMap::new();
-        form_data.insert("artist_ids", id);
+        form_data.insert("artist_ids", id.as_str());
 
         post!(self, &endpoint, form_data)
     }
 
-    pub async fn add_favorite_playlist(&self, id: &str) -> Result<SuccessfulResponse> {
+    pub async fn add_favorite_playlist(&self, id: u32) -> Result<SuccessfulResponse> {
+        let id = id.to_string();
         let endpoint = format!("{}{}", self.base_url, Endpoint::FavoritePlaylistAdd);
         let mut form_data = HashMap::new();
-        form_data.insert("playlist_id", id);
+        form_data.insert("playlist_id", id.as_str());
 
         post!(self, &endpoint, form_data)
     }
 
-    pub async fn remove_favorite_playlist(&self, id: &str) -> Result<SuccessfulResponse> {
+    pub async fn remove_favorite_playlist(&self, id: u32) -> Result<SuccessfulResponse> {
+        let id = id.to_string();
         let endpoint = format!("{}{}", self.base_url, Endpoint::FavoritePlaylistRemove);
         let mut form_data = HashMap::new();
-        form_data.insert("playlist_id", id);
+        form_data.insert("playlist_id", id.as_str());
 
         post!(self, &endpoint, form_data)
     }

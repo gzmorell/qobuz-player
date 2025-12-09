@@ -147,6 +147,9 @@ impl SearchState {
                             Output::Consumed
                         }
                         KeyCode::Char('N') => {
+                            if self.sub_tab != SubTab::Tracks {
+                                return Output::Consumed;
+                            }
                             let index = self.tracks.state.selected();
                             let selected = index.and_then(|index| self.tracks.items.get(index));
 
@@ -170,6 +173,60 @@ impl SearchState {
 
                             Output::Queue(QueueOutcome::AddTrackToQueue(selected.id))
                         }
+                        KeyCode::Char('A') => match self.sub_tab {
+                            SubTab::Albums => {
+                                let index = self.albums.state.selected();
+
+                                let id = index
+                                    .and_then(|index| self.albums.items.get(index))
+                                    .map(|album| album.id.clone());
+
+                                if let Some(id) = id {
+                                    _ = self.client.add_favorite_album(&id).await;
+                                    return Output::UpdateFavorites;
+                                }
+
+                                Output::Consumed
+                            }
+                            SubTab::Artists => {
+                                let index = self.artists.state.selected();
+                                let selected =
+                                    index.and_then(|index| self.artists.items.get(index));
+
+                                if let Some(selected) = selected {
+                                    _ = self.client.add_favorite_artist(selected.id).await;
+                                    return Output::UpdateFavorites;
+                                }
+
+                                Output::Consumed
+                            }
+                            SubTab::Playlists => {
+                                let index = self.playlists.state.selected();
+                                let selected =
+                                    index.and_then(|index| self.playlists.items.get(index));
+
+                                if let Some(selected) = selected {
+                                    _ = self.client.add_favorite_playlist(selected.id).await;
+                                    return Output::UpdateFavorites;
+                                }
+
+                                Output::Consumed
+                            }
+                            SubTab::Tracks => {
+                                let index = self.tracks.state.selected();
+
+                                let id = index
+                                    .and_then(|index| self.tracks.items.get(index))
+                                    .map(|track| track.id);
+
+                                if let Some(id) = id {
+                                    _ = self.client.add_favorite_track(id).await;
+                                    return Output::UpdateFavorites;
+                                }
+
+                                Output::Consumed
+                            }
+                        },
                         KeyCode::Enter => match self.sub_tab {
                             SubTab::Albums => {
                                 let index = self.albums.state.selected();

@@ -147,6 +147,9 @@ impl FavoritesState {
                             Output::Consumed
                         }
                         KeyCode::Char('N') => {
+                            if self.sub_tab != SubTab::Tracks {
+                                return Output::Consumed;
+                            }
                             let index = self.tracks.state.selected();
                             let selected = index.and_then(|index| self.tracks.filter.get(index));
 
@@ -170,6 +173,51 @@ impl FavoritesState {
 
                             Output::Queue(QueueOutcome::AddTrackToQueue(selected.id))
                         }
+                        KeyCode::Char('D') => match self.sub_tab {
+                            SubTab::Albums => {
+                                let index = self.albums.state.selected();
+
+                                let id = index
+                                    .and_then(|index| self.albums.filter.get(index))
+                                    .map(|album| album.id.clone());
+
+                                if let Some(id) = id {
+                                    _ = self.client.remove_favorite_album(&id).await;
+                                }
+
+                                Output::UpdateFavorites
+                            }
+                            SubTab::Artists => {
+                                let index = self.artists.state.selected();
+                                let selected =
+                                    index.and_then(|index| self.artists.filter.get(index));
+
+                                if let Some(selected) = selected {
+                                    _ = self.client.remove_favorite_artist(selected.id).await;
+                                }
+                                Output::UpdateFavorites
+                            }
+                            SubTab::Playlists => {
+                                let index = self.playlists.state.selected();
+                                let selected =
+                                    index.and_then(|index| self.playlists.filter.get(index));
+
+                                if let Some(selected) = selected {
+                                    _ = self.client.remove_favorite_playlist(selected.id).await;
+                                }
+                                Output::UpdateFavorites
+                            }
+                            SubTab::Tracks => {
+                                let index = self.tracks.state.selected();
+                                let selected =
+                                    index.and_then(|index| self.tracks.filter.get(index));
+
+                                if let Some(selected) = selected {
+                                    _ = self.client.remove_favorite_track(selected.id).await;
+                                }
+                                Output::UpdateFavorites
+                            }
+                        },
                         KeyCode::Enter => match self.sub_tab {
                             SubTab::Albums => {
                                 let index = self.albums.state.selected();
