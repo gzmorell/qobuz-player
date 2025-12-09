@@ -17,7 +17,7 @@
 
     @defer (button-group.html) {
       <button
-        class="button"
+        class="button button-primary"
         hx-swap="none"
         hx-put="/playlist/{{ playlist.id }}/play"
       >
@@ -28,7 +28,7 @@
       </button>
 
       <button
-        class="button"
+        class="button button-primary"
         hx-swap="none"
         hx-put="{{ playlist.id }}/play/shuffle"
       >
@@ -48,7 +48,11 @@
       }
 
       @if (rfid) {
-        <button class="button" hx-swap="none" hx-put="{{ playlist.id }}/link">
+        <button
+          class="button button-primary"
+          hx-swap="none"
+          hx-put="{{ playlist.id }}/link"
+        >
           <span class="size-6">
             @defer (icons/link.html) {}
           </span>

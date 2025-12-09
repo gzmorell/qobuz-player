@@ -21,6 +21,10 @@ pub(crate) fn routes() -> Router<Arc<AppState>> {
         .route("/api/volume", post(set_volume))
         .route("/api/position", post(set_position))
         .route("/api/skip-to/{track_number}", put(skip_to))
+        .route(
+            "/api/remove-queue-item/{index}",
+            put(remove_index_from_queue),
+        )
         .route("/api/play-track/{track_id}", put(play_track))
         .route("/api/track/favorite", put(track_favorite))
         .route("/api/queue/reorder", put(reorder_queue))
@@ -32,14 +36,12 @@ enum FavoriteTrackAction {
     AddFavorite,
     RemoveFavorite,
     AddToQueue,
-    RemoveFromQueue,
     PlayNext,
 }
 #[derive(Deserialize)]
 struct FavoriteTrackParammeters {
     track_id: u32,
     action: FavoriteTrackAction,
-    queue_index: usize,
 }
 async fn track_favorite(
     State(state): State<Arc<AppState>>,
@@ -67,11 +69,6 @@ async fn track_favorite(
             state.send_sse("tracklist".into(), "Track added to queue".into());
             Ok(state.send_toast(Notification::Info("Track added to queue".into())))
         }
-        FavoriteTrackAction::RemoveFromQueue => {
-            state.controls.remove_index_from_queue(req.queue_index);
-            state.send_sse("tracklist".into(), "Track removed from queue".into());
-            Ok(state.send_toast(Notification::Info("Track removed from queue".into())))
-        }
         FavoriteTrackAction::PlayNext => {
             state.controls.play_track_next(req.track_id);
             state.send_sse("tracklist".into(), "Track queued next".into());
@@ -90,6 +87,13 @@ async fn reorder_queue(
     Form(req): Form<ReorderQueueParameters>,
 ) -> impl IntoResponse {
     state.controls.reorder_queue(req.new_order);
+}
+
+async fn remove_index_from_queue(
+    State(state): State<Arc<AppState>>,
+    Path(index): Path<usize>,
+) -> impl IntoResponse {
+    state.controls.remove_index_from_queue(index);
 }
 
 async fn play_track(

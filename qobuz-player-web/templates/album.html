@@ -26,7 +26,11 @@
     </div>
 
     @defer (button-group.html) {
-      <button class="button" hx-swap="none" hx-put="/album/{{ album.id }}/play">
+      <button
+        class="button button-primary"
+        hx-swap="none"
+        hx-put="/album/{{ album.id }}/play"
+      >
         <span class="size-6">
           @defer (icons/play.html) {}
         </span>
@@ -66,9 +70,5 @@
       @defer (list-albums-vertical.html; albums=suggested_albums) {}
     </div>
   }
-  @defer (
-    description.html;
-    description=album.description;
-    title=album.title
-  ) {}
+  @defer (description.html; description=album.description; title=album.title) {}
 </div>

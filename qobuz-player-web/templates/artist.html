@@ -11,7 +11,7 @@
     <h1 class="text-2xl">{{ artist.name }}</h1>
     @defer (button-group.html) {
       <button
-        class="button"
+        class="button button-primary"
         hx-swap="none"
         hx-put="{{ artist.id }}/play-top-track/0"
       >
@@ -43,11 +43,7 @@
         id="top-tracks"
         class="flex overflow-x-auto flex-col flex-wrap gap-4 p-4 max-h-92"
       >
-        @defer (
-          artist-tracks.html;
-          artist=artist;
-          playing_info=playing_info
-        ) {}
+        @defer (artist-tracks.html; artist=artist; playing_info=playing_info) {}
       </div>
     </div>
 

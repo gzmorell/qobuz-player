@@ -7,13 +7,13 @@
   >
     @for (track in tracks) {
       @defer (list-item.html) {
-        <button
-          hx-swap="none"
-          hx-put="/api/skip-to/{{ index }}"
-          class="flex justify-between items-center w-full text-left cursor-pointer disabled:text-gray-500 disabled:cursor-default"
-          @if(!track.available){disabled}
-        >
-          <div class="flex overflow-hidden gap-4 items-center w-full">
+        <div class="flex justify-between bg-black">
+          <button
+            hx-swap="none"
+            hx-put="/api/skip-to/{{ index }}"
+            class="flex overflow-hidden gap-4 items-center w-full text-left cursor-pointer disabled:text-gray-500 disabled:cursor-default"
+            @if(!track.available){disabled}
+          >
             <div class="flex justify-center items-center size-12 aspect-square">
               @if (index == currently_playing_position) {
                 <div class="text-blue-500 size-5">
@@ -36,19 +36,24 @@
             } @else {
               <h2 class="w-full truncate">{{ track.title }}</h2>
             }
+            @defer (
+              info.html;
+              hires_available=track.hires_available;
+              explicit=track.explicit
+            ) {}
+          </button>
+
+          <div class="flex gap-1 items-center">
+            <button class="button" hx-put="/api/remove-queue-item/{{ index }}">
+              @defer (icons/x-circle.html) {}
+            </button>
+
+            <input type="hidden" name="new_order" value="{{ index }}" />
+            <span class="handle button">
+              @defer (icons/bars-2.html) {}
+            </span>
           </div>
-
-          @defer (
-            info.html;
-            hires_available=track.hires_available;
-            explicit=track.explicit
-          ) {}
-
-          <input type="hidden" name="new_order" value="{{ index }}" />
-          <span class="handle p-2">
-            @defer (icons/bars-2.html) {}
-          </span>
-        </button>
+        </div>
       }
     }
   </form>
