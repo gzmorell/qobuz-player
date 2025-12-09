@@ -67,6 +67,7 @@ pub async fn init(
 
     let tracklist_value = tracklist_receiver.borrow().clone();
     let status_value = *status_receiver.borrow();
+    let queue = tracklist_value.queue().clone();
     let now_playing = get_current_state(tracklist_value, status_value).await;
 
     let client_clone = client.clone();
@@ -134,7 +135,7 @@ pub async fn init(
         },
         queue: QueueState {
             queue: UnfilteredListState {
-                items: Default::default(),
+                items: queue,
                 state: Default::default(),
             },
         },

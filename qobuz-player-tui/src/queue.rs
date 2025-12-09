@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::{
-    app::{Output, PlayOutcome, UnfilteredListState},
+    app::{Output, PlayOutcome, QueueOutcome, UnfilteredListState},
     ui::basic_list_table,
 };
 
@@ -52,6 +52,30 @@ impl QueueState {
                     }
                     KeyCode::Up | KeyCode::Char('k') => {
                         self.queue.state.select_previous();
+                        Output::Consumed
+                    }
+                    KeyCode::Char('d') => {
+                        let index = self.queue.state.selected();
+
+                        if let Some(index) = index {
+                            return Output::Queue(QueueOutcome::MoveIndexDown(index));
+                        }
+                        Output::Consumed
+                    }
+                    KeyCode::Char('u') => {
+                        let index = self.queue.state.selected();
+
+                        if let Some(index) = index {
+                            return Output::Queue(QueueOutcome::MoveIndexUp(index));
+                        }
+                        Output::Consumed
+                    }
+                    KeyCode::Char('D') => {
+                        let index = self.queue.state.selected();
+
+                        if let Some(index) = index {
+                            return Output::Queue(QueueOutcome::RemoveIndex(index));
+                        }
                         Output::Consumed
                     }
                     KeyCode::Enter => {

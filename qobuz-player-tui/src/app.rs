@@ -53,6 +53,15 @@ pub(crate) enum Output {
     Popup(Popup),
     PlayOutcome(PlayOutcome),
     Error(String),
+    Queue(QueueOutcome),
+}
+
+pub(crate) enum QueueOutcome {
+    MoveIndexUp(usize),
+    MoveIndexDown(usize),
+    RemoveIndex(usize),
+    PlayTrackNext(u32),
+    AddTrackToQueue(u32),
 }
 
 pub(crate) enum PlayOutcome {
@@ -208,6 +217,50 @@ impl App {
                     Output::Error(err) => {
                         self.broadcast.send_error(err);
                     }
+                    Output::Queue(queue_outcome) => match queue_outcome {
+                        QueueOutcome::MoveIndexUp(index) => {
+                            if index == 0 {
+                                return Ok(());
+                            }
+                            let mut order: Vec<_> = self
+                                .queue
+                                .queue
+                                .items
+                                .iter()
+                                .enumerate()
+                                .map(|x| x.0)
+                                .collect();
+
+                            order.swap(index, index - 1);
+                            self.controls.reorder_queue(order);
+                        }
+                        QueueOutcome::MoveIndexDown(index) => {
+                            if index == self.queue.queue.items.len() - 1 {
+                                return Ok(());
+                            }
+
+                            let mut order: Vec<_> = self
+                                .queue
+                                .queue
+                                .items
+                                .iter()
+                                .enumerate()
+                                .map(|x| x.0)
+                                .collect();
+
+                            order.swap(index, index + 1);
+                            self.controls.reorder_queue(order);
+                        }
+                        QueueOutcome::RemoveIndex(index) => {
+                            self.controls.remove_index_from_queue(index);
+                        }
+                        QueueOutcome::PlayTrackNext(id) => {
+                            self.controls.play_track_next(id);
+                        }
+                        QueueOutcome::AddTrackToQueue(id) => {
+                            self.controls.add_track_to_queue(id);
+                        }
+                    },
                 }
 
                 match key_event.code {

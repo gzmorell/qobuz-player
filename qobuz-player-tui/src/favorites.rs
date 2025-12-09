@@ -10,7 +10,7 @@ use ratatui::{
 use tui_input::{Input, backend::crossterm::EventHandler};
 
 use crate::{
-    app::{FilteredListState, Output, PlayOutcome},
+    app::{FilteredListState, Output, PlayOutcome, QueueOutcome},
     popup::{ArtistPopupState, PlaylistPopupState, Popup},
     ui::{album_table, basic_list_table, render_input, track_table},
 };
@@ -145,6 +145,30 @@ impl FavoritesState {
                         KeyCode::Up | KeyCode::Char('k') => {
                             self.current_list_state().select_previous();
                             Output::Consumed
+                        }
+                        KeyCode::Char('N') => {
+                            let index = self.tracks.state.selected();
+                            let selected = index.and_then(|index| self.tracks.filter.get(index));
+
+                            let Some(selected) = selected else {
+                                return Output::Consumed;
+                            };
+
+                            Output::Queue(QueueOutcome::PlayTrackNext(selected.id))
+                        }
+                        KeyCode::Char('B') => {
+                            if self.sub_tab != SubTab::Tracks {
+                                return Output::Consumed;
+                            }
+
+                            let index = self.tracks.state.selected();
+                            let selected = index.and_then(|index| self.tracks.filter.get(index));
+
+                            let Some(selected) = selected else {
+                                return Output::Consumed;
+                            };
+
+                            Output::Queue(QueueOutcome::AddTrackToQueue(selected.id))
                         }
                         KeyCode::Enter => match self.sub_tab {
                             SubTab::Albums => {
