@@ -44,7 +44,11 @@
         api="/album"
       ) {}
       @if (rfid) {
-        <button class="button" hx-swap="none" hx-put="{{ album.id }}/link">
+        <button
+          class="button button-primary"
+          hx-swap="none"
+          hx-put="{{ album.id }}/link"
+        >
           <span class="size-6">
             @defer (icons/link.html) {}
           </span>
