@@ -17,7 +17,7 @@ html {
 }
 
 .button {
-  @apply flex gap-2 justify-center items-center py-2 px-4 rounded cursor-pointer whitespace-nowrap;
+  @apply flex gap-2 justify-center items-center p-2 rounded cursor-pointer whitespace-nowrap;
 }
 
 .button-primary {

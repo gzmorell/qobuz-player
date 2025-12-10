@@ -32,18 +32,25 @@
                 <h3 class="text-sm text-gray-400 truncate">
                   {{ track.artist_name }}
                 </h3>
+                @defer (
+                  info.html;
+                  hires_available=track.hires_available;
+                  explicit=track.explicit
+                ) {}
               </div>
             } @else {
-              <h2 class="w-full truncate">{{ track.title }}</h2>
+              <div class="flex overflow-hidden flex-col">
+                <h2 class="w-full truncate">{{ track.title }}</h2>
+                @defer (
+                  info.html;
+                  hires_available=track.hires_available;
+                  explicit=track.explicit
+                ) {}
+              </div>
             }
-            @defer (
-              info.html;
-              hires_available=track.hires_available;
-              explicit=track.explicit
-            ) {}
           </button>
 
-          <div class="flex gap-1 items-center">
+          <div class="flex items-center">
             <button class="button" hx-put="/api/remove-queue-item/{{ index }}">
               @defer (icons/x-circle.html) {}
             </button>

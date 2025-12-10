@@ -13,7 +13,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.4.3"
+version = "0.4.4"
 edition = "2024"
 license-file = "LICENSE"
 repository = "https://github.com/sofusa/qobuz-player"
@@ -51,3 +51,4 @@ rppal = "0.22"
 ratatui-image = "8"
 tui-input = "0.14"
 image = "0.25"
+skabelon = "0.1.17"
