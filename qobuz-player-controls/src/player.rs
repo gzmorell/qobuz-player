@@ -573,6 +573,7 @@ impl Player {
                 self.sink.pause();
                 self.position_timer.stop();
                 self.sink.clear().await?;
+                self.first_track_queried = false;
             }
         }
         self.next_track_is_queried = false;
