@@ -1,14 +1,9 @@
-@defer (
-  base.html;
-  partial=partial;
-  active_page="Search";
-  playing_info=playing_info
-) {
-  <div id="search" class="flex flex-col">
+@defer (base.html; active_page="Search"; playing_info=playing_info) {
+  <div class="flex flex-col">
     <div
       class="flex sticky top-0 flex-col grow gap-4 pb-2 max-h-full pt-safe-or-4 bg-black/80 backdrop-blur"
     >
-      <div class="flex flex-row gap-4 items-center" id="search-form">
+      <div class="flex flex-row gap-4 items-center">
         <input
           id="query"
           name="query"
@@ -23,8 +18,8 @@
           hx-preserve
           hx-post=""
           hx-trigger="input changed delay:500ms, keyup[key=='Enter']"
-          hx-target="#search"
-          hx-swap="morph:innerHTML"
+          hx-target="#search-content"
+          hx-swap="outerHTML"
         />
         <span class="size-8">
           @defer (icons/magnifying-glass.html) {}
@@ -80,53 +75,6 @@
       </div>
     </div>
 
-    <div class="overflow-auto h-full">
-      @if (tab == "albums") {
-        @defer (list-albums.html; albums=search_results.albums) {}
-      }
-
-      @if (tab == "artists") {
-        @defer (list-artists.html; artists=search_results.artists) {}
-      }
-
-      @if (tab == "playlists") {
-        @defer (list-playlists.html; playlists=search_results.playlists) {}
-      }
-
-      @if (tab == "tracks") {
-        @defer (list.html) {
-          @for (track in search_results.tracks) {
-            @defer (list-item.html) {
-              <button
-                class="flex gap-4 items-center w-full cursor-pointer"
-                hx-put="/api/play-track/{{ track.id }}"
-                hx-swap="none"
-              >
-                <img
-                  class="inline text-sm text-gray-500 bg-gray-800 rounded-md aspect-square size-12"
-                  alt="{{ track.title }}"
-                  src="{{ track.image_thumbnail }}"
-                />
-
-                <div class="overflow-hidden w-full">
-                  <div class="flex justify-between items-center">
-                    <h3 class="text-lg truncate">{{ track.title }}</h3>
-                    @defer (
-                      info.html;
-                      explicit=track.explicit;
-                      hires_available=track.hires_available
-                    ) {}
-                  </div>
-
-                  <h4 class="flex gap-2 text-left text-gray-400">
-                    <span class="truncate">{{ track.artist_name }}</span>
-                  </h4>
-                </div>
-              </button>
-            }
-          }
-        }
-      }
-    </div>
+    @defer (search-content.html; tab=tab; search_results=search_results) {}
   </div>
 }

@@ -1,0 +1,48 @@
+<div class="overflow-auto h-full" id="search-content">
+  @if (tab == "albums") {
+    @defer (list-albums.html; albums=search_results.albums) {}
+  }
+
+  @if (tab == "artists") {
+    @defer (list-artists.html; artists=search_results.artists) {}
+  }
+
+  @if (tab == "playlists") {
+    @defer (list-playlists.html; playlists=search_results.playlists) {}
+  }
+
+  @if (tab == "tracks") {
+    @defer (list.html) {
+      @for (track in search_results.tracks) {
+        @defer (list-item.html) {
+          <button
+            class="flex gap-4 items-center w-full cursor-pointer"
+            hx-put="/api/play-track/{{ track.id }}"
+            hx-swap="none"
+          >
+            <img
+              class="inline text-sm text-gray-500 bg-gray-800 rounded-md aspect-square size-12"
+              alt="{{ track.title }}"
+              src="{{ track.image_thumbnail }}"
+            />
+
+            <div class="overflow-hidden w-full">
+              <div class="flex justify-between items-center">
+                <h3 class="text-lg truncate">{{ track.title }}</h3>
+                @defer (
+                  info.html;
+                  explicit=track.explicit;
+                  hires_available=track.hires_available
+                ) {}
+              </div>
+
+              <h4 class="flex gap-2 text-left text-gray-400">
+                <span class="truncate">{{ track.artist_name }}</span>
+              </h4>
+            </div>
+          </button>
+        }
+      }
+    }
+  }
+</div>
