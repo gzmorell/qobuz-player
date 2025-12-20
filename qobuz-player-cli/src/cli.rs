@@ -11,6 +11,7 @@ use qobuz_player_controls::{
 };
 use qobuz_player_rfid::RfidState;
 use snafu::prelude::*;
+use tokio::sync::watch;
 use tokio_schedule::{Job, every};
 
 #[derive(Parser)]
@@ -171,6 +172,8 @@ pub async fn run() -> Result<(), Error> {
             let tracklist = database.get_tracklist().await.unwrap_or_default();
             let volume = database.get_volume().await.unwrap_or(1.0);
 
+            let (exit_sender, exit_receiver) = watch::channel(false);
+
             let audio_cache = audio_cache.unwrap_or_else(|| {
                 let mut cache_dir = std::env::temp_dir();
                 cache_dir.push("qobuz-player-cache");
@@ -219,6 +222,7 @@ pub async fn run() -> Result<(), Error> {
                 let volume_receiver = player.volume();
                 let status_receiver = player.status();
                 let controls = player.controls();
+                let exit_sender = exit_sender.clone();
                 tokio::spawn(async move {
                     if let Err(e) = qobuz_player_mpris::init(
                         position_receiver,
@@ -226,10 +230,11 @@ pub async fn run() -> Result<(), Error> {
                         volume_receiver,
                         status_receiver,
                         controls,
+                        exit_sender,
                     )
                     .await
                     {
-                        exit(!disable_tui && !rfid, e.into());
+                        error_exit(e.into());
                     }
                 });
             }
@@ -259,7 +264,7 @@ pub async fn run() -> Result<(), Error> {
                     )
                     .await
                     {
-                        exit(!disable_tui && !rfid, e.into());
+                        error_exit(e.into());
                     }
                 });
             }
@@ -269,7 +274,7 @@ pub async fn run() -> Result<(), Error> {
                 let status_receiver = player.status();
                 tokio::spawn(async move {
                     if let Err(e) = qobuz_player_gpio::init(status_receiver).await {
-                        exit(!disable_tui && !rfid, e.into());
+                        error_exit(!disable_tui && !rfid, e.into());
                     }
                 });
             }
@@ -288,7 +293,7 @@ pub async fn run() -> Result<(), Error> {
                     )
                     .await
                     {
-                        exit(!disable_tui && !rfid, e.into());
+                        error_exit(e.into());
                     }
                 });
             } else if !disable_tui {
@@ -306,10 +311,11 @@ pub async fn run() -> Result<(), Error> {
                         position_receiver,
                         tracklist_receiver,
                         status_receiver,
+                        exit_sender,
                     )
                     .await
                     {
-                        exit(!disable_tui && !rfid, e.into());
+                        error_exit(e.into());
                     };
                 });
             };
@@ -332,7 +338,7 @@ pub async fn run() -> Result<(), Error> {
                 tokio::spawn(clean_up_schedule);
             }
 
-            player.player_loop().await?;
+            player.player_loop(exit_receiver).await?;
             Ok(())
         }
         Commands::Config { command } => match command {
@@ -369,11 +375,7 @@ pub async fn run() -> Result<(), Error> {
     }
 }
 
-fn exit(cli: bool, error: Error) {
-    if cli {
-        ratatui::restore();
-    }
-
+fn error_exit(error: Error) {
     eprintln!("{error}");
     std::process::exit(1);
 }

@@ -1,9 +1,10 @@
-use std::time::Duration;
+use crate::{error::Error, tracklist::Tracklist};
 
-pub use qobuz_player_client::client::AudioQuality;
+use std::time::Duration;
 use tokio::sync::watch;
 
-use crate::{error::Error, tracklist::Tracklist};
+pub use qobuz_player_client::client::AudioQuality;
+
 pub mod client;
 pub mod controls;
 pub mod database;
@@ -29,3 +30,14 @@ pub enum Status {
     #[default]
     Paused,
 }
+
+#[derive(Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize)]
+pub enum Notification {
+    Error(String),
+    Warning(String),
+    Success(String),
+    Info(String),
+}
+
+pub type ExitReceiver = watch::Receiver<bool>;
+pub type ExitSender = watch::Sender<bool>;

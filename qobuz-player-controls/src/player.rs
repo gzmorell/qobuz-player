@@ -6,7 +6,8 @@ use tokio::{
 };
 
 use crate::{
-    PositionReceiver, Result, Status, StatusReceiver, TracklistReceiver, VolumeReceiver,
+    ExitReceiver, PositionReceiver, Result, Status, StatusReceiver, TracklistReceiver,
+    VolumeReceiver,
     controls::{ControlCommand, Controls},
     database::Database,
     notification::NotificationBroadcast,
@@ -581,7 +582,7 @@ impl Player {
         Ok(())
     }
 
-    pub async fn player_loop(&mut self) -> Result<()> {
+    pub async fn player_loop(&mut self, mut exit_receiver: ExitReceiver) -> Result<()> {
         let mut interval = tokio::time::interval(Duration::from_millis(INTERVAL_MS));
 
         loop {
@@ -604,6 +605,12 @@ impl Player {
                         self.position_timer.reset();
                         self.start_timer();
                         self.set_target_status(Status::Playing);
+                    }
+                }
+                Ok(_) = exit_receiver.changed() => {
+                    let exit = exit_receiver.borrow_and_update();
+                    if *exit {
+                        break Ok(());
                     }
                 }
             }
