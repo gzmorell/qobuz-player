@@ -281,6 +281,9 @@ pub async fn init(
                         return Err(Error::MprisPropertyError { property: "CanPlay, CanPause, PlaybackStatus".into() });
                     };
             },
+            else => {
+                break Ok(());
+            }
         }
     }
 }
