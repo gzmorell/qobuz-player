@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::{
     app::{Output, PlayOutcome, QueueOutcome, UnfilteredListState},
-    ui::basic_list_table,
+    ui::{basic_list_table, mark_explicit_and_hifi},
 };
 
 pub(crate) struct QueueState {
@@ -32,7 +32,16 @@ impl QueueState {
                         }
                     };
                     Row::new(Line::from(vec![
-                        format!("{} {}", index + 1, track.title.clone()).set_style(style),
+                        format!(
+                            "{} {}",
+                            index + 1,
+                            mark_explicit_and_hifi(
+                                track.title.clone(),
+                                track.explicit,
+                                track.hires_available
+                            )
+                        )
+                        .set_style(style),
                     ]))
                 })
                 .collect(),

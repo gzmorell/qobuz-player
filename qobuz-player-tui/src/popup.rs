@@ -3,7 +3,7 @@ use ratatui::{crossterm::event::KeyCode, prelude::*, widgets::*};
 
 use crate::{
     app::PlayOutcome,
-    ui::{block, center},
+    ui::{block, center, mark_explicit_and_hifi},
 };
 
 #[derive(PartialEq)]
@@ -39,7 +39,13 @@ impl Popup {
                 let list: Vec<ListItem> = artist
                     .albums
                     .iter()
-                    .map(|album| ListItem::from(Line::from(album.title.clone())))
+                    .map(|album| {
+                        ListItem::from(Line::from(mark_explicit_and_hifi(
+                            album.title.clone(),
+                            album.explicit,
+                            album.hires_available,
+                        )))
+                    })
                     .collect();
 
                 let list = List::new(list)

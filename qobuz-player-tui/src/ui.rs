@@ -152,7 +152,7 @@ fn render_help(frame: &mut Frame) {
         ["Stop edit filter", "esc"],
         ["Select in list", "Up/Down"],
         ["Select selected item", "Enter"],
-        ["Cycle subgrup", "Left/right"],
+        ["Cycle subgroup", "Left/right"],
         ["Add track to queue", "B"],
         ["Play track next", "N"],
         ["Delete from queue", "D"],
@@ -230,7 +230,11 @@ pub(crate) fn album_table<'a>(rows: &[Album], title: &'a str) -> Table<'a> {
         .iter()
         .map(|album| {
             Row::new(vec![
-                Span::from(album.title.clone()),
+                Span::from(mark_explicit_and_hifi(
+                    album.title.clone(),
+                    album.explicit,
+                    album.hires_available,
+                )),
                 Span::from(album.artist.name.clone()),
                 Span::from(album.release_year.to_string()),
             ])
@@ -260,7 +264,11 @@ pub(crate) fn album_simple_table<'a>(rows: &[AlbumSimple], title: &'a str) -> Ta
         .iter()
         .map(|album| {
             Row::new(vec![
-                Span::from(album.title.clone()),
+                Span::from(mark_explicit_and_hifi(
+                    album.title.clone(),
+                    album.explicit,
+                    album.hires_available,
+                )),
                 Span::from(album.artist.name.clone()),
             ])
         })
@@ -288,7 +296,11 @@ pub(crate) fn track_table<'a>(rows: &[Track], title: &'a str) -> Table<'a> {
         .iter()
         .map(|track| {
             Row::new(vec![
-                Span::from(track.title.clone()),
+                Span::from(mark_explicit_and_hifi(
+                    track.title.clone(),
+                    track.explicit,
+                    track.hires_available,
+                )),
                 Span::from(track.artist_name.clone().unwrap_or_default()),
                 Span::from(track.album_title.clone().unwrap_or_default()),
             ])
@@ -311,4 +323,22 @@ pub(crate) fn track_table<'a>(rows: &[Track], title: &'a str) -> Table<'a> {
         table = table.header(Row::new(["Title", "Artist", "Album"]).add_modifier(Modifier::BOLD));
     }
     table
+}
+
+pub fn mark_explicit_and_hifi(title: String, explicit: bool, hires_available: bool) -> String {
+    if !hires_available && !explicit {
+        return title;
+    }
+
+    let mut title = title;
+
+    if explicit {
+        title += " 🅴";
+    }
+
+    if hires_available {
+        title += " 〜";
+    }
+
+    title
 }
