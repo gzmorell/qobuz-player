@@ -274,7 +274,7 @@ pub async fn run() -> Result<(), Error> {
                 let status_receiver = player.status();
                 tokio::spawn(async move {
                     if let Err(e) = qobuz_player_gpio::init(status_receiver).await {
-                        error_exit(!disable_tui && !rfid, e.into());
+                        error_exit(e.into());
                     }
                 });
             }
