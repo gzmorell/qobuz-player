@@ -29,55 +29,55 @@ struct Cli {
 enum Commands {
     /// Default. Starts the player
     Open {
-        /// Provide a username. (overrides any configured value)
+        /// Provide a username (overrides any configured value)
         #[clap(short, long)]
         username: Option<String>,
 
         #[clap(short, long)]
-        /// Provide a password. (overrides any configured value)
+        /// Provide a password (overrides any configured value)
         password: Option<String>,
 
         #[clap(short, long)]
-        /// Provide max audio quality. (overrides any configured value)
+        /// Provide max audio quality (overrides any configured value)
         max_audio_quality: Option<AudioQuality>,
 
         #[clap(short, long, default_value_t = false)]
-        /// Disable the TUI interface.
+        /// Disable the TUI interface
         disable_tui: bool,
 
         #[cfg(target_os = "linux")]
         #[clap(long, default_value_t = false)]
-        /// Disable the mpris interface.
+        /// Disable the mpris interface
         disable_mpris: bool,
 
         #[clap(short, long, default_value_t = false)]
-        /// Start web server with websocket API and embedded UI.
+        /// Start web server with web api and ui
         web: bool,
 
         #[clap(long)]
-        /// Secret used for web ui auth.
+        /// Secret used for web ui auth
         web_secret: Option<String>,
 
+        #[clap(long, default_value_t = 9888)]
+        /// Specify port for the web server
+        port: u16,
+
         #[clap(long, default_value_t = false)]
-        /// Enable rfid interface.
+        /// Enable rfid interface
         rfid: bool,
 
         #[cfg(feature = "gpio")]
         #[clap(long, default_value_t = false)]
-        /// Enable gpio interface for raspberry pi. Pin 16 (gpio-23) will be high when playing.
+        /// Enable gpio interface for raspberry pi. Pin 16 (gpio-23) will be high when playing
         gpio: bool,
 
-        #[clap(long, default_value_t = 9888)]
-        /// Specify port for the web server.
-        port: u16,
-
         #[clap(long)]
-        /// Cache audio files in directory.
+        /// Cache audio files in directory [default: Temporary directory]
         audio_cache: Option<PathBuf>,
 
-        #[clap(long, default_value_t = false)]
-        /// Do not clean up audio cache
-        no_clean_up_audio_cache: bool,
+        #[clap(long, default_value_t = 1)]
+        /// Clean up audio cache interval in hours. 0 for disable
+        clean_up_audio_cache_interval_hours: u32,
     },
     /// Persist configurations
     Config {
@@ -149,7 +149,7 @@ pub async fn run() -> Result<(), Error> {
         #[cfg(feature = "gpio")]
         gpio: Default::default(),
         audio_cache: Default::default(),
-        no_clean_up_audio_cache: Default::default(),
+        clean_up_audio_cache_interval_hours: Default::default(),
     }) {
         Commands::Open {
             username,
@@ -165,7 +165,7 @@ pub async fn run() -> Result<(), Error> {
             #[cfg(feature = "gpio")]
             gpio,
             audio_cache,
-            no_clean_up_audio_cache,
+            clean_up_audio_cache_interval_hours,
         } => {
             let database_credentials = database.get_credentials().await?;
             let database_configuration = database.get_configuration().await?;
@@ -320,12 +320,14 @@ pub async fn run() -> Result<(), Error> {
                 });
             };
 
-            if !no_clean_up_audio_cache {
+            if clean_up_audio_cache_interval_hours != 0 {
                 let clean_up_schedule = every(1).hour().perform(move || {
                     let database = database.clone();
                     async move {
                         if let Ok(deleted_paths) = database
-                            .clean_up_cache_entries(time::Duration::hours(1))
+                            .clean_up_cache_entries(time::Duration::hours(
+                                clean_up_audio_cache_interval_hours.into(),
+                            ))
                             .await
                         {
                             for path in deleted_paths {

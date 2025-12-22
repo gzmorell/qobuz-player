@@ -2872,7 +2872,7 @@ dependencies = [
 
 [[package]]
 name = "qobuz-player"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "clap",
  "qobuz-player-client",
@@ -2893,7 +2893,7 @@ dependencies = [
 
 [[package]]
 name = "qobuz-player-client"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "base64",
  "clap",
@@ -2912,7 +2912,7 @@ dependencies = [
 
 [[package]]
 name = "qobuz-player-controls"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "dirs",
  "md5",
@@ -2933,7 +2933,7 @@ dependencies = [
 
 [[package]]
 name = "qobuz-player-gpio"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "qobuz-player-controls",
  "rppal",
@@ -2942,14 +2942,14 @@ dependencies = [
 
 [[package]]
 name = "qobuz-player-models"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "qobuz-player-mpris"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "mpris-server",
  "qobuz-player-controls",
@@ -2959,7 +2959,7 @@ dependencies = [
 
 [[package]]
 name = "qobuz-player-rfid"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "qobuz-player-controls",
  "tokio",
@@ -2968,7 +2968,7 @@ dependencies = [
 
 [[package]]
 name = "qobuz-player-tui"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "image",
  "qobuz-player-controls",
@@ -2982,7 +2982,7 @@ dependencies = [
 
 [[package]]
 name = "qobuz-player-web"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "axum",
  "axum-extra",
