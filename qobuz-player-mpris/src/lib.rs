@@ -208,6 +208,8 @@ pub async fn init(
     controls: Controls,
     exit_sender: ExitSender,
 ) -> Result<()> {
+    let mut exit_receiver = exit_sender.subscribe();
+
     let Ok(server) = Server::new(
         "qobuz-player",
         MprisPlayer {
@@ -281,8 +283,10 @@ pub async fn init(
                         return Err(Error::MprisPropertyError { property: "CanPlay, CanPause, PlaybackStatus".into() });
                     };
             },
-            else => {
-                break Ok(());
+            Ok(exit) = exit_receiver.recv() => {
+                if exit {
+                    break Ok(());
+                }
             }
         }
     }

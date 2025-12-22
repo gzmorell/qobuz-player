@@ -11,7 +11,7 @@ use qobuz_player_controls::{
 };
 use qobuz_player_rfid::RfidState;
 use snafu::prelude::*;
-use tokio::sync::watch;
+use tokio::sync::broadcast;
 use tokio_schedule::{Job, every};
 
 #[derive(Parser)]
@@ -172,7 +172,7 @@ pub async fn run() -> Result<(), Error> {
             let tracklist = database.get_tracklist().await.unwrap_or_default();
             let volume = database.get_volume().await.unwrap_or(1.0);
 
-            let (exit_sender, exit_receiver) = watch::channel(false);
+            let (exit_sender, exit_receiver) = broadcast::channel(5);
 
             let audio_cache = audio_cache.unwrap_or_else(|| {
                 let mut cache_dir = std::env::temp_dir();

@@ -1,7 +1,7 @@
 use crate::{error::Error, tracklist::Tracklist};
 
 use std::time::Duration;
-use tokio::sync::watch;
+use tokio::sync::{broadcast, watch};
 
 pub use qobuz_player_client::client::AudioQuality;
 
@@ -39,5 +39,5 @@ pub enum Notification {
     Info(String),
 }
 
-pub type ExitReceiver = watch::Receiver<bool>;
-pub type ExitSender = watch::Sender<bool>;
+pub type ExitReceiver = broadcast::Receiver<bool>;
+pub type ExitSender = broadcast::Sender<bool>;
