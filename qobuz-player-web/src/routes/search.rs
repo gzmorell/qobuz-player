@@ -56,6 +56,7 @@ async fn search(
     let query = parameters
         .query
         .and_then(|s| if s.is_empty() { None } else { Some(s) });
+    dbg!(&query);
     let search_results = match query {
         Some(query) => ok_or_broadcast(&state.broadcast, state.client.search(query).await)?,
         None => SearchResults::default(),

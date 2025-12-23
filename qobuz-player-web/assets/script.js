@@ -104,6 +104,20 @@ function loadSearchInput() {
 
 function setSearchQuery(value) {
   sessionStorage.setItem("search-query", value);
+
+  const url = new URL(window.location.href);
+  if (value && value.trim() !== "") {
+    url.searchParams.set("query", value);
+  } else {
+    url.searchParams.delete("query");
+  }
+
+  history.replaceState(null, "", url.toString());
+
+  document.getElementById("albums-tab").href = "albums?query=" + value;
+  document.getElementById("artists-tab").href = "artists?query=" + value;
+  document.getElementById("playlists-tab").href = "playlists?query=" + value;
+  document.getElementById("tracks-tab").href = "tracks?query=" + value;
 }
 
 htmx.onLoad(function (content) {

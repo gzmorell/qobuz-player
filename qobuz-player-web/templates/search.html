@@ -32,46 +32,42 @@
       <div
         class="flex justify-between *:rounded-full *:px-2 *:py-1 *:transition-colors"
       >
-        <button
-          hx-get="albums?query={{ search_results.query }}"
-          hx-target="#search"
-          hx-push-url="true"
+        <a
+          id="albums-tab"
+          href="albums?query={{ search_results.query }}"
           class="@if(tab == 'albums'){bg-blue-800}"
           preload="mouseover"
           preload-images="true"
         >
           Albums
-        </button>
-        <button
-          hx-get="artists?query={{ search_results.query }}"
-          hx-target="#search"
-          hx-push-url="true"
+        </a>
+        <a
+          id="artists-tab"
+          href="artists?query={{ search_results.query }}"
           class="@if(tab == 'artists'){bg-blue-800}"
           preload="mouseover"
           preload-images="true"
         >
           Artists
-        </button>
-        <button
-          hx-get="playlists?query={{ search_results.query }}"
-          hx-target="#search"
-          hx-push-url="true"
+        </a>
+        <a
+          id="playlists-tab"
+          href="playlists?query={{ search_results.query }}"
           class="@if(tab == 'playlists'){bg-blue-800}"
           preload="mouseover"
           preload-images="true"
         >
           Playlists
-        </button>
-        <button
-          hx-get="tracks?query={{ search_results.query }}"
-          hx-target="#search"
-          hx-push-url="true"
+        </a>
+        <a
+          id="tracks-tab"
+          href="tracks?query={{ search_results.query }}"
           class="@if(tab == 'tracks'){bg-blue-800}"
           preload="mouseover"
           preload-images="true"
         >
           Tracks
-        </button>
+        </a>
       </div>
     </div>
 
