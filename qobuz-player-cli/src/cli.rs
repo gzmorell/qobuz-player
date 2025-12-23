@@ -76,8 +76,8 @@ enum Commands {
         audio_cache: Option<PathBuf>,
 
         #[clap(long, default_value_t = 1)]
-        /// Clean up audio cache interval in hours. 0 for disable
-        clean_up_audio_cache_interval_hours: u32,
+        /// Hours before audio cache is cleaned. 0 for disable
+        audio_cache_time_to_live: u32,
     },
     /// Persist configurations
     Config {
@@ -149,7 +149,7 @@ pub async fn run() -> Result<(), Error> {
         #[cfg(feature = "gpio")]
         gpio: Default::default(),
         audio_cache: Default::default(),
-        clean_up_audio_cache_interval_hours: Default::default(),
+        audio_cache_time_to_live: Default::default(),
     }) {
         Commands::Open {
             username,
@@ -165,7 +165,7 @@ pub async fn run() -> Result<(), Error> {
             #[cfg(feature = "gpio")]
             gpio,
             audio_cache,
-            clean_up_audio_cache_interval_hours,
+            audio_cache_time_to_live,
         } => {
             let database_credentials = database.get_credentials().await?;
             let database_configuration = database.get_configuration().await?;
@@ -320,13 +320,13 @@ pub async fn run() -> Result<(), Error> {
                 });
             };
 
-            if clean_up_audio_cache_interval_hours != 0 {
+            if audio_cache_time_to_live != 0 {
                 let clean_up_schedule = every(1).hour().perform(move || {
                     let database = database.clone();
                     async move {
                         if let Ok(deleted_paths) = database
                             .clean_up_cache_entries(time::Duration::hours(
-                                clean_up_audio_cache_interval_hours.into(),
+                                audio_cache_time_to_live.into(),
                             ))
                             .await
                         {
