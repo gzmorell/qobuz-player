@@ -74,5 +74,11 @@
       @defer (list-albums-vertical.html; albums=suggested_albums) {}
     </div>
   }
-  @defer (description.html; description=album.description; title=album.title) {}
+  @if (album.description) {
+    @defer (
+      description.html;
+      description=album.description;
+      title=album.title
+    ) {}
+  }
 </div>

@@ -57,9 +57,11 @@
         <ListArtistsVertical artists="similar_artists" />
       </div>
     }
-    @defer (
-      description.html;
-      description=artist.description title=artist.name
-    ) {}
+    @if (artist.description) {
+      @defer (
+        description.html;
+        description=artist.description title=artist.name
+      ) {}
+    }
   </div>
 </div>

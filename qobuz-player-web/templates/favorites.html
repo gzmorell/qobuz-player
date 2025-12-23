@@ -47,30 +47,30 @@
           Tracks
         </a>
       </div>
+    </div>
 
-      @if (tab == "albums") {
-        @defer (list-albums.html; albums=favorites.albums) {}
-      }
+    @if (tab == "albums") {
+      @defer (list-albums.html; albums=favorites.albums) {}
+    }
 
-      @if (tab == "artists") {
-        @defer (list-artists.html; artists=favorites.artists) {}
-      }
+    @if (tab == "artists") {
+      @defer (list-artists.html; artists=favorites.artists) {}
+    }
 
-      @if (tab == "playlists") {
-        @defer (list-playlists.html; playlists=favorites.playlists) {}
-      }
+    @if (tab == "playlists") {
+      @defer (list-playlists.html; playlists=favorites.playlists) {}
+    }
 
-      @if (tab == "tracks") {
-        @defer (
-          list-tracks.html;
-          click="/api/play-track/"
+    @if (tab == "tracks") {
+      @defer (
+        list-tracks.html;
+        click="/api/play-track/"
           api_by_id=true
           tracks=favorites.tracks;
-          show_track_cover=true;
-          show_artist=true
+        show_track_cover=true;
+        show_artist=true
           is_favorite=true
-        ) {}
-      }
-    </div>
+      ) {}
+    }
   </div>
 }
