@@ -399,24 +399,20 @@ async fn fetch_image(image_url: &str) -> Option<(StatefulProtocol, f32)> {
 }
 
 pub(crate) async fn get_current_state(tracklist: Tracklist, status: Status) -> NowPlayingState {
-    let (entity, image_url, show_tracklist_position) = match &tracklist.list_type() {
-        qobuz_player_controls::tracklist::TracklistType::Album(tracklist) => (
-            Some(tracklist.title.clone()),
-            tracklist.image.clone(),
-            false,
-        ),
+    let (entity, image_url) = match &tracklist.list_type() {
+        qobuz_player_controls::tracklist::TracklistType::Album(tracklist) => {
+            (Some(tracklist.title.clone()), tracklist.image.clone())
+        }
         qobuz_player_controls::tracklist::TracklistType::Playlist(tracklist) => {
-            (Some(tracklist.title.clone()), tracklist.image.clone(), true)
+            (Some(tracklist.title.clone()), tracklist.image.clone())
         }
-        qobuz_player_controls::tracklist::TracklistType::TopTracks(tracklist) => (
-            Some(tracklist.artist_name.clone()),
-            tracklist.image.clone(),
-            true,
-        ),
+        qobuz_player_controls::tracklist::TracklistType::TopTracks(tracklist) => {
+            (Some(tracklist.artist_name.clone()), tracklist.image.clone())
+        }
         qobuz_player_controls::tracklist::TracklistType::Track(tracklist) => {
-            (None, tracklist.image.clone(), true)
+            (None, tracklist.image.clone())
         }
-        qobuz_player_controls::tracklist::TracklistType::None => (None, None, false),
+        qobuz_player_controls::tracklist::TracklistType::None => (None, None),
     };
 
     let track = tracklist.current_track().cloned();
@@ -437,7 +433,6 @@ pub(crate) async fn get_current_state(tracklist: Tracklist, status: Status) -> N
         tracklist_length,
         status,
         tracklist_position: tracklist.current_position(),
-        show_tracklist_position,
         duration_ms: 0,
     }
 }

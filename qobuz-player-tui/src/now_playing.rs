@@ -11,7 +11,6 @@ pub(crate) struct NowPlayingState {
     pub(crate) playing_track: Option<Track>,
     pub(crate) tracklist_length: usize,
     pub(crate) tracklist_position: usize,
-    pub(crate) show_tracklist_position: bool,
     pub(crate) status: Status,
     pub(crate) duration_ms: u32,
 }
@@ -68,15 +67,10 @@ pub(crate) fn render(
 
     lines.push(Line::from(track.title.clone()));
 
-    let track_number = if state.show_tracklist_position {
-        state.tracklist_position as u32 + 1
-    } else {
-        track.number
-    };
-
     lines.push(Line::from(format!(
         "{} of {}",
-        track_number, state.tracklist_length
+        state.tracklist_position + 1,
+        state.tracklist_length
     )));
 
     let duration = if state.duration_ms < track.duration_seconds * 1000 {
