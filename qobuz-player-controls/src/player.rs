@@ -449,10 +449,8 @@ impl Player {
     }
 
     async fn tick(&mut self) -> Result<()> {
-        match *self.target_status.borrow() {
-            Status::Playing => {}
-            Status::Buffering => {}
-            Status::Paused => return Ok(()),
+        if *self.target_status.borrow() != Status::Playing {
+            return Ok(());
         }
 
         let position = self.position_timer.elapsed();
