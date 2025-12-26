@@ -2,7 +2,10 @@ use qobuz_player_models::{Album, Track, TrackStatus};
 use rand::seq::SliceRandom;
 use tokio::{
     select,
-    sync::watch::{self, Receiver, Sender},
+    sync::{
+        mpsc,
+        watch::{self, Receiver, Sender},
+    },
 };
 
 use crate::{
@@ -10,7 +13,9 @@ use crate::{
     VolumeReceiver,
     controls::{ControlCommand, Controls},
     database::Database,
+    downloader::Downloader,
     notification::NotificationBroadcast,
+    sink::QueryTrackResult,
     timer::Timer,
     tracklist::{SingleTracklist, TracklistType},
 };
@@ -34,14 +39,14 @@ pub struct Player {
     volume: Sender<f32>,
     position_timer: Timer,
     position: Sender<Duration>,
-    done_buffering: Receiver<()>,
-    controls_rx: tokio::sync::mpsc::UnboundedReceiver<ControlCommand>,
+    done_buffering: Receiver<PathBuf>,
+    controls_rx: mpsc::UnboundedReceiver<ControlCommand>,
     controls: Controls,
     database: Arc<Database>,
     next_track_is_queried: bool,
     first_track_queried: bool,
     next_track_in_queue: bool,
-    next_track_is_ready: bool,
+    downloader: Downloader,
 }
 
 impl Player {
@@ -54,14 +59,11 @@ impl Player {
         database: Arc<Database>,
     ) -> Result<Self> {
         let (volume, volume_receiver) = watch::channel(volume);
-        let sink = Sink::new(
-            volume_receiver,
-            broadcast.clone(),
-            audio_cache_dir,
-            database.clone(),
-        )?;
+        let sink = Sink::new(volume_receiver)?;
 
-        let done_buffering = sink.done_buffering();
+        let downloader = Downloader::new(audio_cache_dir, broadcast.clone(), database.clone());
+
+        let done_buffering = downloader.done_buffering();
 
         let (position, _) = watch::channel(Default::default());
         let (target_status, _) = watch::channel(Default::default());
@@ -87,7 +89,7 @@ impl Player {
             next_track_in_queue: false,
             next_track_is_queried: false,
             first_track_queried: false,
-            next_track_is_ready: false,
+            downloader,
         })
     }
 
@@ -179,13 +181,9 @@ impl Player {
 
     async fn query_track(&mut self, track: &Track) -> Result<()> {
         let track_url = self.client.track_url(track.id).await?;
-        let next_track_has_other_sample_rate = self.sink.query_track(track_url, track)?;
-        self.next_track_is_ready = false;
-
-        self.next_track_in_queue = match next_track_has_other_sample_rate {
-            crate::sink::QueryTrackResult::Queued => true,
-            crate::sink::QueryTrackResult::NotQueued => false,
-        };
+        self.downloader
+            .ensure_track_is_downloaded(track_url, track)
+            .await;
 
         Ok(())
     }
@@ -561,7 +559,7 @@ impl Player {
                     self.query_track(next_track).await?;
                 }
 
-                if self.next_track_is_ready {
+                if self.next_track_is_queried {
                     self.start_timer();
                 } else {
                     self.set_target_status(Status::Buffering);
@@ -578,6 +576,21 @@ impl Player {
         }
         self.next_track_is_queried = false;
         self.broadcast_tracklist(tracklist).await?;
+        Ok(())
+    }
+
+    fn done_buffering(&mut self, path: PathBuf) -> Result<()> {
+        if *self.target_status.borrow() != Status::Playing {
+            self.position_timer.reset();
+            self.start_timer();
+            self.set_target_status(Status::Playing);
+        }
+
+        let next_track_has_other_sample_rate = self.sink.query_track(&path)?;
+        self.next_track_in_queue = match next_track_has_other_sample_rate {
+            QueryTrackResult::Queued => true,
+            QueryTrackResult::NotQueued => false,
+        };
         Ok(())
     }
 
@@ -599,12 +612,10 @@ impl Player {
                 }
 
                 Ok(_) = self.done_buffering.changed() => {
-                    self.next_track_is_ready = true;
-                    if *self.target_status.borrow() != Status::Playing {
-                        self.position_timer.reset();
-                        self.start_timer();
-                        self.set_target_status(Status::Playing);
-                    }
+                    let path = self.done_buffering.borrow_and_update().clone();
+                    if let Err(err) = self.done_buffering(path) {
+                        self.broadcast.send_error(format!("{err}"));
+                    };
                 }
                 Ok(exit) = exit_receiver.recv() => {
                     if exit {
