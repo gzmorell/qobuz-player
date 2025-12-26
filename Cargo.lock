@@ -2874,14 +2874,12 @@ name = "qobuz-player"
 version = "0.4.5"
 dependencies = [
  "clap",
- "qobuz-player-client",
  "qobuz-player-controls",
  "qobuz-player-gpio",
  "qobuz-player-mpris",
  "qobuz-player-rfid",
  "qobuz-player-tui",
  "qobuz-player-web",
- "ratatui",
  "snafu",
  "time",
  "tokio",
