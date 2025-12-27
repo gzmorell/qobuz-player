@@ -44,11 +44,11 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3" }
 url = "2"
 moka = { version = "0.12", features = ["future"]}
-rodio = {version = "0.21", default-features = false, features = ["flac", "playback"] }
-ratatui = "0.29"
+rodio = { version = "0.21", default-features = false, features = ["flac", "playback"] }
+ratatui = "0.30"
 tokio_schedule = "0.3"
 rppal = "0.22"
-ratatui-image = "8"
-tui-input = "0.14"
+ratatui-image = { version = "10", default-features = false, features = ["image-defaults", "crossterm"] }
+tui-input.git = "https://github.com/sofusa/tui-input"
 image = "0.25"
 skabelon = "0.1.18"
