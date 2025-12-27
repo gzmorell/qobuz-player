@@ -44,8 +44,7 @@ pub struct Player {
     controls: Controls,
     database: Arc<Database>,
     next_track_is_queried: bool,
-    first_track_queried: bool,
-    next_track_in_queue: bool,
+    next_track_in_sink_queue: bool,
     downloader: Downloader,
 }
 
@@ -86,9 +85,8 @@ impl Player {
             position,
             done_buffering,
             database,
-            next_track_in_queue: false,
+            next_track_in_sink_queue: false,
             next_track_is_queried: false,
-            first_track_queried: false,
             downloader,
         })
     }
@@ -155,12 +153,11 @@ impl Player {
     async fn play(&mut self) -> Result<()> {
         let track = self.tracklist_rx.borrow().current_track().cloned();
 
-        if !self.first_track_queried
+        if !self.next_track_is_queried
             && let Some(current_track) = track
         {
             self.set_target_status(Status::Buffering);
             self.query_track(&current_track).await?;
-            self.first_track_queried = true;
         }
 
         self.set_target_status(Status::Playing);
@@ -266,13 +263,11 @@ impl Player {
             self.sink.clear().await?;
             self.next_track_is_queried = false;
             self.query_track(next_track).await?;
-            self.first_track_queried = true;
             self.start_timer();
         } else {
             tracklist.reset();
             self.sink.clear().await?;
             self.next_track_is_queried = false;
-            self.first_track_queried = false;
             self.set_target_status(Status::Paused);
             self.sink.pause();
             self.position.send(Default::default())?;
@@ -303,7 +298,6 @@ impl Player {
 
         if let Some(first_track) = tracklist.current_track() {
             self.query_track(first_track).await?;
-            self.first_track_queried = true;
         }
 
         self.broadcast_tracklist(tracklist).await?;
@@ -476,7 +470,6 @@ impl Player {
 
                 if let Some(next_track) = tracklist.next_track() {
                     self.query_track(next_track).await?;
-                    self.first_track_queried = true;
                     self.next_track_is_queried = true;
                 }
             }
@@ -554,7 +547,7 @@ impl Player {
 
         match next_track {
             Some(next_track) => {
-                if !self.next_track_in_queue {
+                if !self.next_track_in_sink_queue {
                     self.sink.clear().await?;
                     self.query_track(next_track).await?;
                 }
@@ -571,7 +564,6 @@ impl Player {
                 self.sink.pause();
                 self.position_timer.stop();
                 self.sink.clear().await?;
-                self.first_track_queried = false;
             }
         }
         self.next_track_is_queried = false;
@@ -587,7 +579,7 @@ impl Player {
         }
 
         let next_track_has_other_sample_rate = self.sink.query_track(&path)?;
-        self.next_track_in_queue = match next_track_has_other_sample_rate {
+        self.next_track_in_sink_queue = match next_track_has_other_sample_rate {
             QueryTrackResult::Queued => true,
             QueryTrackResult::NotQueued => false,
         };
