@@ -1,12 +1,20 @@
 name: On Pull Request To Main (Linux)
 on:
   pull_request:
+    branches:
+      - main
     paths:
       - "**.rs"
       - "**/Cargo.lock"
       - "**/Cargo.toml"
+  push:
     branches:
       - main
+    paths:
+      - "**.rs"
+      - "**/Cargo.lock"
+      - "**/Cargo.toml"
+
 jobs:
   pre-merge:
     name: Pre-merge checks
@@ -30,8 +38,8 @@ jobs:
         working-directory: qobuz-player-web
         run: npm run build
 
-      - name: Test ${{ matrix.arch }} 
+      - name: Test ${{ matrix.arch }}
         run: cargo test
 
-      - name: Build ${{ matrix.arch }} 
+      - name: Build ${{ matrix.arch }}
         run: cargo build --features gpio

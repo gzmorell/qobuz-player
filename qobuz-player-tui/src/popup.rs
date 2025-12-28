@@ -85,7 +85,6 @@ impl Popup {
                 }
                 KeyCode::Enter => {
                     let index = artist_popup_state.state.selected();
-
                     let id = index
                         .and_then(|index| artist_popup_state.albums.get(index))
                         .map(|album| album.id.clone());
