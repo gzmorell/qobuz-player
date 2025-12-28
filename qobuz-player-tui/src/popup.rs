@@ -40,11 +40,11 @@ impl Popup {
                     .albums
                     .iter()
                     .map(|album| {
-                        ListItem::from(Line::from(mark_explicit_and_hifi(
+                        ListItem::from(mark_explicit_and_hifi(
                             album.title.clone(),
                             album.explicit,
                             album.hires_available,
-                        )))
+                        ))
                     })
                     .collect();
 

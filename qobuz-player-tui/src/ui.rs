@@ -230,13 +230,9 @@ pub(crate) fn album_table<'a>(rows: &[Album], title: &'a str) -> Table<'a> {
         .iter()
         .map(|album| {
             Row::new(vec![
-                Span::from(mark_explicit_and_hifi(
-                    album.title.clone(),
-                    album.explicit,
-                    album.hires_available,
-                )),
-                Span::from(album.artist.name.clone()),
-                Span::from(album.release_year.to_string()),
+                mark_explicit_and_hifi(album.title.clone(), album.explicit, album.hires_available),
+                Line::from(album.artist.name.clone()),
+                Line::from(album.release_year.to_string()),
             ])
         })
         .collect();
@@ -264,12 +260,8 @@ pub(crate) fn album_simple_table<'a>(rows: &[AlbumSimple], title: &'a str) -> Ta
         .iter()
         .map(|album| {
             Row::new(vec![
-                Span::from(mark_explicit_and_hifi(
-                    album.title.clone(),
-                    album.explicit,
-                    album.hires_available,
-                )),
-                Span::from(album.artist.name.clone()),
+                mark_explicit_and_hifi(album.title.clone(), album.explicit, album.hires_available),
+                Line::from(album.artist.name.clone()),
             ])
         })
         .collect();
@@ -296,13 +288,9 @@ pub(crate) fn track_table<'a>(rows: &[Track], title: &'a str) -> Table<'a> {
         .iter()
         .map(|track| {
             Row::new(vec![
-                Span::from(mark_explicit_and_hifi(
-                    track.title.clone(),
-                    track.explicit,
-                    track.hires_available,
-                )),
-                Span::from(track.artist_name.clone().unwrap_or_default()),
-                Span::from(track.album_title.clone().unwrap_or_default()),
+                mark_explicit_and_hifi(track.title.clone(), track.explicit, track.hires_available),
+                Line::from(track.artist_name.clone().unwrap_or_default()),
+                Line::from(track.album_title.clone().unwrap_or_default()),
             ])
         })
         .collect();
@@ -325,20 +313,30 @@ pub(crate) fn track_table<'a>(rows: &[Track], title: &'a str) -> Table<'a> {
     table
 }
 
-pub fn mark_explicit_and_hifi(title: String, explicit: bool, hires_available: bool) -> String {
-    if !hires_available && !explicit {
-        return title;
-    }
+pub fn mark_explicit_and_hifi(
+    title: String,
+    explicit: bool,
+    hires_available: bool,
+) -> Line<'static> {
+    let mut parts: Vec<Span<'static>> = Vec::new();
 
-    let mut title = title;
+    parts.push(Span::raw(title));
 
     if explicit {
-        title += " 🅴";
+        parts.push(Span::raw(" "));
+        parts.push(Span::styled(
+            "🅴",
+            Style::default().add_modifier(Modifier::DIM),
+        ));
     }
 
     if hires_available {
-        title += " 〜";
+        parts.push(Span::raw(" "));
+        parts.push(Span::styled(
+            "〜",
+            Style::default().add_modifier(Modifier::DIM),
+        ));
     }
 
-    title
+    Line::from(parts)
 }
