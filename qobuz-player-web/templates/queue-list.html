@@ -18,17 +18,26 @@
             @if(!track.available){disabled}
           >
             <div class="flex justify-center items-center size-12 aspect-square">
-              @if (index == currently_playing_position) {
-                <div class="text-blue-500 size-5">
-                  @defer (icons/play.html) {}
-                </div>
-              } @else {
+              <div
+                class="relative overflow-hidden rounded-md size-12 aspect-square"
+              >
                 <div
-                  class="bg-gray-800 bg-center bg-no-repeat bg-cover rounded-md aspect-square size-12"
+                  class="bg-gray-800 bg-center bg-no-repeat bg-cover rounded-md w-full h-full @if(index == currently_playing_position) {opacity-50}"
                   style="background-image: url({{ track.image }});"
                 ></div>
-              }
+
+                @if (index == currently_playing_position) {
+                  <div
+                    class="absolute inset-0 grid place-items-center text-blue-500"
+                  >
+                    <span class="size-6">
+                      @defer (icons/play.html) {}
+                    </span>
+                  </div>
+                }
+              </div>
             </div>
+
             @if (track.artist_name) {
               <div class="flex overflow-hidden flex-col">
                 <h2 class="truncate">{{ track.title }}</h2>
