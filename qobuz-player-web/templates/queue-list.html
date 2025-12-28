@@ -11,7 +11,7 @@
           <button
             hx-swap="none"
             hx-put="/api/skip-to/{{ index }}"
-            class="flex overflow-hidden gap-4 items-center w-full text-left cursor-pointer disabled:text-gray-500 disabled:cursor-default"
+            class="flex overflow-hidden gap-4 items-center w-full text-left cursor-pointer disabled:text-gray-500 disabled:cursor-default @if(track.status != 'Unplayed' && track.status != 'Playing'){opacity-50}"
             @if(!track.available){disabled}
           >
             <div class="flex justify-center items-center size-12 aspect-square">
