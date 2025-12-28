@@ -7,7 +7,10 @@
   >
     @for (track in tracks) {
       @defer (list-item.html) {
-        <div class="flex justify-between bg-black">
+        <div
+          class="flex justify-between bg-black scroll-m-48"
+          id="@if(track.status == 'Playing') {playing} @else {{{track.id}}}"
+        >
           <button
             hx-swap="none"
             hx-put="/api/skip-to/{{ index }}"
@@ -65,3 +68,9 @@
     }
   </form>
 }
+<script>
+  const el = document.getElementById("playing");
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+</script>
