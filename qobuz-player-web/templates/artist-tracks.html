@@ -1,7 +1,7 @@
 @for (track in artist.top_tracks) {
   <button
     class="flex gap-4 items-center w-5/6 max-w-lg rounded cursor-pointer"
-    hx-put="/artist/{{ artist.id }}/play-top-track/{{ track.id }}"
+    hx-put="/artist/{{ artist.id }}/play-top-track/{{ index }}"
     hx-swap="none"
   >
     <img
