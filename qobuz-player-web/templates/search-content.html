@@ -15,32 +15,56 @@
     @defer (list.html) {
       @for (track in search_results.tracks) {
         @defer (list-item.html) {
-          <button
-            class="flex gap-4 items-center w-full cursor-pointer"
-            hx-put="/api/play-track/{{ track.id }}"
-            hx-swap="none"
-          >
-            <img
-              class="inline text-sm text-gray-500 bg-gray-800 rounded-md aspect-square size-12"
-              alt="{{ track.title }}"
-              src="{{ track.image_thumbnail }}"
-            />
+          <div class="flex gap-4">
+            <button
+              class="flex gap-4 items-center w-full cursor-pointer"
+              hx-put="/api/play-track/{{ track.id }}"
+              hx-swap="none"
+            >
+              <img
+                class="inline text-sm text-gray-500 bg-gray-800 rounded-md aspect-square size-12"
+                alt="{{ track.title }}"
+                src="{{ track.image_thumbnail }}"
+              />
 
-            <div class="overflow-hidden w-full">
-              <div class="flex justify-between items-center">
-                <h3 class="text-lg truncate">{{ track.title }}</h3>
-                @defer (
-                  info.html;
-                  explicit=track.explicit;
-                  hires_available=track.hires_available
-                ) {}
+              <div class="overflow-hidden w-full">
+                <div class="flex justify-between items-center">
+                  <h3 class="text-lg truncate">{{ track.title }}</h3>
+                </div>
+
+                <h4 class="flex gap-2 text-left text-gray-400">
+                  <span class="truncate">{{ track.artist_name }}</span>
+                </h4>
               </div>
+              @defer (
+                info.html;
+                explicit=track.explicit;
+                hires_available=track.hires_available
+              ) {}
+            </button>
 
-              <h4 class="flex gap-2 text-left text-gray-400">
-                <span class="truncate">{{ track.artist_name }}</span>
-              </h4>
+            <div class="relative w-12 action-group overflow-hidden">
+              <span
+                class="pointer-events-none absolute inset-y-0 left-0 flex items-center w-full justify-center text-white"
+              >
+                @defer (icons/bars-4.html) {}
+              </span>
+              <input type="hidden" name="track_id" value="{{ track.id }}" />
+              <select
+                name="action"
+                class="appearance-none text-transparent size-full cursor-pointer"
+                hx-trigger="change"
+                hx-put="/api/track/favorite"
+                hx-swap="none"
+                hx-include="closest .action-group"
+                hx-on::after-request="this.value=''"
+              >
+                <option value="" disabled hidden selected>Choose action</option>
+                <option value="add_to_queue">Add to queue</option>
+                <option value="play_next">Play next</option>
+              </select>
             </div>
-          </button>
+          </div>
         }
       }
     }
