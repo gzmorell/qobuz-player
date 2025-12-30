@@ -35,14 +35,10 @@
       data-sse="tracklist"
       hx-trigger="tracklist"
       hx-target="#top-tracks"
-      class="flex flex-col gap-2"
       hx-get="{{ artist.id }}/top-tracks"
     >
       <h3 class="px-4 text-lg">Top tracks</h3>
-      <div
-        id="top-tracks"
-        class="flex overflow-x-auto flex-col flex-wrap gap-4 p-4 max-h-92"
-      >
+      <div id="top-tracks" class="max-h-92 overflow-scroll">
         @defer (
           list-tracks.html;
           now_playing_id=playing_info.now_playing_id;
