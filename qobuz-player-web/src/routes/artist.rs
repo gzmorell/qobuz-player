@@ -29,11 +29,17 @@ async fn top_tracks_partial(
     Path(id): Path<u32>,
 ) -> ResponseResult {
     let artist = ok_or_error_component(&state, state.client.artist_page(id).await)?;
+    let click_string = format!("/artist/{}/play-top-track/", artist.id);
+    let now_playing_id = state.tracklist_receiver.borrow().currently_playing();
 
     Ok(state.render(
-        "artist-tracks.html",
+        "list-tracks.html",
         &json!({
-            "artist": artist
+            "click": click_string,
+            "tracks": artist.top_tracks,
+            "show_artist": false,
+            "show_track_cover": true,
+            "now_playing_id": now_playing_id
         }),
     ))
 }
@@ -83,6 +89,7 @@ async fn content(State(state): State<Arc<AppState>>, Path(id): Path<u32>) -> Res
 
     let favorites = ok_or_error_component(&state, state.get_favorites().await)?;
     let is_favorite = favorites.artists.iter().any(|artist| artist.id == id);
+    let click_string = format!("/artist/{}/play-top-track/", artist.id);
 
     Ok(state.render(
         "artist.html",
@@ -91,6 +98,7 @@ async fn content(State(state): State<Arc<AppState>>, Path(id): Path<u32>) -> Res
             "albums": albums,
             "is_favorite": is_favorite,
             "similar_artists": similar_artists,
+            "click": click_string
         }),
     ))
 }

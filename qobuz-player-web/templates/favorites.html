@@ -64,12 +64,12 @@
     @if (tab == "tracks") {
       @defer (
         list-tracks.html;
-        click="/api/track/play"
-          api_by_id=true
-          tracks=favorites.tracks;
+        click="/api/track/play";
+        api_by_id=true;
+        tracks=favorites.tracks;
         show_track_cover=true;
-        show_artist=true
-          is_favorite=true
+        show_artist=true;
+        is_favorite=true
       ) {}
     }
   </div>

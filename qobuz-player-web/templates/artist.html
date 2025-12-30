@@ -43,7 +43,14 @@
         id="top-tracks"
         class="flex overflow-x-auto flex-col flex-wrap gap-4 p-4 max-h-92"
       >
-        @defer (artist-tracks.html; artist=artist; playing_info=playing_info) {}
+        @defer (
+          list-tracks.html;
+          now_playing_id=playing_info.now_playing_id;
+          tracks=artist.top_tracks;
+          show_artist=false;
+          show_track_cover=true;
+          click=click
+        ) {}
       </div>
     </div>
 
