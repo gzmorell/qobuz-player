@@ -18,7 +18,7 @@
           <div class="flex gap-4">
             <button
               class="flex gap-4 items-center w-full cursor-pointer"
-              hx-put="/api/play-track/{{ track.id }}"
+              hx-put="/api/track/play/{{ track.id }}"
               hx-swap="none"
             >
               <img
@@ -54,7 +54,7 @@
                 name="action"
                 class="appearance-none text-transparent size-full cursor-pointer"
                 hx-trigger="change"
-                hx-put="/api/track/favorite"
+                hx-put="/api/track/action"
                 hx-swap="none"
                 hx-include="closest .action-group"
                 hx-on::after-request="this.value=''"

@@ -25,30 +25,30 @@ pub(crate) fn routes() -> Router<Arc<AppState>> {
             "/api/remove-queue-item/{index}",
             put(remove_index_from_queue),
         )
-        .route("/api/play-track/{track_id}", put(play_track))
-        .route("/api/track/favorite", put(track_favorite))
+        .route("/api/track/play/{track_id}", put(play_track))
+        .route("/api/track/action", put(track_action))
         .route("/api/queue/reorder", put(reorder_queue))
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
-enum FavoriteTrackAction {
+enum TrackAction {
     AddFavorite,
     RemoveFavorite,
     AddToQueue,
     PlayNext,
 }
 #[derive(Deserialize)]
-struct FavoriteTrackParammeters {
+struct TrackActionParammeters {
     track_id: u32,
-    action: FavoriteTrackAction,
+    action: TrackAction,
 }
-async fn track_favorite(
+async fn track_action(
     State(state): State<Arc<AppState>>,
-    Form(req): Form<FavoriteTrackParammeters>,
+    Form(req): Form<TrackActionParammeters>,
 ) -> ResponseResult {
     match req.action {
-        FavoriteTrackAction::AddFavorite => {
+        TrackAction::AddFavorite => {
             ok_or_broadcast(
                 &state.broadcast,
                 state.client.add_favorite_track(req.track_id).await,
@@ -56,7 +56,7 @@ async fn track_favorite(
             state.send_sse("tracklist".into(), "New favorite track".into());
             Ok(state.send_toast(Notification::Info("Track added to favorites".into())))
         }
-        FavoriteTrackAction::RemoveFavorite => {
+        TrackAction::RemoveFavorite => {
             ok_or_broadcast(
                 &state.broadcast,
                 state.client.remove_favorite_track(req.track_id).await,
@@ -64,12 +64,12 @@ async fn track_favorite(
             state.send_sse("tracklist".into(), "Removed favorite track".into());
             Ok(state.send_toast(Notification::Info("Track removed from favorites".into())))
         }
-        FavoriteTrackAction::AddToQueue => {
+        TrackAction::AddToQueue => {
             state.controls.add_track_to_queue(req.track_id);
             state.send_sse("tracklist".into(), "Track added to queue".into());
             Ok(state.send_toast(Notification::Info("Track added to queue".into())))
         }
-        FavoriteTrackAction::PlayNext => {
+        TrackAction::PlayNext => {
             state.controls.play_track_next(req.track_id);
             state.send_sse("tracklist".into(), "Track queued next".into());
             Ok(state.send_toast(Notification::Info("Track queued next".into())))
