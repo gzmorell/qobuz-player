@@ -325,7 +325,7 @@ pub fn mark_explicit_and_hifi(
     if explicit {
         parts.push(Span::raw(" "));
         parts.push(Span::styled(
-            "🅴",
+            "\u{f0b0c}",
             Style::default().add_modifier(Modifier::DIM),
         ));
     }
@@ -333,7 +333,7 @@ pub fn mark_explicit_and_hifi(
     if hires_available {
         parts.push(Span::raw(" "));
         parts.push(Span::styled(
-            "〜",
+            "\u{f0435}",
             Style::default().add_modifier(Modifier::DIM),
         ));
     }
