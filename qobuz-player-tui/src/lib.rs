@@ -21,6 +21,7 @@ mod queue;
 mod search;
 mod ui;
 
+#[allow(clippy::too_many_arguments)]
 pub async fn init(
     client: Arc<Client>,
     broadcast: Arc<NotificationBroadcast>,
@@ -29,6 +30,7 @@ pub async fn init(
     tracklist_receiver: TracklistReceiver,
     status_receiver: StatusReceiver,
     exit_sender: ExitSender,
+    disable_tui_album_cover: bool,
 ) -> Result<()> {
     let mut terminal = ratatui::init();
 
@@ -87,6 +89,7 @@ pub async fn init(
         exit: Default::default(),
         should_draw: true,
         app_state: Default::default(),
+        disable_tui_album_cover,
         favorites: FavoritesState {
             client: client_clone.clone(),
             editing: Default::default(),

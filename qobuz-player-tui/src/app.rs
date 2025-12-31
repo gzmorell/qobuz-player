@@ -38,6 +38,7 @@ pub(crate) struct App {
     pub(crate) broadcast: Arc<NotificationBroadcast>,
     pub(crate) notifications: Vec<(Notification, Instant)>,
     pub(crate) full_screen: bool,
+    pub(crate) disable_tui_album_cover: bool,
 }
 
 #[derive(Default, PartialEq)]

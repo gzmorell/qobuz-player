@@ -20,6 +20,7 @@ pub(crate) fn render(
     area: Rect,
     state: &mut NowPlayingState,
     full_screen: bool,
+    disable_tui_album_cover: bool,
 ) {
     let track = match &state.playing_track {
         Some(t) => t,
@@ -36,16 +37,21 @@ pub(crate) fn render(
         .map(|x| x as u16)
         .unwrap_or(0);
 
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Length(length), Constraint::Min(1)])
-        .split(block.inner(area));
+    let chunks = match disable_tui_album_cover {
+        true => std::rc::Rc::new([block.inner(area)]),
+        false => Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Length(length), Constraint::Min(1)])
+            .split(block.inner(area)),
+    };
 
     if !full_screen {
         frame.render_widget(block, area);
     }
 
-    if let Some(image) = &mut state.image {
+    if let Some(image) = &mut state.image
+        && !disable_tui_album_cover
+    {
         let stateful_image = StatefulImage::default();
         frame.render_stateful_widget(stateful_image, chunks[0], &mut image.0);
     }
@@ -53,7 +59,7 @@ pub(crate) fn render(
     let info_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Min(1), Constraint::Length(1)])
-        .split(chunks[1]);
+        .split(*chunks.last().unwrap());
 
     let mut lines = vec![];
 

@@ -45,6 +45,10 @@ enum Commands {
         /// Disable the TUI interface
         disable_tui: bool,
 
+        #[clap(long, default_value_t = false)]
+        /// Disable the album cover image in TUI
+        disable_tui_album_cover: bool,
+
         #[cfg(target_os = "linux")]
         #[clap(long, default_value_t = false)]
         /// Disable the mpris interface
@@ -150,6 +154,7 @@ pub async fn run() -> Result<(), Error> {
         gpio: Default::default(),
         audio_cache: Default::default(),
         audio_cache_time_to_live: Default::default(),
+        disable_tui_album_cover: false,
     }) {
         Commands::Open {
             username,
@@ -166,6 +171,7 @@ pub async fn run() -> Result<(), Error> {
             gpio,
             audio_cache,
             audio_cache_time_to_live,
+            disable_tui_album_cover,
         } => {
             let database_credentials = database.get_credentials().await?;
             let database_configuration = database.get_configuration().await?;
@@ -312,6 +318,7 @@ pub async fn run() -> Result<(), Error> {
                         tracklist_receiver,
                         status_receiver,
                         exit_sender,
+                        disable_tui_album_cover,
                     )
                     .await
                     {

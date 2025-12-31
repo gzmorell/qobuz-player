@@ -25,7 +25,13 @@ impl App {
         let area = frame.area();
         if self.full_screen {
             let area = center(area, Constraint::Percentage(80), Constraint::Length(10));
-            now_playing::render(frame, area, &mut self.now_playing, self.full_screen);
+            now_playing::render(
+                frame,
+                area,
+                &mut self.now_playing,
+                self.full_screen,
+                self.disable_tui_album_cover,
+            );
             return;
         }
 
@@ -56,7 +62,13 @@ impl App {
         frame.render_widget(tabs, chunks[0]);
 
         if self.now_playing.playing_track.is_some() {
-            now_playing::render(frame, chunks[2], &mut self.now_playing, self.full_screen);
+            now_playing::render(
+                frame,
+                chunks[2],
+                &mut self.now_playing,
+                self.full_screen,
+                self.disable_tui_album_cover,
+            );
         }
 
         let tab_content_area = if self.now_playing.playing_track.is_some() {
