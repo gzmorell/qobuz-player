@@ -399,25 +399,9 @@ async fn fetch_image(image_url: &str) -> Option<(StatefulProtocol, f32)> {
 }
 
 pub(crate) async fn get_current_state(tracklist: Tracklist, status: Status) -> NowPlayingState {
-    let (entity, image_url) = match &tracklist.list_type() {
-        qobuz_player_controls::tracklist::TracklistType::Album(tracklist) => {
-            (Some(tracklist.title.clone()), tracklist.image.clone())
-        }
-        qobuz_player_controls::tracklist::TracklistType::Playlist(tracklist) => {
-            (Some(tracklist.title.clone()), tracklist.image.clone())
-        }
-        qobuz_player_controls::tracklist::TracklistType::TopTracks(tracklist) => {
-            (Some(tracklist.artist_name.clone()), tracklist.image.clone())
-        }
-        qobuz_player_controls::tracklist::TracklistType::Track(tracklist) => {
-            (None, tracklist.image.clone())
-        }
-        qobuz_player_controls::tracklist::TracklistType::None => (None, None),
-    };
-
+    let entity = tracklist.entity_playing();
     let track = tracklist.current_track().cloned();
-
-    let image = if let Some(image_url) = image_url {
+    let image = if let Some(image_url) = entity.cover_link {
         Some(fetch_image(&image_url).await)
     } else {
         None
@@ -428,7 +412,7 @@ pub(crate) async fn get_current_state(tracklist: Tracklist, status: Status) -> N
 
     NowPlayingState {
         image,
-        entity_title: entity,
+        entity_title: entity.title,
         playing_track: track,
         tracklist_length,
         status,

@@ -46,6 +46,12 @@ pub struct Tracklist {
     pub(crate) list_type: TracklistType,
 }
 
+pub struct Entity {
+    pub title: Option<String>,
+    pub link: Option<String>,
+    pub cover_link: Option<String>,
+}
+
 impl Tracklist {
     pub fn new() -> Self {
         Default::default()
@@ -107,6 +113,41 @@ impl Tracklist {
 
     pub fn current_track(&self) -> Option<&Track> {
         self.queue.iter().find(|t| t.status == TrackStatus::Playing)
+    }
+
+    pub fn entity_playing(&self) -> Entity {
+        let current_track = self.current_track();
+        let cover_link = current_track.as_ref().and_then(|track| track.image.clone());
+
+        match self.list_type() {
+            TracklistType::Album(tracklist) => Entity {
+                title: Some(tracklist.title.clone()),
+                link: Some(format!("/album/{}", tracklist.id)),
+                cover_link,
+            },
+            TracklistType::Playlist(tracklist) => Entity {
+                title: Some(tracklist.title.clone()),
+                link: Some(format!("/playlist/{}", tracklist.id)),
+                cover_link,
+            },
+            TracklistType::TopTracks(tracklist) => Entity {
+                title: Some(tracklist.artist_name.clone()),
+                link: Some(format!("/artist/{}", tracklist.id)),
+                cover_link,
+            },
+            TracklistType::Track(tracklist) => Entity {
+                title: current_track
+                    .as_ref()
+                    .and_then(|track| track.album_title.clone()),
+                link: tracklist.album_id.as_ref().map(|id| format!("/album/{id}")),
+                cover_link,
+            },
+            TracklistType::None => Entity {
+                title: None,
+                link: None,
+                cover_link,
+            },
+        }
     }
 
     pub(crate) fn skip_to_track(&mut self, new_position: i32) -> Option<&Track> {

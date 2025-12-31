@@ -38,7 +38,6 @@ impl AppState {
         let tracklist = self.tracklist_receiver.borrow().clone();
         let current_track = tracklist.current_track().cloned();
         let status = *self.status_receiver.borrow();
-        let cover_image = current_track.as_ref().and_then(|track| track.image.clone());
         let artist_name = current_track
             .as_ref()
             .and_then(|track| track.artist_name.clone());
@@ -54,28 +53,7 @@ impl AppState {
                     )
                 });
 
-        let (entity_title, entity_link) = match tracklist.list_type() {
-            TracklistType::Album(tracklist) => (
-                Some(tracklist.title.clone()),
-                Some(format!("/album/{}", tracklist.id)),
-            ),
-            TracklistType::Playlist(tracklist) => (
-                Some(tracklist.title.clone()),
-                Some(format!("/playlist/{}", tracklist.id)),
-            ),
-            TracklistType::TopTracks(tracklist) => (
-                Some(tracklist.artist_name.clone()),
-                Some(format!("/artist/{}", tracklist.id)),
-            ),
-            TracklistType::Track(tracklist) => (
-                current_track
-                    .as_ref()
-                    .and_then(|track| track.album_title.clone()),
-                tracklist.album_id.as_ref().map(|id| format!("/album/{id}")),
-            ),
-            TracklistType::None => (None, None),
-        };
-
+        let entity = tracklist.entity_playing();
         let tracklist_type = tracklist.list_type().into();
         let now_playing_id = tracklist.currently_playing();
 
@@ -84,10 +62,10 @@ impl AppState {
             now_playing_id,
             artist_link,
             artist_name,
-            entity_title,
-            entity_link,
+            entity_title: entity.title,
+            entity_link: entity.link,
             status,
-            cover_image,
+            cover_image: entity.cover_link,
             tracklist_type,
         };
 
