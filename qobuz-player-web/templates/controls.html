@@ -15,7 +15,7 @@
         href="{{ playing_info.entity_link }}"
       >
         <div
-          class="bg-gray-800 bg-center bg-no-repeat bg-cover shadow aspect-square size-10 @if(playing_info.tracklist_type == "Artist"){rounded-full} @else {rounded-md}"
+          class="bg-gray-800 bg-center bg-no-repeat bg-cover shadow aspect-square size-10 rounded-md"
           style="@if(playing_info.cover_image){background-image: url({{
             playing_info.cover_image
           }});}"

@@ -5,7 +5,6 @@ use qobuz_player_controls::{
     client::Client,
     controls::Controls,
     notification::{Notification, NotificationBroadcast},
-    tracklist::TracklistType,
 };
 use qobuz_player_models::Favorites;
 use qobuz_player_rfid::RfidState;
@@ -54,7 +53,6 @@ impl AppState {
                 });
 
         let entity = tracklist.entity_playing();
-        let tracklist_type = tracklist.list_type().into();
         let now_playing_id = tracklist.currently_playing();
 
         let playing_info = PlayingInfo {
@@ -66,7 +64,6 @@ impl AppState {
             entity_link: entity.link,
             status,
             cover_image: entity.cover_link,
-            tracklist_type,
         };
 
         let playing_info = serde_json::json!({"playing_info": playing_info});
@@ -131,28 +128,6 @@ struct PlayingInfo {
     entity_link: Option<String>,
     status: Status,
     cover_image: Option<String>,
-    tracklist_type: TrackListTypeSimple,
-}
-
-#[derive(serde::Serialize, serde::Deserialize)]
-enum TrackListTypeSimple {
-    TopTracks,
-    Album,
-    Playlist,
-    Track,
-    None,
-}
-
-impl From<&TracklistType> for TrackListTypeSimple {
-    fn from(value: &TracklistType) -> Self {
-        match value {
-            TracklistType::Album(_) => TrackListTypeSimple::Album,
-            TracklistType::Playlist(_) => TrackListTypeSimple::Playlist,
-            TracklistType::TopTracks(_) => TrackListTypeSimple::TopTracks,
-            TracklistType::Track(_) => TrackListTypeSimple::Track,
-            TracklistType::None => TrackListTypeSimple::None,
-        }
-    }
 }
 
 fn merge_serialized<T: serde::Serialize, Y: serde::Serialize>(
