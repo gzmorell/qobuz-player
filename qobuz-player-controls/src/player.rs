@@ -428,6 +428,10 @@ impl Player {
     }
 
     async fn reorder_queue(&mut self, new_order: Vec<usize>) -> Result<()> {
+        if new_order.iter().enumerate().all(|(i, &v)| i == v) {
+            return Ok(());
+        }
+
         let mut tracklist = self.tracklist_rx.borrow().clone();
 
         let reordered: Vec<_> = new_order

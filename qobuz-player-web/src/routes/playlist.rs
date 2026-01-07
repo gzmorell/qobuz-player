@@ -82,8 +82,9 @@ async fn reorder_tracks(
     let playlist = state.client.playlist(req.playlist_id).await;
     let playlist = ok_or_send_error_toast(&state, playlist)?;
 
-    let moved_output = moved_index(&req.new_order).ok_or(Error::PlaylistReorderError);
-    let moved_output = ok_or_send_error_toast(&state, moved_output)?;
+    let Some(moved_output) = moved_index(&req.new_order) else {
+        return Ok(([("HX-Reswap", "none")], "").into_response());
+    };
 
     let moved_track = playlist
         .tracks
