@@ -259,21 +259,17 @@ impl Player {
 
         self.position.send(Default::default())?;
 
-        if let Some(next_track) = tracklist.skip_to_track(new_position) {
-            self.sink.clear().await?;
-            self.next_track_is_queried = false;
-            self.query_track(next_track).await?;
+        if tracklist.skip_to_track(new_position).is_some() {
+            self.new_queue(tracklist).await?;
             self.start_timer();
         } else {
             tracklist.reset();
             self.sink.clear().await?;
             self.next_track_is_queried = false;
             self.set_target_status(Status::Paused);
-            self.sink.pause();
             self.position.send(Default::default())?;
+            self.broadcast_tracklist(tracklist).await?;
         }
-
-        self.broadcast_tracklist(tracklist).await?;
 
         Ok(())
     }
@@ -294,6 +290,7 @@ impl Player {
         self.stop_timer();
         self.sink.clear().await?;
         self.next_track_is_queried = false;
+        self.next_track_in_sink_queue = false;
         self.set_target_status(Status::Buffering);
 
         if let Some(first_track) = tracklist.current_track() {
