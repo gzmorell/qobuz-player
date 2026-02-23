@@ -1,11 +1,17 @@
 <button
-  class="@if(variant == 'hero-icon'){ btn btn-secondary btn-icon rounded-full size-12 hover:bg-white/20 border-white/10 active:scale-95 backdrop-blur-md bg-white/10 } @else { @if(variant == 'hero-lg'){ btn btn-secondary btn-lg rounded-full px-8 hover:bg-white/20 border-white/10 active:scale-95 backdrop-blur-md bg-white/10 } @else { btn btn-secondary } }"
+  class="btn btn-secondary btn-icon size-12 rounded-full border-white/10 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95"
   hx-swap="outerHTML"
   hx-target="this"
   hx-put="{{ api }}/{{
     id
   }}/@if(is_favorite){unset-favorite}@else{set-favorite}"
-  @if(is_favorite){ title="Remove from favorites" } @else { title="Add to favorites" }
+  @if(is_favorite){
+  title="Remove from favorites"
+  }
+  @else
+  {
+  title="Add to favorites"
+  }
 >
   @if (is_favorite) {
     <span class="size-6 text-yellow-500">

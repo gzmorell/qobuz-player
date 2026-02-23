@@ -73,13 +73,18 @@
                 value="{{ playlist.id }}"
               />
 
-              <button type="submit" class="btn btn-icon btn-ghost size-12 text-red-500 hover:text-red-400">
+              <button
+                type="submit"
+                class="btn btn-icon btn-ghost size-12 text-red-500 hover:text-red-400"
+              >
                 @defer (icons/x-circle.html) {}
               </button>
             </form>
 
             <input type="hidden" name="new_order" value="{{ index }}" />
-            <span class="handle btn btn-icon btn-ghost cursor-grab active:cursor-grabbing">
+            <span
+              class="handle btn btn-icon btn-ghost cursor-grab active:cursor-grabbing"
+            >
               @defer (icons/bars-2.html) {}
             </span>
           </div>

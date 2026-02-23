@@ -62,7 +62,7 @@
 
           <div class="flex items-center gap-2">
             <button
-              class="btn btn-icon btn-ghost size-10 text-gray-500 hover:text-red-500 transition-colors"
+              class="btn btn-icon btn-ghost size-10 text-gray-500 transition-colors hover:text-red-500"
               hx-put="/api/remove-queue-item/{{ index }}"
               hx-swap="none"
               title="Remove from queue"
@@ -71,7 +71,9 @@
             </button>
 
             <input type="hidden" name="new_order" value="{{ index }}" />
-            <span class="handle btn btn-icon btn-ghost cursor-grab active:cursor-grabbing text-gray-500 hover:text-white">
+            <span
+              class="handle btn btn-icon btn-ghost cursor-grab text-gray-500 hover:text-white active:cursor-grabbing"
+            >
               @defer (icons/bars-2.html) {}
             </span>
           </div>
@@ -81,5 +83,7 @@
   </form>
 }
 <script>
-  document.getElementById("playing")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  document
+    .getElementById("playing")
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
 </script>

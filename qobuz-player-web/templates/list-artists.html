@@ -1,4 +1,6 @@
-<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 p-4">
+<div
+  class="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+>
   @for (artist in artists) {
     <a
       href="/artist/{{ artist.id }}"
@@ -7,7 +9,9 @@
       preload-images="true"
       hx-boost="true"
     >
-      <div class="aspect-square w-full overflow-hidden rounded-full shadow-lg bg-gray-800 ring-2 ring-transparent transition-all group-hover:ring-white/10">
+      <div
+        class="aspect-square w-full overflow-hidden rounded-full bg-gray-800 shadow-lg ring-2 ring-transparent transition-all group-hover:ring-white/10"
+      >
         @if (artist.image) {
           <img
             src="{{ artist.image }}"
@@ -16,13 +20,19 @@
             loading="lazy"
           />
         } @else {
-          <div class="flex h-full w-full items-center justify-center text-gray-600">
-             @defer (icons/user.html) {}
+          <div
+            class="flex h-full w-full items-center justify-center text-gray-600"
+          >
+            @defer (icons/user.html) {}
           </div>
         }
       </div>
 
-      <h3 class="w-full truncate text-center font-medium text-gray-200 group-hover:text-white">{{ artist.name }}</h3>
+      <h3
+        class="w-full truncate text-center font-medium text-gray-200 group-hover:text-white"
+      >
+        {{ artist.name }}
+      </h3>
     </a>
   }
 </div>

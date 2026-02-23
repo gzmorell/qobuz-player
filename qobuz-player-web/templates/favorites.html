@@ -5,31 +5,33 @@
     >
       <h1 class="text-3xl font-bold tracking-tight">Favorites</h1>
 
-      <div class="flex w-full overflow-x-auto rounded-lg bg-gray-900 p-1 no-scrollbar">
+      <div
+        class="no-scrollbar flex w-full overflow-x-auto rounded-lg bg-gray-900 p-1"
+      >
         <a
           href="albums"
-          class="flex-1 min-w-20 rounded-md py-1.5 px-2 text-center text-sm font-medium transition-all @if (tab == 'albums') {bg-gray-800 text-white shadow-sm} @else {text-gray-400 hover:text-gray-200}"
+          class="@if (tab == 'albums') {bg-gray-800 shadow-sm} @else {text-gray-400 hover:text-gray-200} min-w-20 flex-1 rounded-md px-2 py-1.5 text-center text-sm font-medium text-white transition-all"
           hx-boost="true"
         >
           Albums
         </a>
         <a
           href="tracks"
-          class="flex-1 min-w-20 rounded-md py-1.5 px-2 text-center text-sm font-medium transition-all @if (tab == 'tracks') {bg-gray-800 text-white shadow-sm} @else {text-gray-400 hover:text-gray-200}"
+          class="@if (tab == 'tracks') {bg-gray-800 shadow-sm} @else {text-gray-400 hover:text-gray-200} min-w-20 flex-1 rounded-md px-2 py-1.5 text-center text-sm font-medium text-white transition-all"
           hx-boost="true"
         >
           Tracks
         </a>
         <a
           href="artists"
-          class="flex-1 min-w-20 rounded-md py-1.5 px-2 text-center text-sm font-medium transition-all @if (tab == 'artists') {bg-gray-800 text-white shadow-sm} @else {text-gray-400 hover:text-gray-200}"
+          class="@if (tab == 'artists') {bg-gray-800 shadow-sm} @else {text-gray-400 hover:text-gray-200} min-w-20 flex-1 rounded-md px-2 py-1.5 text-center text-sm font-medium text-white transition-all"
           hx-boost="true"
         >
           Artists
         </a>
         <a
           href="playlists"
-          class="flex-1 min-w-20 rounded-md py-1.5 px-2 text-center text-sm font-medium transition-all @if (tab == 'playlists') {bg-gray-800 text-white shadow-sm} @else {text-gray-400 hover:text-gray-200}"
+          class="@if (tab == 'playlists') {bg-gray-800 shadow-sm} @else {text-gray-400 hover:text-gray-200} min-w-20 flex-1 rounded-md px-2 py-1.5 text-center text-sm font-medium text-white transition-all"
           hx-boost="true"
         >
           Playlists

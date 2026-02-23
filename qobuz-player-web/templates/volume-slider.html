@@ -50,7 +50,7 @@
   </div>
   <input
     id="volume-slider"
-    class="volume-range h-1 w-full grow appearance-none rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black"
+    class="volume-range h-1 w-full grow appearance-none rounded-full focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black focus:outline-none"
     autocomplete="off"
     hx-post="/api/volume"
     hx-trigger="input delay:100ms"
@@ -60,7 +60,14 @@
     name="value"
     min="0"
     max="100"
-    oninput="document.getElementById('volume-percentage').textContent = this.value + '%'"
+    oninput="
+      document.getElementById('volume-percentage').textContent =
+        this.value + '%'
+    "
   />
-  <span id="volume-percentage" class="w-10 text-right text-sm font-medium tabular-nums">{{ current_volume }}%</span>
+  <span
+    id="volume-percentage"
+    class="w-10 text-right text-sm font-medium tabular-nums"
+    >{{ current_volume }}%</span
+  >
 </div>
