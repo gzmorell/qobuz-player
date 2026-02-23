@@ -101,24 +101,20 @@
       </div>
 
       <!-- Controls -->
-      <div class="flex items-center justify-center gap-8 md:justify-start">
-        <div class="flex w-16 items-center justify-center">
+      <div class="flex items-center justify-center gap-8">
+        <div class="flex w-12 items-center justify-center">
           @defer (previous.html) {}
         </div>
-        <div
-          class="flex size-16 items-center justify-center rounded-full bg-white p-4 text-black shadow-lg transition-transform hover:scale-105 active:scale-95"
-        >
+        <div class="flex w-12 items-center justify-center">
           @defer (player-state.html; playing_info=playing_info) {}
         </div>
-        <div class="flex w-16 items-center justify-center">
+        <div class="flex w-12 items-center justify-center">
           @defer (next.html) {}
         </div>
       </div>
 
       <!-- Volume -->
-      <div class="md:pr-4">
-        @defer (volume-slider.html; current_volume=current_volume) {}
-      </div>
+      @defer (volume-slider.html; current_volume=current_volume) {}
     </div>
   </div>
 </div>
