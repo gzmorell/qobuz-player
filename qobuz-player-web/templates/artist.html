@@ -1,47 +1,12 @@
 @defer (base.html; active_page="Search"; playing_info=playing_info) {
-  <div class="relative flex flex-col gap-8">
-    <!-- Sticky Header (appears on scroll) -->
-    <div
-      class="pt-safe-or-4 animate-sticky-header pointer-events-none fixed top-0 right-0 left-0 z-50 flex -translate-y-full items-center justify-between gap-4 border-b border-white/5 bg-black/80 p-4 opacity-0 backdrop-blur-md transition-all data-[visible=true]:pointer-events-auto"
-    >
-      <div class="flex items-center gap-4 overflow-hidden">
-        @if (artist.image) {
-          <img
-            src="{{ artist.image }}"
-            alt=""
-            class="size-10 rounded-full shadow-sm"
-          />
-        }
-        <span class="truncate text-base font-bold text-white">{{
-          artist.name
-        }}</span>
-      </div>
-      <div class="pointer-events-auto flex items-center gap-2">
-        <button
-          class="btn btn-primary btn-icon btn-sm rounded-full"
-          hx-swap="none"
-          hx-put="{{ artist.id }}/play-top-track/0"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        </button>
-      </div>
-    </div>
-
+  <div class="flex flex-col gap-8">
     <!-- Hero Section -->
     <div
-      class="pt-safe-or-4 animate-hero-scroll relative flex origin-top flex-col items-center gap-6 overflow-hidden bg-gray-900 pb-8 shadow-xl"
+      class="pt-safe-or-4 relative flex origin-top flex-col items-center gap-6 overflow-hidden bg-gray-900 pb-8 shadow-xl"
     >
       <!-- Background Blur -->
       <div
-        class="absolute inset-0 -z-10 scale-125 bg-cover bg-center bg-no-repeat opacity-30 blur-3xl"
+        class="absolute inset-0 z-10 scale-125 bg-cover bg-center bg-no-repeat opacity-30 blur-3xl"
         style="@if(artist.image){background-image: url({{ artist.image }});}"
       ></div>
 
