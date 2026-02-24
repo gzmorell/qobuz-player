@@ -48,7 +48,7 @@ enum Commands {
         #[clap(long)]
         /// Use provided device for audio output, instead of default.
         /// Use qobuz-player list-devices for output device list
-        output_device_name: Option<String>,
+        output_device_id: Option<String>,
 
         #[clap(long)]
         /// Delay playback when changing state from paused to playing in milliseconds
@@ -115,11 +115,7 @@ enum Commands {
     },
 
     /// List available output devices
-    ListDevices {
-        #[clap(long, default_value_t = false)]
-        /// List all available output devices
-        all: bool,
-    },
+    ListDevices,
 }
 
 #[derive(Subcommand)]
@@ -201,7 +197,7 @@ pub async fn run() -> Result<(), Error> {
         username: Default::default(),
         password: Default::default(),
         max_audio_quality: Default::default(),
-        output_device_name: None,
+        output_device_id: None,
         state_change_delay_ms: Default::default(),
         sample_rate_change_delay_ms: Default::default(),
         disable_tui: Default::default(),
@@ -223,7 +219,7 @@ pub async fn run() -> Result<(), Error> {
             username,
             password,
             max_audio_quality,
-            output_device_name: preferred_device_name,
+            output_device_id,
             state_change_delay_ms,
             sample_rate_change_delay_ms,
             disable_tui,
@@ -290,7 +286,7 @@ pub async fn run() -> Result<(), Error> {
                 database.clone(),
                 state_change_delay,
                 sample_rate_change_delay,
-                preferred_device_name,
+                output_device_id,
             )?;
 
             if connect {
@@ -486,26 +482,17 @@ pub async fn run() -> Result<(), Error> {
                 Ok(())
             }
         },
-        Commands::ListDevices { all } => {
+        Commands::ListDevices => {
             let Ok(devices) = rodio::cpal::default_host().output_devices() else {
                 println!("Unable to find available devices");
                 return Ok(());
             };
-
-            let allowed_ids = &["alsa:sysdefault", "alsa:pipewire", "alsa:default"];
 
             let entries: Vec<(String, String)> = devices
                 .filter_map(|x| {
                     let desc = x.description().ok()?;
                     let id = x.id().ok()?;
                     let id = id.to_string();
-
-                    if !all
-                        && !id.starts_with("alsa:sysdefault:CARD=")
-                        && !allowed_ids.contains(&id.as_str())
-                    {
-                        return None;
-                    }
 
                     Some((desc.name().to_string(), id))
                 })

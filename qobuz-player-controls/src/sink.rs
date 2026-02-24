@@ -24,11 +24,11 @@ pub struct Sink {
     track_finished: Sender<()>,
     track_handle: Option<JoinHandle<()>>,
     duration_played: Arc<Mutex<Duration>>,
-    preferred_device_name: Option<String>,
+    preferred_device_id: Option<String>,
 }
 
 impl Sink {
-    pub fn new(volume: VolumeReceiver, preferred_device_name: Option<String>) -> AppResult<Self> {
+    pub fn new(volume: VolumeReceiver, preferred_device_id: Option<String>) -> AppResult<Self> {
         let (track_finished, _) = watch::channel(());
         Ok(Self {
             player: None,
@@ -38,7 +38,7 @@ impl Sink {
             track_finished,
             track_handle: Default::default(),
             duration_played: Default::default(),
-            preferred_device_name,
+            preferred_device_id,
         })
     }
 
@@ -141,12 +141,12 @@ impl Sink {
         let needs_stream = self.mixer.is_none() || self.player.is_none();
 
         if needs_stream {
-            let mut mixer =
-                if let Some(preferred_device_name) = self.preferred_device_name.as_deref() {
-                    silence_stderr(|| open_preferred_stream(sample_rate, preferred_device_name))?
-                } else {
-                    open_default_stream(sample_rate)?
-                };
+            let mut mixer = if let Some(preferred_device_name) = self.preferred_device_id.as_deref()
+            {
+                silence_stderr(|| open_preferred_stream(sample_rate, preferred_device_name))?
+            } else {
+                open_default_stream(sample_rate)?
+            };
             mixer.log_on_drop(false);
 
             let (sender, receiver) = queue(true);
