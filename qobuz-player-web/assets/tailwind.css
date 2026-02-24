@@ -112,6 +112,5 @@ body {
   animation-duration: 0.2s;
 }
 
-@source inline(
-  "bg-red-500 bg-yellow-500 bg-blue-500 bg-teal-500 bg-green-700 bg-blue-800 opacity-40"
-);
+/* prettier-ignore */
+@source inline("bg-red-500 bg-yellow-500 bg-blue-500 bg-teal-500 bg-green-700 bg-blue-800 opacity-40");

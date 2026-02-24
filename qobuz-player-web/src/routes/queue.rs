@@ -1,11 +1,6 @@
 use std::sync::Arc;
 
-use axum::{
-    Router,
-    extract::State,
-    response::IntoResponse,
-    routing::get,
-};
+use axum::{Router, extract::State, response::IntoResponse, routing::get};
 use serde_json::json;
 
 use crate::app_state::AppState;
@@ -36,7 +31,7 @@ async fn queue_partial(State(state): State<Arc<AppState>>) -> impl IntoResponse 
     let currently_playing_position = tracklist.current_position();
 
     state.render(
-        "queue-content.html",
+        "queue-list.html",
         &json!({
             "tracks": tracks,
             "currently_playing_position": currently_playing_position
