@@ -216,7 +216,7 @@ fn open_preferred_stream(
     let devices = rodio::cpal::default_host().output_devices()?;
 
     for device in devices {
-        if device.id().map(|x| x.1).ok().as_deref() == Some(preferred_device_name) {
+        if device.id().map(|x| x.to_string()).ok().as_deref() == Some(preferred_device_name) {
             let Ok(stream) = rodio::DeviceSinkBuilder::from_device(device)
                 .and_then(|x| x.with_sample_rate(sample_rate).open_sink_or_fallback())
             else {

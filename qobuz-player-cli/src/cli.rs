@@ -13,6 +13,7 @@ use qobuz_player_controls::{
     notification::NotificationBroadcast, player::Player,
 };
 use qobuz_player_rfid::RfidState;
+use rodio::{DeviceTrait, cpal::traits::HostTrait};
 use snafu::prelude::*;
 use tokio::sync::broadcast;
 use tokio_schedule::{Job, every};
@@ -45,7 +46,8 @@ enum Commands {
         max_audio_quality: Option<AudioQuality>,
 
         #[clap(long)]
-        /// Use provided device for audio output, instead of default
+        /// Use provided device for audio output, instead of default.
+        /// Use qobuz-player list-devices for output device list
         output_device_name: Option<String>,
 
         #[clap(long)]
@@ -110,6 +112,13 @@ enum Commands {
     Config {
         #[clap(subcommand)]
         command: ConfigCommands,
+    },
+
+    /// List available output devices
+    ListDevices {
+        #[clap(long, default_value_t = false)]
+        /// List all available output devices
+        all: bool,
     },
 }
 
@@ -477,6 +486,51 @@ pub async fn run() -> Result<(), Error> {
                 Ok(())
             }
         },
+        Commands::ListDevices { all } => {
+            let Ok(devices) = rodio::cpal::default_host().output_devices() else {
+                println!("Unable to find available devices");
+                return Ok(());
+            };
+
+            let allowed_ids = &["alsa:sysdefault", "alsa:pipewire", "alsa:default"];
+
+            let entries: Vec<(String, String)> = devices
+                .filter_map(|x| {
+                    let desc = x.description().ok()?;
+                    let id = x.id().ok()?;
+                    let id = id.to_string();
+
+                    if !all
+                        && !id.starts_with("alsa:sysdefault:CARD=")
+                        && !allowed_ids.contains(&id.as_str())
+                    {
+                        return None;
+                    }
+
+                    Some((desc.name().to_string(), id))
+                })
+                .collect();
+
+            if entries.is_empty() {
+                println!("No output devices found");
+                return Ok(());
+            }
+
+            let max_name = entries
+                .iter()
+                .map(|(name, _)| name.len())
+                .max()
+                .unwrap_or(0);
+
+            println!("Available output devices. Use the id for '--output-device-name'\n");
+            println!("{:<width$}  Id", "Name", width = max_name - 1);
+
+            for (name, id) in entries {
+                println!("{:<width$} {}", name, id, width = max_name);
+            }
+
+            Ok(())
+        }
     }
 }
 

@@ -3545,6 +3545,7 @@ dependencies = [
  "qobuz-player-rfid",
  "qobuz-player-tui",
  "qobuz-player-web",
+ "rodio",
  "snafu",
  "time",
  "tokio",
