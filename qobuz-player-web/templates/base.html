@@ -2,7 +2,7 @@
   <div
     id="loading-spinner"
     hx-preserve
-    class="m-safe my-indicator pointer-events-none fixed top-8 right-8 z-10 size-12 rounded-lg bg-gray-900/20 p-2 backdrop-blur"
+    class="m-safe my-indicator pointer-events-none fixed top-8 right-8 z-50 size-12 rounded-lg bg-gray-900/20 p-2 backdrop-blur"
   >
     @defer (icons/loading-spinner.html) {}
   </div>
@@ -28,6 +28,7 @@
       hx-boost="true"
       hx-swap="morph:innerHTML"
       hx-indicator="#loading-spinner"
+      style="background-color: black"
     >
       <div
         id="loading-spinner"
