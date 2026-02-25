@@ -1,5 +1,4 @@
 use std::fs;
-use std::num::NonZero;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -17,8 +16,8 @@ use crate::stderr_redirect::silence_stderr;
 use crate::{AppResult, VolumeReceiver};
 
 pub struct Sink {
-    player: Option<rodio::Player>,
-    mixer: Option<rodio::MixerDeviceSink>,
+    sink: Option<rodio::Sink>,
+    output_stream: Option<rodio::OutputStream>,
     sender: Option<Arc<rodio::queue::SourcesQueueInput>>,
     volume: VolumeReceiver,
     track_finished: Sender<()>,
@@ -31,8 +30,8 @@ impl Sink {
     pub fn new(volume: VolumeReceiver, preferred_device_id: Option<String>) -> AppResult<Self> {
         let (track_finished, _) = watch::channel(());
         Ok(Self {
-            player: None,
-            mixer: None,
+            sink: None,
+            output_stream: None,
             sender: None,
             volume,
             track_finished,
@@ -47,11 +46,7 @@ impl Sink {
     }
 
     pub fn position(&self) -> Duration {
-        let position = self
-            .player
-            .as_ref()
-            .map(|x| x.get_pos())
-            .unwrap_or_default();
+        let position = self.sink.as_ref().map(|x| x.get_pos()).unwrap_or_default();
 
         let duration_played = *self.duration_played.lock();
 
@@ -63,19 +58,19 @@ impl Sink {
     }
 
     pub fn play(&self) {
-        if let Some(player) = &self.player {
+        if let Some(player) = &self.sink {
             player.play();
         }
     }
 
     pub fn pause(&self) {
-        if let Some(player) = &self.player {
+        if let Some(player) = &self.sink {
             player.pause();
         }
     }
 
     pub fn seek(&self, duration: Duration) -> AppResult<()> {
-        if let Some(player) = &self.player {
+        if let Some(player) = &self.sink {
             match player.try_seek(duration) {
                 Ok(_) => {
                     *self.duration_played.lock() = Default::default();
@@ -91,8 +86,8 @@ impl Sink {
         tracing::info!("Clearing sink");
         self.clear_queue()?;
 
-        self.player = None;
-        self.mixer = None;
+        self.sink = None;
+        self.output_stream = None;
         self.sender = None;
 
         *self.duration_played.lock() = Default::default();
@@ -108,14 +103,14 @@ impl Sink {
         tracing::info!("Clearing sink queue");
         *self.duration_played.lock() = Default::default();
 
-        if let Some(player) = self.player.as_ref() {
+        if let Some(player) = self.sink.as_ref() {
             player.clear();
         };
         Ok(())
     }
 
     pub fn is_empty(&self) -> bool {
-        self.player.is_none()
+        self.sink.is_none()
     }
 
     pub fn query_track(&mut self, track_path: &Path) -> AppResult<QueryTrackResult> {
@@ -129,7 +124,7 @@ impl Sink {
 
         let sample_rate = source.sample_rate();
         let same_sample_rate = self
-            .mixer
+            .output_stream
             .as_ref()
             .map(|mixer| mixer.config().sample_rate() == sample_rate)
             .unwrap_or(true);
@@ -138,7 +133,7 @@ impl Sink {
             return Ok(QueryTrackResult::RecreateStreamRequired);
         }
 
-        let needs_stream = self.mixer.is_none() || self.player.is_none();
+        let needs_stream = self.output_stream.is_none() || self.sink.is_none();
 
         if needs_stream {
             let mut mixer = if let Some(preferred_device_name) = self.preferred_device_id.as_deref()
@@ -150,13 +145,13 @@ impl Sink {
             mixer.log_on_drop(false);
 
             let (sender, receiver) = queue(true);
-            let player = rodio::Player::connect_new(mixer.mixer());
+            let player = rodio::Sink::connect_new(mixer.mixer());
             player.append(receiver);
             set_volume(&player, &self.volume.borrow());
 
-            self.player = Some(player);
+            self.sink = Some(player);
             self.sender = Some(sender);
-            self.mixer = Some(mixer);
+            self.output_stream = Some(mixer);
         }
 
         let track_finished = self.track_finished.clone();
@@ -182,27 +177,27 @@ impl Sink {
     }
 
     pub fn sync_volume(&self) {
-        if let Some(player) = &self.player {
+        if let Some(player) = &self.sink {
             set_volume(player, &self.volume.borrow());
         }
     }
 }
 
-fn set_volume(sink: &rodio::Player, volume: &f32) {
+fn set_volume(sink: &rodio::Sink, volume: &f32) {
     let volume = volume.clamp(0.0, 1.0).powi(3);
     sink.set_volume(volume);
 }
 
-fn open_default_stream(sample_rate: NonZero<u32>) -> AppResult<rodio::MixerDeviceSink> {
-    rodio::DeviceSinkBuilder::from_default_device()
+fn open_default_stream(sample_rate: u32) -> AppResult<rodio::OutputStream> {
+    rodio::OutputStreamBuilder::from_default_device()
         .and_then(|x| x.with_sample_rate(sample_rate).open_stream())
         .or_else(|original_err| {
             let mut devices = rodio::cpal::default_host().output_devices()?;
 
             Ok(devices
                 .find_map(|d| {
-                    rodio::DeviceSinkBuilder::from_device(d)
-                        .and_then(|x| x.with_sample_rate(sample_rate).open_sink_or_fallback())
+                    rodio::OutputStreamBuilder::from_device(d)
+                        .and_then(|x| x.with_sample_rate(sample_rate).open_stream_or_fallback())
                         .ok()
                 })
                 .ok_or(original_err)?)
@@ -210,15 +205,15 @@ fn open_default_stream(sample_rate: NonZero<u32>) -> AppResult<rodio::MixerDevic
 }
 
 fn open_preferred_stream(
-    sample_rate: NonZero<u32>,
+    sample_rate: u32,
     preferred_device_name: &str,
-) -> AppResult<rodio::MixerDeviceSink> {
+) -> AppResult<rodio::OutputStream> {
     let devices = rodio::cpal::default_host().output_devices()?;
 
     for device in devices {
-        if device.id().map(|x| x.to_string()).ok().as_deref() == Some(preferred_device_name) {
-            let Ok(stream) = rodio::DeviceSinkBuilder::from_device(device)
-                .and_then(|x| x.with_sample_rate(sample_rate).open_sink_or_fallback())
+        if device.name().map(|x| x.to_string()).ok().as_deref() == Some(preferred_device_name) {
+            let Ok(stream) = rodio::OutputStreamBuilder::from_device(device)
+                .and_then(|x| x.with_sample_rate(sample_rate).open_stream_or_fallback())
             else {
                 break;
             };
@@ -228,7 +223,9 @@ fn open_preferred_stream(
     }
 
     let devices = rodio::cpal::default_host().output_devices()?;
-    let available_devices: Vec<String> = devices.flat_map(|x| x.id().map(|x| x.1)).collect();
+    let available_devices: Vec<String> = devices
+        .flat_map(|x| x.name().map(|x| x.to_string()))
+        .collect();
     let available_devices = available_devices.join(", ");
 
     Err(Error::SinkDeviceError {

@@ -488,32 +488,17 @@ pub async fn run() -> Result<(), Error> {
                 return Ok(());
             };
 
-            let entries: Vec<(String, String)> = devices
-                .filter_map(|x| {
-                    let desc = x.description().ok()?;
-                    let id = x.id().ok()?;
-                    let id = id.to_string();
-
-                    Some((desc.name().to_string(), id))
-                })
-                .collect();
+            let entries: Vec<String> = devices.filter_map(|x| x.name().ok()).collect();
 
             if entries.is_empty() {
                 println!("No output devices found");
                 return Ok(());
             }
 
-            let max_name = entries
-                .iter()
-                .map(|(name, _)| name.len())
-                .max()
-                .unwrap_or(0);
+            println!("Available output devices");
 
-            println!("Available output devices. Use the id for '--output-device-name'\n");
-            println!("{:<width$}  Id", "Name", width = max_name - 1);
-
-            for (name, id) in entries {
-                println!("{:<width$} {}", name, id, width = max_name);
+            for name in entries {
+                println!("{name}");
             }
 
             Ok(())
