@@ -12,7 +12,7 @@ use ratatui::{
 use crate::{
     app::{FilteredListState, NotificationList, Output},
     popup::{AlbumPopupState, Popup},
-    ui::{COLUMN_SPACING, ROW_HIGHLIGHT_STYLE, format_duration, mark_explicit_and_hifi},
+    ui::{COLUMN_SPACING, HIGHLIGHT_STYLE, format_duration, mark_explicit_and_hifi},
 };
 
 #[derive(Default)]
@@ -146,7 +146,7 @@ pub fn album_table<'a>(rows: &[AlbumSimple]) -> Table<'a> {
     ];
 
     let mut table = Table::new(body_rows, constraints)
-        .row_highlight_style(ROW_HIGHLIGHT_STYLE)
+        .row_highlight_style(HIGHLIGHT_STYLE)
         .column_spacing(COLUMN_SPACING);
 
     if !is_empty {

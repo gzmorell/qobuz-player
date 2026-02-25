@@ -7,6 +7,10 @@ use crate::{
     now_playing::{self},
 };
 
+pub const HIGHLIGHT_STYLE: Style = Style::new().white().on_blue();
+pub const HIGHLIGHT_TEXT_STYLE: Style = Style::new().blue();
+pub const COLUMN_SPACING: u16 = 2;
+
 impl App {
     pub fn render(&mut self, frame: &mut Frame) {
         let area = frame.area();
@@ -234,7 +238,7 @@ pub fn render_input(input: &Input, editing: bool, area: Rect, frame: &mut Frame,
     let width = area.width.max(3) - 3;
     let scroll = input.visual_scroll(width as usize);
     let style = match editing {
-        true => Color::Blue.into(),
+        true => HIGHLIGHT_TEXT_STYLE,
         _ => Style::default(),
     };
 
@@ -251,9 +255,6 @@ pub fn render_input(input: &Input, editing: bool, area: Rect, frame: &mut Frame,
     }
 }
 
-pub const ROW_HIGHLIGHT_STYLE: Style = Style::new().bg(Color::Blue);
-pub const COLUMN_SPACING: u16 = 2;
-
 pub fn block(title: Option<&str>) -> Block<'_> {
     let mut block = Block::bordered()
         .title_alignment(Alignment::Center)
@@ -268,14 +269,14 @@ pub fn block(title: Option<&str>) -> Block<'_> {
 
 pub fn basic_list_table<'a>(rows: Vec<Row<'a>>) -> Table<'a> {
     Table::new(rows, [Constraint::Min(1)])
-        .row_highlight_style(ROW_HIGHLIGHT_STYLE)
+        .row_highlight_style(HIGHLIGHT_STYLE)
         .column_spacing(COLUMN_SPACING)
 }
 
 pub fn tab_bar<'a>(tabs: Vec<&'a str>, selected: usize) -> Tabs<'a> {
     Tabs::new(tabs)
         .not_underlined()
-        .highlight_style(Style::default().bg(Color::Blue))
+        .highlight_style(HIGHLIGHT_STYLE)
         .divider(symbols::line::VERTICAL)
         .select(selected)
 }

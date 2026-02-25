@@ -12,7 +12,7 @@ use ratatui::{
 use crate::{
     app::{FilteredListState, NotificationList, Output},
     popup::{DeletePlaylistPopupstate, NewPlaylistPopupState, PlaylistPopupState, Popup},
-    ui::{COLUMN_SPACING, ROW_HIGHLIGHT_STYLE, format_duration, mark_as_owned},
+    ui::{COLUMN_SPACING, HIGHLIGHT_STYLE, format_duration, mark_as_owned},
 };
 
 #[derive(Default)]
@@ -161,7 +161,7 @@ fn playlist_list<'a>(rows: &[PlaylistSimple]) -> Table<'a> {
     let constraints = [Constraint::Ratio(2, 3), Constraint::Length(10)];
 
     let mut table = Table::new(body_rows, constraints)
-        .row_highlight_style(ROW_HIGHLIGHT_STYLE)
+        .row_highlight_style(HIGHLIGHT_STYLE)
         .column_spacing(COLUMN_SPACING);
 
     if !is_empty {

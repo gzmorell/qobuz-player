@@ -1,4 +1,4 @@
-use crate::ui::block;
+use crate::ui::{HIGHLIGHT_TEXT_STYLE, block};
 use qobuz_player_controls::Status;
 use qobuz_player_models::Track;
 use ratatui::{prelude::*, widgets::*};
@@ -95,7 +95,7 @@ pub fn render(
 
     let gauge = Gauge::default()
         .ratio(ratio)
-        .gauge_style(Style::default().fg(Color::Blue))
+        .gauge_style(HIGHLIGHT_TEXT_STYLE)
         .label(label);
 
     frame.render_widget(gauge, info_chunks[1]);
