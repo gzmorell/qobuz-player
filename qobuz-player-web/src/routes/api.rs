@@ -11,7 +11,9 @@ use axum::{
     routing::{get, post, put},
 };
 use axum_extra::extract::Form;
-use qobuz_player_controls::{AppResult, client::Client, notification::Notification};
+use qobuz_player_controls::{
+    AppResult, client::Client, database::ReferenceType, notification::Notification,
+};
 use qobuz_player_models::{AlbumSimple, Artist, Playlist, Track};
 use serde::Deserialize;
 
@@ -40,6 +42,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/api/favorites/artists", get(favorite_artists))
         .route("/api/favorites/playlists", get(favorite_playlists))
         .route("/api/favorites/tracks", get(favorite_tracks))
+        .route("/api/rfid/reference/{reference}", get(rfid_reference))
 }
 
 #[derive(Debug, Deserialize)]
@@ -243,4 +246,11 @@ async fn favorite_tracks(State(state): State<Arc<AppState>>) -> impl IntoRespons
 async fn get_favorite_tracks(client: &Client) -> AppResult<Vec<Track>> {
     let favorites = client.favorites().await?;
     Ok(favorites.tracks)
+}
+
+async fn rfid_reference(
+    State(state): State<Arc<AppState>>,
+    reference: String,
+) -> Json<Option<ReferenceType>> {
+    Json(state.database.get_reference(&reference).await)
 }

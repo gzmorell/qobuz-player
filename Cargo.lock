@@ -3619,6 +3619,7 @@ name = "qobuz-player-rfid"
 version = "0.7.2"
 dependencies = [
  "qobuz-player-controls",
+ "reqwest",
  "tokio",
  "tracing",
 ]

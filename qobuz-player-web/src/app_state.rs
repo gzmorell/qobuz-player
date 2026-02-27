@@ -1,9 +1,10 @@
 use axum::response::{Html, IntoResponse, Response};
 use futures::try_join;
 use qobuz_player_controls::{
-    PositionReceiver, AppResult, Status, StatusReceiver, TracklistReceiver, VolumeReceiver,
+    AppResult, PositionReceiver, Status, StatusReceiver, TracklistReceiver, VolumeReceiver,
     client::Client,
     controls::Controls,
+    database::Database,
     notification::{Notification, NotificationBroadcast},
 };
 use qobuz_player_models::Favorites;
@@ -27,6 +28,7 @@ pub struct AppState {
     pub status_receiver: StatusReceiver,
     pub volume_receiver: VolumeReceiver,
     pub templates: watch::Receiver<Templates>,
+    pub database: Arc<Database>,
 }
 
 impl AppState {
