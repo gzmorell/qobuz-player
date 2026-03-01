@@ -55,7 +55,11 @@
         @defer (list-playlists.html; playlists=favorites.playlists) {}
       }
       @if (tab == "tracks") {
-        @defer (favorites-tracks.html; tracks=favorites.tracks) {}
+        @defer (
+          favorites-tracks.html;
+          tracks=favorites.tracks;
+          playing_info=playing_info
+        ) {}
       }
     </div>
   </div>
