@@ -23,7 +23,7 @@
     >
       <!-- Album art -->
       <div
-        class="aspect-square max-h-full w-full overflow-hidden rounded-2xl shadow-2xl transition-transform duration-500 hover:scale-[1.02]"
+        class="aspect-square max-h-full w-full overflow-hidden rounded-2xl shadow-2xl"
       >
         @if (playing_info.cover_image) {
           <img
@@ -31,22 +31,6 @@
             alt="{{ playing_info.title }}"
             class="h-full w-full object-cover"
           />
-        } @else {
-          <div
-            class="flex h-full w-full items-center justify-center bg-gray-800 text-gray-600"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="64"
-              height="64"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path
-                d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
-              />
-            </svg>
-          </div>
         }
       </div>
     </div>

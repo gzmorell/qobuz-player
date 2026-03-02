@@ -41,7 +41,7 @@ body {
   }
 
   .btn-secondary {
-    @apply border border-gray-700 bg-gray-800 text-gray-200 hover:border-gray-600 hover:bg-gray-700 active:bg-gray-900;
+    @apply border border-gray-700 border-white/10 bg-gray-800 bg-white/10 text-gray-200 backdrop-blur-md hover:border-gray-600 hover:bg-gray-700 hover:bg-white/20 active:bg-gray-900;
   }
 
   .btn-ghost {
@@ -49,19 +49,23 @@ body {
   }
 
   .btn-danger {
-    @apply bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-800;
+    @apply border-red-500/20 bg-red-500/20 text-red-500 hover:bg-red-500/40;
   }
 
   .btn-icon {
-    @apply aspect-square rounded-full p-2;
+    @apply aspect-square rounded-full p-3;
   }
 
-  .btn-lg {
-    @apply px-6 py-3 text-base;
+  .btn-play {
+    @apply rounded-full px-6 px-8 py-3 text-base shadow-lg;
   }
 
-  .btn-sm {
-    @apply px-3 py-1.5 text-xs;
+  .surface {
+    @apply rounded-xl bg-gray-900/50 p-2 sm:p-4;
+  }
+
+  .hero-bg {
+    @apply absolute inset-0 z-0 scale-125 bg-cover bg-center bg-no-repeat opacity-30 blur-3xl;
   }
 }
 
