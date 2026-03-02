@@ -53,14 +53,16 @@
         </div>
 
         <!-- Actions -->
-        <div class="flex flex-wrap justify-center gap-4 *:h-12">
+        <div class="flex justify-center gap-4 *:h-12">
           <button
             class="btn btn-primary btn-play"
             hx-swap="none"
-            hx-put="/playlist/{{ playlist.id }}/play"
+            hx-put="/album/{{ album.id }}/play"
           >
-            @defer (icons/play.html) {}
-            Play
+            <span class="size-6">
+              @defer (icons/play.html) {}
+            </span>
+            <span> Play </span>
           </button>
 
           <button
@@ -69,7 +71,7 @@
             hx-put="/playlist/{{ playlist.id }}/play/shuffle"
             title="Shuffle"
           >
-            @defer (icons/trash.html) {}
+            @defer (icons/shuffle.html) {}
           </button>
 
           @if (!playlist.is_owned) {
