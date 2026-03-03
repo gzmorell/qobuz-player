@@ -55,10 +55,10 @@
           >
             {{ playing_info.entity_title }}
           </a>
-          <span>&bull;</span>
-          <span class="shrink-0"
-            >{{ current_position }} of {{ number_of_tracks }}</span
-          >
+          <span>•</span>
+          <span class="shrink-0">
+            {{ current_position }} of {{ number_of_tracks }}
+          </span>
           @defer (
             info.html;
             hires_available=playing_info.hires_available;
@@ -67,16 +67,13 @@
         </div>
       </div>
 
-      <!-- Progress -->
-      <div class="flex flex-col gap-2">
-        @defer (
-          progress.html;
-          position_mseconds=position_mseconds;
-          duration_mseconds=duration_mseconds;
-          position_string=position_string;
-          duration_string=duration_string
-        ) {}
-      </div>
+      @defer (
+        progress.html;
+        position_mseconds=position_mseconds;
+        duration_mseconds=duration_mseconds;
+        position_string=position_string;
+        duration_string=duration_string
+      ) {}
 
       <!-- Controls -->
       <div class="flex items-center justify-center gap-8">
