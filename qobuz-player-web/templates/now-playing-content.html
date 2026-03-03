@@ -6,13 +6,7 @@
   hx-target="this"
   hx-swap="morph:outerHTML"
 >
-  <!-- Background Blur -->
-  <div
-    class="fixed inset-0 -z-10 scale-110 bg-cover bg-center bg-no-repeat opacity-30 blur-3xl transition-all duration-1000"
-    style="@if(playing_info.cover_image){background-image: url({{
-      playing_info.cover_image
-    }});}"
-  ></div>
+  @defer (background-blur.html; image=playing_info.cover_image) {}
 
   <div
     class="pt-safe-or-4 z-10 mx-auto flex w-full max-w-md grow flex-col justify-center gap-2 p-3 sm:gap-4 sm:p-6 md:max-w-4xl md:flex-row md:items-center md:gap-8 md:px-8 md:pt-0"

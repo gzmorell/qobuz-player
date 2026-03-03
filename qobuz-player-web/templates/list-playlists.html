@@ -12,12 +12,7 @@
       <div
         class="relative flex h-full w-full items-center overflow-clip rounded-lg"
       >
-        <div
-          class="hero-bg"
-          style="@if(playlist.image){background-image: url({{
-            playlist.image
-          }});}"
-        ></div>
+        @defer (background-blur.html; image=playlist.image) {}
 
         <div class="w-full overflow-hidden bg-gray-800 shadow-md">
           @if (playlist.image) {

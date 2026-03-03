@@ -4,11 +4,7 @@
     <div
       class="pt-safe-or-4 relative flex origin-top flex-col items-center gap-6 overflow-hidden bg-gray-900 pb-8 shadow-xl"
     >
-      <!-- Background Blur -->
-      <div
-        class="hero-bg"
-        style="@if(artist.image){background-image: url({{ artist.image }});}"
-      ></div>
+      @defer (background-blur.html; image=artist.image) {}
 
       <div
         class="relative z-10 flex flex-col items-center gap-4 px-4 text-center"

@@ -20,7 +20,6 @@ body {
   overflow-anchor: none;
 }
 
-/* HTMX Indicators */
 .my-indicator {
   opacity: 0;
   transition: opacity 150ms ease-in;
@@ -30,7 +29,6 @@ body {
   opacity: 1;
 }
 
-/* Button Component */
 @layer components {
   .btn {
     @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:scale-95 disabled:pointer-events-none disabled:opacity-50;
@@ -62,43 +60,6 @@ body {
 
   .surface {
     @apply rounded-xl bg-gray-900/50 p-2 sm:p-4;
-  }
-
-  .hero-bg {
-    @apply absolute inset-0 z-0 scale-125 bg-cover bg-center bg-no-repeat opacity-30 blur-3xl;
-  }
-}
-
-/* Utilities */
-@layer utilities {
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .scrollbar-thin {
-    scrollbar-width: thin;
-  }
-  .scrollbar-thin::-webkit-scrollbar {
-    height: 6px;
-    width: 6px;
-  }
-  .scrollbar-track-transparent::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .scrollbar-thumb-gray-700::-webkit-scrollbar-thumb {
-    background-color: #374151;
-    border-radius: 9999px;
-  }
-  .scrollbar-thumb-gray-700:hover::-webkit-scrollbar-thumb {
-    background-color: #4b5563;
-  }
-
-  .pt-safe-or-4 {
-    padding-top: max(env(safe-area-inset-top), 1rem);
   }
 }
 
