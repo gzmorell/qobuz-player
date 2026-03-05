@@ -259,12 +259,12 @@ async fn get_favorite_tracks(client: &Client) -> AppResult<Vec<Track>> {
 
 async fn rfid_reference(
     State(state): State<Arc<AppState>>,
-    reference: String,
+    Path(reference): Path<String>,
 ) -> Json<Option<ReferenceType>> {
     Json(state.database.get_reference(&reference).await)
 }
 
-async fn play_rfid_reference(State(state): State<Arc<AppState>>, reference: String) {
+async fn play_rfid_reference(State(state): State<Arc<AppState>>, Path(reference): Path<String>) {
     handle_play_scan(
         &state.database,
         &state.controls,

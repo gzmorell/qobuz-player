@@ -291,22 +291,17 @@ async fn submit_link(
         if let Some(rfid_server_secret) = rfid_server_secret {
             request = request.header("secret", rfid_server_secret);
         }
+        request = request.header("Content-Type", "application/json");
 
-        let response = match request.send().await {
-            Ok(res) => res,
+        match request.send().await {
+            Ok(_) => broadcast.send(qobuz_player_controls::notification::Notification::Success(
+                "Link completed".to_string(),
+            )),
             Err(err) => {
                 broadcast.send_error(err.to_string());
                 return;
             }
         };
-
-        match response.json().await {
-            Ok(res) => res,
-            Err(err) => {
-                broadcast.send_error(err.to_string());
-                return;
-            }
-        }
 
         return;
     }
@@ -330,13 +325,13 @@ async fn submit_link(
     });
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct LinkAlbumRfid {
     pub rfid_id: String,
     pub id: String,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct LinkPlaylistRfid {
     pub rfid_id: String,
     pub id: u32,
