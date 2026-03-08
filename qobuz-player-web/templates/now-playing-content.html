@@ -34,10 +34,17 @@
       class="flex shrink-0 flex-col gap-2 sm:gap-4 md:min-w-0 md:flex-1 md:shrink md:justify-center"
     >
       <!-- Track Info -->
-      <div class="flex flex-col gap-0.5 text-center md:text-left">
-        <h1 class="truncate text-xl font-bold text-white sm:text-2xl">
-          {{ playing_info.title }}
-        </h1>
+      <div class="flex flex-col gap-1 text-center md:text-left">
+        <div class="flex justify-center gap-0.5">
+          <h1 class="truncate text-xl font-bold text-white sm:text-2xl">
+            {{ playing_info.title }}
+          </h1>
+          @defer (
+            info.html;
+            hires_available=playing_info.hires_available;
+            explicit=playing_info.explicit
+          ) {}
+        </div>
         <a
           href="{{ playing_info.artist_link }}"
           hx-target="body"
@@ -60,11 +67,6 @@
             {{ playing_info.current_position }} of
             {{ playing_info.number_of_tracks }}
           </span>
-          @defer (
-            info.html;
-            hires_available=playing_info.hires_available;
-            explicit=playing_info.explicit
-          ) {}
         </div>
       </div>
 
