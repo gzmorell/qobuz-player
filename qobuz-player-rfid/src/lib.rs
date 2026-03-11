@@ -111,7 +111,7 @@ pub async fn handle_play_scan(
 
             let mut request = client.get(&url);
             if let Some(rfid_server_secret) = rfid_server_secret {
-                request = request.header("secret", rfid_server_secret);
+                request = request.header("Cookie", &format!("secret={rfid_server_secret}"));
             }
 
             let response = match request.send().await {

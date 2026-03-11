@@ -25,6 +25,7 @@ impl NotificationBroadcast {
     }
 
     pub fn send_error(&self, message: String) {
+        tracing::error!(message);
         self.tx
             .send(Notification::Error(message))
             .expect("infallible");
