@@ -111,7 +111,7 @@ pub async fn handle_play_scan(
             let url = format!("{}/api/rfid/reference/{}", server, reference_id);
 
             let mut request = client.get(&url);
-            request = set_header(request, rfid_server_secret);
+            request = set_secret_header(request, rfid_server_secret);
 
             let response = match request.send().await.and_then(|x| x.error_for_status()) {
                 Ok(res) => res,
@@ -264,7 +264,7 @@ async fn submit_link(
                 };
 
                 let url = format!("{server}/api/rfid/reference/album");
-                let request = client.post(url).header(CONTENT_TYPE, "application/json");
+                let request = client.post(url);
                 request.body(reference_payload)
             }
             ReferenceType::Playlist(id) => {
@@ -282,12 +282,13 @@ async fn submit_link(
                 };
 
                 let url = format!("{server}/api/rfid/reference/playlist");
-                let request = client.post(url).header(CONTENT_TYPE, "application/json");
+                let request = client.post(url);
                 request.body(reference_payload)
             }
         };
 
-        request = set_header(request, rfid_server_secret);
+        request =
+            set_secret_header(request, rfid_server_secret).header(CONTENT_TYPE, "application/json");
 
         match request.send().await.and_then(|x| x.error_for_status()) {
             Ok(_) => {
@@ -334,7 +335,7 @@ pub struct LinkPlaylistRfid {
     pub id: u32,
 }
 
-fn set_header(mut request: RequestBuilder, secret: Option<&str>) -> RequestBuilder {
+fn set_secret_header(mut request: RequestBuilder, secret: Option<&str>) -> RequestBuilder {
     if let Some(secret) = secret {
         request = request.header("Cookie", &format!("secret={secret}"));
     }
