@@ -6,7 +6,7 @@ use qobuz_player_controls::{
     notification::NotificationBroadcast,
     tracklist,
 };
-use reqwest::RequestBuilder;
+use reqwest::{RequestBuilder, header::CONTENT_TYPE};
 use std::sync::Arc;
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt},
@@ -264,7 +264,7 @@ async fn submit_link(
                 };
 
                 let url = format!("{server}/api/rfid/reference/album");
-                let request = client.post(url);
+                let request = client.post(url).header(CONTENT_TYPE, "application/json");
                 request.body(reference_payload)
             }
             ReferenceType::Playlist(id) => {
@@ -282,7 +282,7 @@ async fn submit_link(
                 };
 
                 let url = format!("{server}/api/rfid/reference/playlist");
-                let request = client.post(url);
+                let request = client.post(url).header(CONTENT_TYPE, "application/json");
                 request.body(reference_payload)
             }
         };
