@@ -6,6 +6,7 @@ use qobuz_player_controls::{
     notification::NotificationBroadcast,
     tracklist,
 };
+use reqwest::RequestBuilder;
 use std::sync::Arc;
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt},
@@ -110,11 +111,9 @@ pub async fn handle_play_scan(
             let url = format!("{}/api/rfid/reference/{}", server, reference_id);
 
             let mut request = client.get(&url);
-            if let Some(rfid_server_secret) = rfid_server_secret {
-                request = request.header("Cookie", &format!("secret={rfid_server_secret}"));
-            }
+            request = set_header(request, rfid_server_secret);
 
-            let response = match request.send().await {
+            let response = match request.send().await.and_then(|x| x.error_for_status()) {
                 Ok(res) => res,
                 Err(err) => {
                     broadcast.send_error(err.to_string());
@@ -288,15 +287,15 @@ async fn submit_link(
             }
         };
 
-        if let Some(rfid_server_secret) = rfid_server_secret {
-            request = request.header("secret", rfid_server_secret);
-        }
-        request = request.header("Content-Type", "application/json");
+        request = set_header(request, rfid_server_secret);
 
-        match request.send().await {
-            Ok(_) => broadcast.send(qobuz_player_controls::notification::Notification::Success(
-                "Link completed".to_string(),
-            )),
+        match request.send().await.and_then(|x| x.error_for_status()) {
+            Ok(_) => {
+                broadcast.send(qobuz_player_controls::notification::Notification::Success(
+                    "Link completed".to_string(),
+                ));
+                set_state(&state, None).await;
+            }
             Err(err) => {
                 broadcast.send_error(err.to_string());
                 return;
@@ -307,22 +306,20 @@ async fn submit_link(
     }
 
     let rfid_id = rfid_id.to_owned();
-    tokio::spawn(async move {
-        match database.add_rfid_reference(rfid_id, reference).await {
-            Ok(_) => {
-                broadcast.send(qobuz_player_controls::notification::Notification::Success(
-                    "Link completed".to_string(),
-                ));
-                set_state(&state, None).await;
-            }
-            Err(e) => {
-                broadcast.send(qobuz_player_controls::notification::Notification::Error(
-                    format!("{e}"),
-                ));
-                tracing::error!("{e}");
-            }
-        };
-    });
+
+    match database.add_rfid_reference(rfid_id, reference).await {
+        Ok(_) => {
+            broadcast.send(qobuz_player_controls::notification::Notification::Success(
+                "Link completed".to_string(),
+            ));
+            set_state(&state, None).await;
+        }
+        Err(err) => {
+            broadcast.send(qobuz_player_controls::notification::Notification::Error(
+                err.to_string(),
+            ));
+        }
+    };
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -335,4 +332,11 @@ pub struct LinkAlbumRfid {
 pub struct LinkPlaylistRfid {
     pub rfid_id: String,
     pub id: u32,
+}
+
+fn set_header(mut request: RequestBuilder, secret: Option<&str>) -> RequestBuilder {
+    if let Some(secret) = secret {
+        request = request.header("Cookie", &format!("secret={secret}"));
+    }
+    request
 }
