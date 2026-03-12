@@ -33,13 +33,16 @@ jobs:
           cache: npm
           cache-dependency-path: qobuz-player-web/package-lock.json
 
-      - name: Install dependencies 
+      - name: Web install dependencies 
         working-directory: qobuz-player-web
         run: npm i
 
-      - name: Run format check
+      - name: Web format check
         working-directory: qobuz-player-web
         run: npm run format:check
+
+      - name: Check format
+        run: cargo fmt --check
 
   pre-merge:
     name: Pre-merge checks

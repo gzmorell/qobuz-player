@@ -201,7 +201,11 @@ impl GenresState {
         }
     }
 
-    async fn handle_genre_list_events(&mut self, code: KeyCode, client: &Client) -> AppResult<Output> {
+    async fn handle_genre_list_events(
+        &mut self,
+        code: KeyCode,
+        client: &Client,
+    ) -> AppResult<Output> {
         match code {
             KeyCode::Up | KeyCode::Char('k') => {
                 if self.selected_genre >= 2 {
