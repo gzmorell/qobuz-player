@@ -3519,6 +3519,7 @@ name = "qobuz-player-controls"
 version = "0.7.3"
 dependencies = [
  "dirs",
+ "futures",
  "libc",
  "md5",
  "moka",

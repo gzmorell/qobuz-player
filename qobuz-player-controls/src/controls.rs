@@ -35,14 +35,14 @@ pub enum ControlCommand {
     SetVolume {
         volume: f32,
     },
-    AddTrackToQueue {
-        id: u32,
+    AddTracksToQueue {
+        ids: Vec<u32>,
     },
     RemoveIndexFromQueue {
         index: usize,
     },
-    PlayTrackNext {
-        id: u32,
+    PlayTracksNext {
+        ids: Vec<u32>,
     },
     ReorderQueue {
         new_order: Vec<usize>,
@@ -105,9 +105,9 @@ impl Controls {
             .expect("infallible");
     }
 
-    pub fn add_track_to_queue(&self, id: u32) {
+    pub fn add_tracks_to_queue(&self, ids: Vec<u32>) {
         self.tx
-            .send(ControlCommand::AddTrackToQueue { id })
+            .send(ControlCommand::AddTracksToQueue { ids })
             .expect("infallible");
     }
 
@@ -117,9 +117,9 @@ impl Controls {
             .expect("infallible");
     }
 
-    pub fn play_track_next(&self, id: u32) {
+    pub fn play_tracks_next(&self, ids: Vec<u32>) {
         self.tx
-            .send(ControlCommand::PlayTrackNext { id })
+            .send(ControlCommand::PlayTracksNext { ids })
             .expect("infallible");
     }
 

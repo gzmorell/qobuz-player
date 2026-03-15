@@ -471,7 +471,12 @@ impl Popup {
                             Some(state) => match state {
                                 SelectedArtistPopupSubtabMut::Albums(album_list) => {
                                     album_list
-                                        .handle_events(key_event.code, client, notifications)
+                                        .handle_events(
+                                            key_event.code,
+                                            client,
+                                            controls,
+                                            notifications,
+                                        )
                                         .await
                                 }
                                 SelectedArtistPopupSubtabMut::TopTracks(track_list) => {

@@ -449,12 +449,22 @@ impl App {
                     Tab::Queue => Ok(self.queue.handle_events(event, &self.controls).await),
                     Tab::Discover => {
                         self.discover
-                            .handle_events(event, &self.client, &mut self.notifications)
+                            .handle_events(
+                                event,
+                                &self.client,
+                                &self.controls,
+                                &mut self.notifications,
+                            )
                             .await
                     }
                     Tab::Genres => {
                         self.genres
-                            .handle_events(event, &self.client, &mut self.notifications)
+                            .handle_events(
+                                event,
+                                &self.client,
+                                &self.controls,
+                                &mut self.notifications,
+                            )
                             .await
                     }
                 };

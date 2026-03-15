@@ -105,7 +105,7 @@ impl FavoritesState {
                             SubTab::Albums => {
                                 return self
                                     .albums
-                                    .handle_events(key_event.code, client, notifications)
+                                    .handle_events(key_event.code, client, controls, notifications)
                                     .await;
                             }
                             SubTab::Artists => {

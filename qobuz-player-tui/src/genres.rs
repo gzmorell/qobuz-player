@@ -1,5 +1,5 @@
-use qobuz_player_controls::AppResult;
 use qobuz_player_controls::client::Client;
+use qobuz_player_controls::{AppResult, controls::Controls};
 use ratatui::{
     crossterm::event::{Event, KeyCode, KeyEventKind},
     prelude::*,
@@ -185,6 +185,7 @@ impl GenresState {
         &mut self,
         event: Event,
         client: &Client,
+        controls: &Controls,
         notifications: &mut NotificationList,
     ) -> AppResult<Output> {
         match event {
@@ -193,7 +194,7 @@ impl GenresState {
                     self.handle_genre_list_events(key_event.code, client).await
                 }
                 GenresMode::GenreDetail => {
-                    self.handle_genre_detail_events(key_event.code, client, notifications)
+                    self.handle_genre_detail_events(key_event.code, client, controls, notifications)
                         .await
                 }
             },
@@ -245,6 +246,7 @@ impl GenresState {
         &mut self,
         code: KeyCode,
         client: &Client,
+        controls: &Controls,
         notifications: &mut NotificationList,
     ) -> AppResult<Output> {
         match code {
@@ -262,7 +264,9 @@ impl GenresState {
             }
             _ => match self.selected_mut() {
                 Selected::Album(album_list) => {
-                    return album_list.handle_events(code, client, notifications).await;
+                    return album_list
+                        .handle_events(code, client, controls, notifications)
+                        .await;
                 }
                 Selected::Playlist(playlist_list) => {
                     return playlist_list

@@ -97,7 +97,7 @@ impl TrackList {
                     return Ok(Output::Consumed);
                 };
 
-                controls.play_track_next(selected.id);
+                controls.play_tracks_next(vec![selected.id]);
                 Ok(Output::Consumed)
             }
 
@@ -106,7 +106,7 @@ impl TrackList {
                 let selected = index.and_then(|index| self.items.filter().get(index));
 
                 if let Some(selected) = selected {
-                    controls.add_track_to_queue(selected.id);
+                    controls.add_tracks_to_queue(vec![selected.id]);
                 };
                 Ok(Output::Consumed)
             }

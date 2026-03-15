@@ -473,26 +473,39 @@ impl Player {
         Ok(())
     }
 
-    async fn add_track_to_queue(&mut self, id: u32) -> AppResult<()> {
+    async fn add_tracks_to_queue(&mut self, ids: Vec<u32>) -> AppResult<()> {
         let mut tracklist = self.tracklist_rx.borrow().clone();
-        let track = self.client.track(id).await?;
+        let tracks = self.client.tracks(ids).await?;
+        let track_titles: Vec<_> = tracks.iter().map(|x| x.title.clone()).collect();
+        let track_titles = track_titles.join(", ");
 
-        let notification = Notification::Info(format!("{} added to queue", track.title.clone()));
+        let notification = Notification::Info(format!("{} added to queue", track_titles));
 
-        tracklist.push_track(track);
+        for track in tracks {
+            tracklist.push_track(track);
+        }
+
         self.update_queue(tracklist).await?;
         self.broadcast.send(notification);
         Ok(())
     }
 
-    async fn play_track_next(&mut self, id: u32) -> AppResult<()> {
+    async fn play_tracks_next(&mut self, ids: Vec<u32>) -> AppResult<()> {
         let mut tracklist = self.tracklist_rx.borrow().clone();
-        let track = self.client.track(id).await?;
 
-        let notification = Notification::Info(format!("{} playing next", track.title.clone()));
+        let mut tracks = self.client.tracks(ids).await?;
+        let track_titles: Vec<_> = tracks.iter().map(|x| x.title.clone()).collect();
+        let track_titles = track_titles.join(", ");
+
+        let notification = Notification::Info(format!("{} playing next", track_titles));
 
         let current_index = tracklist.current_position();
-        tracklist.insert_track(current_index + 1, track);
+
+        tracks.reverse();
+        for track in tracks {
+            tracklist.insert_track(current_index + 1, track);
+        }
+
         self.update_queue(tracklist).await?;
         self.broadcast.send(notification);
         Ok(())
@@ -590,11 +603,11 @@ impl Player {
             ControlCommand::SetVolume { volume } => {
                 self.set_volume(volume).await?;
             }
-            ControlCommand::AddTrackToQueue { id } => self.add_track_to_queue(id).await?,
+            ControlCommand::AddTracksToQueue { ids } => self.add_tracks_to_queue(ids).await?,
             ControlCommand::RemoveIndexFromQueue { index } => {
                 self.remove_index_from_queue(index).await?
             }
-            ControlCommand::PlayTrackNext { id } => self.play_track_next(id).await?,
+            ControlCommand::PlayTracksNext { ids } => self.play_tracks_next(ids).await?,
             ControlCommand::ReorderQueue { new_order } => self.reorder_queue(new_order).await?,
             ControlCommand::NewQueue { items, play } => self.new_track_queue(items, play).await?,
             ControlCommand::ClearQueue => self.clear_queue().await?,

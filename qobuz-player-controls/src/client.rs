@@ -1,3 +1,4 @@
+use futures::future::join_all;
 use moka::future::Cache;
 use qobuz_player_client::{client::AudioQuality, qobuz_models::TrackURL};
 use qobuz_player_models::{
@@ -160,6 +161,12 @@ impl Client {
 
         self.artist_cache.insert(id, artist.clone()).await;
         Ok(artist)
+    }
+
+    pub async fn tracks(&self, ids: Vec<u32>) -> Result<Vec<Track>> {
+        let futures = ids.into_iter().map(|id| self.track(id));
+        let results = join_all(futures).await;
+        results.into_iter().collect()
     }
 
     pub async fn track(&self, id: u32) -> Result<Track> {

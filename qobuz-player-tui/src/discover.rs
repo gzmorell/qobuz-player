@@ -1,5 +1,5 @@
-use qobuz_player_controls::AppResult;
 use qobuz_player_controls::client::Client;
+use qobuz_player_controls::{AppResult, controls::Controls};
 use ratatui::{
     crossterm::event::{Event, KeyCode, KeyEventKind},
     prelude::*,
@@ -93,6 +93,7 @@ impl DiscoverState {
         &mut self,
         event: Event,
         client: &Client,
+        controls: &Controls,
         notifications: &mut NotificationList,
     ) -> AppResult<Output> {
         match event {
@@ -113,7 +114,7 @@ impl DiscoverState {
                             true => {
                                 return self.featured_albums[self.selected_sub_tab]
                                     .1
-                                    .handle_events(key_event.code, client, notifications)
+                                    .handle_events(key_event.code, client, controls, notifications)
                                     .await;
                             }
                             false => {
