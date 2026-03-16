@@ -1,4 +1,6 @@
-use qobuz_player_controls::{AppResult, client::Client, notification::Notification};
+use qobuz_player_controls::{
+    AppResult, client::Client, controls::Controls, notification::Notification,
+};
 use qobuz_player_models::PlaylistSimple;
 use ratatui::{
     buffer::Buffer,
@@ -63,6 +65,7 @@ impl PlaylistList {
         &mut self,
         event: KeyCode,
         client: &Client,
+        controls: &Controls,
         notifications: &mut NotificationList,
     ) -> AppResult<Output> {
         match event {
@@ -120,6 +123,43 @@ impl PlaylistList {
                             return Ok(Output::UpdateFavorites);
                         }
                     }
+                }
+
+                Ok(Output::Consumed)
+            }
+
+            KeyCode::Char('B') => {
+                let index = self.items.state.selected();
+                let selected = index.and_then(|index| self.items.filter().get(index));
+
+                if let Some(selected) = selected {
+                    let ids = client
+                        .playlist(selected.id)
+                        .await?
+                        .tracks
+                        .into_iter()
+                        .map(|x| x.id)
+                        .collect();
+
+                    controls.add_tracks_to_queue(ids);
+                }
+
+                Ok(Output::Consumed)
+            }
+
+            KeyCode::Char('N') => {
+                let index = self.items.state.selected();
+                let selected = index.and_then(|index| self.items.filter().get(index));
+
+                if let Some(selected) = selected {
+                    let ids = client
+                        .playlist(selected.id)
+                        .await?
+                        .tracks
+                        .into_iter()
+                        .map(|x| x.id)
+                        .collect();
+                    controls.play_tracks_next(ids);
                 }
 
                 Ok(Output::Consumed)

@@ -64,6 +64,10 @@ impl Tracklist {
         Self { queue, list_type }
     }
 
+    pub fn set_list_type(&mut self, list_type: TracklistType) {
+        self.list_type = list_type
+    }
+
     pub fn new_with_id(list_type: TracklistType, items: Vec<QueueItem>) -> Self {
         Self {
             queue: items,

@@ -475,6 +475,8 @@ impl Player {
 
     async fn add_tracks_to_queue(&mut self, ids: Vec<u32>) -> AppResult<()> {
         let mut tracklist = self.tracklist_rx.borrow().clone();
+        tracklist.set_list_type(TracklistType::Tracks);
+
         let tracks = self.client.tracks(ids).await?;
         let track_titles: Vec<_> = tracks.iter().map(|x| x.title.clone()).collect();
         let track_titles = track_titles.join(", ");
@@ -492,6 +494,7 @@ impl Player {
 
     async fn play_tracks_next(&mut self, ids: Vec<u32>) -> AppResult<()> {
         let mut tracklist = self.tracklist_rx.borrow().clone();
+        tracklist.set_list_type(TracklistType::Tracks);
 
         let mut tracks = self.client.tracks(ids).await?;
         let track_titles: Vec<_> = tracks.iter().map(|x| x.title.clone()).collect();

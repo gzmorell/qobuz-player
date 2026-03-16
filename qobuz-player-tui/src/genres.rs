@@ -270,7 +270,7 @@ impl GenresState {
                 }
                 Selected::Playlist(playlist_list) => {
                     return playlist_list
-                        .handle_events(code, client, notifications)
+                        .handle_events(code, client, controls, notifications)
                         .await;
                 }
             },

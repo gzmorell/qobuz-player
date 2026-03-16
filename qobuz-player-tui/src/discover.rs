@@ -121,7 +121,7 @@ impl DiscoverState {
                                 return self.featured_playlists
                                     [self.selected_sub_tab - self.featured_albums.len()]
                                 .1
-                                .handle_events(key_event.code, client, notifications)
+                                .handle_events(key_event.code, client, controls, notifications)
                                 .await;
                             }
                         }
