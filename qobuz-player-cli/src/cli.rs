@@ -5,15 +5,12 @@ use std::{
     time::Duration,
 };
 
-#[cfg(any(windows, target_os = "linux", target_os = "macos"))]
-use std::thread;
-
 use clap::{Parser, Subcommand};
 #[cfg(any(windows, target_os = "linux", target_os = "macos"))]
 use futures::executor::block_on;
 use qobuz_player_controls::{
-    AudioQuality, client::Client, database::Database,
-    notification::NotificationBroadcast, player::Player,
+    AudioQuality, client::Client, database::Database, notification::NotificationBroadcast,
+    player::Player,
 };
 #[cfg(any(windows, target_os = "linux", target_os = "macos"))]
 use qobuz_player_controls::{Status, StatusReceiver};
@@ -35,6 +32,7 @@ struct Cli {
 }
 
 #[derive(Subcommand)]
+#[allow(clippy::large_enum_variant)]
 enum Commands {
     /// Default. Starts the player
     Open {
@@ -545,7 +543,7 @@ fn error_exit(error: Error) {
 
 #[cfg(any(windows, target_os = "linux", target_os = "macos"))]
 pub fn sleep_inhibitor(mut status_receiver: StatusReceiver) {
-    thread::spawn(move || {
+    std::thread::spawn(move || {
         let mut sleep_inhibitor = SleepInhibitor::new();
 
         loop {

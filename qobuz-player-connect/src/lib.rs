@@ -24,6 +24,7 @@ struct ConnectState {
     connected: bool,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn init(
     app_id: &str,
     connect_name: String,
