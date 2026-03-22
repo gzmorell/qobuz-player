@@ -1,4 +1,5 @@
 use std::fs;
+use std::num::NonZero;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -6,7 +7,7 @@ use std::time::Duration;
 use parking_lot::Mutex;
 use rodio::cpal::traits::HostTrait;
 use rodio::queue::queue;
-use rodio::{Decoder, DeviceTrait, Source};
+use rodio::{Decoder, DeviceTrait, Player, Source};
 use tokio::sync::watch::{self, Receiver, Sender};
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
@@ -16,8 +17,8 @@ use crate::stderr_redirect::silence_stderr;
 use crate::{AppResult, VolumeReceiver};
 
 pub struct Sink {
-    sink: Option<rodio::Sink>,
-    output_stream: Option<rodio::OutputStream>,
+    sink: Option<Player>,
+    output_stream: Option<rodio::MixerDeviceSink>,
     sender: Option<Arc<rodio::queue::SourcesQueueInput>>,
     volume: VolumeReceiver,
     track_finished: Sender<()>,
@@ -145,7 +146,7 @@ impl Sink {
             mixer.log_on_drop(false);
 
             let (sender, receiver) = queue(true);
-            let player = rodio::Sink::connect_new(mixer.mixer());
+            let player = rodio::Player::connect_new(mixer.mixer());
             player.append(receiver);
             set_volume(&player, &self.volume.borrow());
 
@@ -183,21 +184,21 @@ impl Sink {
     }
 }
 
-fn set_volume(sink: &rodio::Sink, volume: &f32) {
+fn set_volume(sink: &rodio::Player, volume: &f32) {
     let volume = volume.clamp(0.0, 1.0).powi(3);
     sink.set_volume(volume);
 }
 
-fn open_default_stream(sample_rate: u32) -> AppResult<rodio::OutputStream> {
-    rodio::OutputStreamBuilder::from_default_device()
+fn open_default_stream(sample_rate: NonZero<u32>) -> AppResult<rodio::MixerDeviceSink> {
+    rodio::DeviceSinkBuilder::from_default_device()
         .and_then(|x| x.with_sample_rate(sample_rate).open_stream())
         .or_else(|original_err| {
             let mut devices = rodio::cpal::default_host().output_devices()?;
 
             Ok(devices
                 .find_map(|d| {
-                    rodio::OutputStreamBuilder::from_device(d)
-                        .and_then(|x| x.with_sample_rate(sample_rate).open_stream_or_fallback())
+                    rodio::DeviceSinkBuilder::from_device(d)
+                        .and_then(|x| x.with_sample_rate(sample_rate).open_sink_or_fallback())
                         .ok()
                 })
                 .ok_or(original_err)?)
@@ -205,15 +206,17 @@ fn open_default_stream(sample_rate: u32) -> AppResult<rodio::OutputStream> {
 }
 
 fn open_preferred_stream(
-    sample_rate: u32,
+    sample_rate: NonZero<u32>,
     preferred_device_name: &str,
-) -> AppResult<rodio::OutputStream> {
+) -> AppResult<rodio::MixerDeviceSink> {
     let devices = rodio::cpal::default_host().output_devices()?;
 
     for device in devices {
-        if device.name().map(|x| x.to_string()).ok().as_deref() == Some(preferred_device_name) {
-            let Ok(stream) = rodio::OutputStreamBuilder::from_device(device)
-                .and_then(|x| x.with_sample_rate(sample_rate).open_stream_or_fallback())
+        if device.description().map(|x| x.to_string()).ok().as_deref()
+            == Some(preferred_device_name)
+        {
+            let Ok(stream) = rodio::DeviceSinkBuilder::from_device(device)
+                .and_then(|x| x.with_sample_rate(sample_rate).open_sink_or_fallback())
             else {
                 break;
             };
@@ -224,7 +227,7 @@ fn open_preferred_stream(
 
     let devices = rodio::cpal::default_host().output_devices()?;
     let available_devices: Vec<String> = devices
-        .flat_map(|x| x.name().map(|x| x.to_string()))
+        .flat_map(|x| x.description().map(|x| x.to_string()))
         .collect();
     let available_devices = available_devices.join(", ");
 

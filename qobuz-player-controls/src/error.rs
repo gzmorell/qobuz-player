@@ -97,8 +97,8 @@ impl From<rodio::source::SeekError> for Error {
     }
 }
 
-impl From<rodio::StreamError> for Error {
-    fn from(value: rodio::StreamError) -> Self {
+impl From<rodio::DeviceSinkError> for Error {
+    fn from(value: rodio::DeviceSinkError) -> Self {
         Self::StreamError {
             message: value.to_string(),
         }

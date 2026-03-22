@@ -518,7 +518,9 @@ pub async fn run() -> Result<(), Error> {
                 return Ok(());
             };
 
-            let entries: Vec<String> = devices.filter_map(|x| x.name().ok()).collect();
+            let entries: Vec<String> = devices
+                .filter_map(|x| x.description().ok().map(|x| x.to_string()))
+                .collect();
 
             if entries.is_empty() {
                 println!("No output devices found");
