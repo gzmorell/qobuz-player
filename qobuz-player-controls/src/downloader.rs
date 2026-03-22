@@ -168,6 +168,7 @@ fn sanitize_name(input: &str) -> String {
 fn guess_extension(mime: &str) -> String {
     match mime {
         m if m.contains("mp4") => "mp4".to_string(),
+        m if m.contains("mpeg") => "mp3".to_string(),
         m if m.contains("mp3") => "mp3".to_string(),
         m if m.contains("flac") => "flac".to_string(),
         _ => "unknown".to_string(),
