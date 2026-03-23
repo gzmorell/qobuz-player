@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     io::{Write, stdin, stdout},
     path::PathBuf,
     sync::Arc,
@@ -518,7 +519,7 @@ pub async fn run() -> Result<(), Error> {
                 return Ok(());
             };
 
-            let entries: Vec<String> = devices
+            let entries: HashSet<String> = devices
                 .filter_map(|x| x.description().ok().map(|x| x.to_string()))
                 .collect();
 
@@ -527,7 +528,7 @@ pub async fn run() -> Result<(), Error> {
                 return Ok(());
             }
 
-            println!("Available output devices");
+            println!("Available output devices:");
 
             for name in entries {
                 println!("{name}");
