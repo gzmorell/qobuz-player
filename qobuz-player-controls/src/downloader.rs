@@ -1,27 +1,31 @@
 use std::{
-    fs,
     path::{Path, PathBuf},
     sync::Arc,
 };
 
-use crate::{cmaf, crypto, database::Database, notification::NotificationBroadcast};
-use futures::future::join_all;
+use stream_download::{Settings, StreamDownload, storage::temp::TempStorageProvider};
+
+use crate::{
+    AppResult, cmaf, crypto,
+    database::Database,
+    error::Error,
+    flac_source_stream::{
+        FlacSourceParams, FlacSourceStream, SeekableStreamReader, SegmentByteInfo,
+    },
+    notification::NotificationBroadcast,
+};
 use qobuz_player_client::qobuz_models::TrackURL;
 use qobuz_player_models::Track;
-use tokio::{
-    sync::{
-        Semaphore,
-        watch::{self, Receiver, Sender},
-    },
-    task::JoinHandle,
-};
+
+pub enum DownloadResult {
+    Cached(PathBuf),
+    Streaming(SeekableStreamReader),
+}
 
 pub struct Downloader {
     audio_cache_dir: PathBuf,
     database: Arc<Database>,
     broadcast: Arc<NotificationBroadcast>,
-    done_buffering_tx: Sender<PathBuf>,
-    download_handle: Option<JoinHandle<()>>,
 }
 
 impl Downloader {
@@ -30,186 +34,116 @@ impl Downloader {
         broadcast: Arc<NotificationBroadcast>,
         database: Arc<Database>,
     ) -> Self {
-        let (done_buffering_tx, _) = watch::channel(Default::default());
-
         Self {
             audio_cache_dir,
-            done_buffering_tx,
             database,
             broadcast,
-            download_handle: None,
         }
-    }
-
-    pub fn done_buffering(&self) -> Receiver<PathBuf> {
-        self.done_buffering_tx.subscribe()
     }
 
     pub async fn ensure_track_is_downloaded(
         &mut self,
         track_url: TrackURL,
-        session_infos: Option<String>,
+        session_infos: Option<&str>,
         track: &Track,
-    ) -> Option<PathBuf> {
-        if let Some(handle) = &self.download_handle {
-            handle.abort();
-            self.download_handle = None;
-        }
-
+    ) -> AppResult<DownloadResult> {
         let cache_path = cache_path(track, &track_url.mime_type, &self.audio_cache_dir);
         self.database.set_cache_entry(cache_path.as_path()).await;
 
         if cache_path.exists() {
-            return Some(cache_path);
+            tracing::info!("Playing from cache: {}", cache_path.display());
+            return Ok(DownloadResult::Cached(cache_path));
         }
 
-        let done_buffering = self.done_buffering_tx.clone();
-        let broadcast = self.broadcast.clone();
         let n_segments = track_url.n_segments;
-        let template = track_url.url_template.clone();
-        let key_str = track_url.key.clone();
 
-        tracing::info!("Downloading segmented track: {}", track.title);
+        tracing::info!("Streaming: {} ({n_segments} segments)", track.title);
 
-        let handle = tokio::spawn(async move {
-            let content_key = match (key_str, session_infos.as_deref()) {
-                (Some(key_str), Some(infos)) => {
-                    match crypto::derive_session_key(infos)
-                        .and_then(|session_key| crypto::unwrap_content_key(&session_key, &key_str))
-                    {
-                        Ok(ck) => Some(ck),
-                        Err(e) => {
-                            broadcast.send_error(format!("Failed to derive content key: {e}"));
-                            return;
-                        }
-                    }
-                }
-                _ => None,
-            };
-            let key = content_key.unwrap_or([0u8; 16]);
-
-            let segment_0_url = template.replace("$SEGMENT$", "0");
-            let init_bytes = match fetch_segment(&segment_0_url, 0).await {
-                Ok(b) => b,
-                Err(e) => {
-                    broadcast.send_error(format!("Init segment error: {e}"));
-                    return;
-                }
-            };
-
-            let init_info = match cmaf::parse_init_segment(&init_bytes) {
-                Ok(info) => info,
-                Err(e) => {
-                    broadcast.send_error(format!("Init segment parse error: {e}"));
-                    return;
-                }
-            };
-            let flac_header = init_info.flac_header;
-
-            let mut out = Vec::new();
-            out.extend_from_slice(&flac_header);
-
-            let concurrency_limit = 8;
-            let concurrent_semaphore = Arc::new(Semaphore::new(concurrency_limit));
-
-            let mut task_handles = Vec::new();
-
-            for segment_index in 1..n_segments {
-                let permit = concurrent_semaphore.clone().acquire_owned().await.unwrap();
-                let url = template.replace("$SEGMENT$", &segment_index.to_string());
-
-                task_handles.push(tokio::spawn(async move {
-                    let _permit = permit;
-
-                    match fetch_segment(&url, segment_index).await {
-                        Ok(bytes) => Ok((segment_index, bytes)),
-                        Err(e) => Err(e),
-                    }
-                }));
+        let content_key = match (&track_url.key, session_infos) {
+            (Some(key_str), Some(infos)) => {
+                let session_key = crypto::derive_session_key(infos)?;
+                let content_key = crypto::unwrap_content_key(&session_key, key_str)?;
+                tracing::debug!("Derived content key for key_id: {:?}", track_url.key_id);
+                Some(content_key)
             }
-
-            let results = join_all(task_handles).await;
-
-            let mut segments = Vec::new();
-            for r in results {
-                match r {
-                    Ok(Ok((idx, bytes))) => segments.push((idx, bytes)),
-                    Ok(Err(e)) => {
-                        broadcast.send_error(format!("Segment fetch error: {e}"));
-                    }
-                    Err(join_err) => {
-                        broadcast.send_error(format!("Task join error: {join_err}"));
-                        return;
-                    }
-                }
+            _ => {
+                tracing::warn!("No encryption key available");
+                None
             }
+        };
 
-            segments.sort_by_key(|(index, _)| *index);
+        let seg0_url = track_url.url_template.replace("$SEGMENT$", "0");
+        let init_bytes = fetch_segment(&seg0_url, 0).await?;
+        let init_info = cmaf::parse_init_segment(&init_bytes)?;
 
-            for (segment_index, segment_bytes) in segments {
-                let crypto_info = match cmaf::parse_segment_crypto(&segment_bytes) {
-                    Ok(c) => c,
-                    Err(e) => {
-                        broadcast
-                            .send_error(format!("Crypto parse error seg {segment_index}: {e}"));
-                        return;
-                    }
-                };
+        tracing::info!(
+            "Init segment: {} bytes, FLAC header: {} bytes",
+            init_bytes.len(),
+            init_info.flac_header.len(),
+        );
 
-                let mut offset = crypto_info.data_offset;
+        if n_segments < 2 {
+            return Err(Error::StreamError {
+                message: "Track has no audio segments".to_string(),
+            });
+        }
 
-                for entry in crypto_info.entries {
-                    let end = offset + entry.size as usize;
+        let flac_header_len = init_info.flac_header.len() as u64;
+        let mut segment_map = Vec::new();
+        let mut cumulative_offset: u64 = 0;
+        for entry in &init_info.segment_table {
+            segment_map.push(SegmentByteInfo {
+                byte_offset: cumulative_offset,
+                byte_len: entry.byte_len as u64,
+            });
+            cumulative_offset += entry.byte_len as u64;
+        }
+        let total_byte_len = flac_header_len + cumulative_offset;
 
-                    if end > segment_bytes.len() {
-                        broadcast.send_error(format!("Segment {segment_index} truncated"));
-                        return;
-                    }
+        tracing::info!(
+            "Segment map: {} segments, total FLAC size: {} bytes",
+            segment_map.len(),
+            total_byte_len,
+        );
 
-                    let mut frame = segment_bytes[offset..end].to_vec();
-                    if entry.flags != 0 {
-                        crypto::decrypt_frame(&key, &entry.iv, &mut frame);
-                    }
+        let params = FlacSourceParams {
+            url_template: track_url.url_template,
+            n_segments,
+            content_key,
+            flac_header: init_info.flac_header,
+            cache_path,
+            broadcast: self.broadcast.clone(),
+            segment_map: segment_map.clone(),
+            total_byte_len,
+        };
 
-                    out.extend_from_slice(&frame);
-                    offset = end;
-                }
-            }
+        let reader = StreamDownload::new::<FlacSourceStream>(
+            params,
+            TempStorageProvider::default(),
+            Settings::default().prefetch_bytes(4096),
+        )
+        .await
+        .map_err(|e| Error::StreamError {
+            message: format!("Failed to create stream: {e}"),
+        })?;
 
-            if let Some(parent) = cache_path.parent()
-                && let Err(e) = fs::create_dir_all(parent)
-            {
-                broadcast.send_error(format!("Cache mkdir error: {e}"));
-                return;
-            }
+        let seekable = SeekableStreamReader::new(reader, total_byte_len);
 
-            let tmp = cache_path.with_extension("partial");
-            if let Err(e) = fs::write(&tmp, &out) {
-                broadcast.send_error(format!("Failed to write temp file: {e}"));
-                return;
-            }
-            if let Err(e) = fs::rename(&tmp, &cache_path) {
-                let _ = fs::remove_file(&tmp);
-                broadcast.send_error(format!("Failed to finalize cache: {e}"));
-                return;
-            }
-
-            done_buffering.send(cache_path.clone()).unwrap();
-        });
-
-        self.download_handle = Some(handle);
-        None
+        Ok(DownloadResult::Streaming(seekable))
     }
 }
 
-async fn fetch_segment(url: &str, index: u8) -> Result<Vec<u8>, String> {
-    let resp = reqwest::get(url)
+async fn fetch_segment(url: &str, index: u8) -> AppResult<Vec<u8>> {
+    let bytes = reqwest::get(url)
         .await
-        .map_err(|e| format!("Segment {index} request failed: {e}"))?;
-    let bytes = resp
+        .map_err(|e| Error::StreamError {
+            message: format!("Failed to fetch segment {index}: {e}"),
+        })?
         .bytes()
         .await
-        .map_err(|e| format!("Segment {index} read error: {e}"))?;
+        .map_err(|e| Error::StreamError {
+            message: format!("Failed to read segment {index} bytes: {e}"),
+        })?;
     Ok(bytes.to_vec())
 }
 
@@ -226,20 +160,22 @@ fn cache_path(track: &Track, mime: &str, audio_cache_dir: &Path) -> PathBuf {
     let artist_dir = format!(
         "{} ({})",
         sanitize_name(artist_name),
-        sanitize_name(&artist_id)
+        sanitize_name(&artist_id),
     );
     let album_dir = format!(
         "{} ({})",
         sanitize_name(album_title),
-        sanitize_name(album_id)
+        sanitize_name(album_id),
     );
-    let extension = guess_extension(mime);
-
+    let extension = if mime.contains("flac") || mime.contains("mp4") {
+        "flac"
+    } else {
+        &guess_extension(mime)
+    };
     let track_file = format!(
-        "{}_{}.{}",
+        "{}_{}.{extension}",
         track.number,
-        sanitize_name(track_title),
-        extension
+        sanitize_name(track_title)
     );
 
     audio_cache_dir
@@ -249,43 +185,43 @@ fn cache_path(track: &Track, mime: &str, audio_cache_dir: &Path) -> PathBuf {
 }
 
 fn sanitize_name(input: &str) -> String {
-    let mut s = input
+    let mut s: String = input
         .chars()
         .map(|c| match c {
             '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' | '\0' => '_',
             c if c.is_control() => '_',
             _ => c,
         })
-        .collect::<String>();
+        .collect();
 
     s = s.trim_matches([' ', '.']).to_string();
 
-    let mut out = String::new();
-    let mut prev_us = false;
+    let mut out = String::with_capacity(s.len());
+    let mut prev_underscore = false;
     for ch in s.chars() {
         let ch2 = if ch == ' ' { '_' } else { ch };
         if ch2 == '_' {
-            if prev_us {
+            if prev_underscore {
                 continue;
             }
-            prev_us = true;
+            prev_underscore = true;
         } else {
-            prev_us = false;
+            prev_underscore = false;
         }
         out.push(ch2);
     }
 
     if out.is_empty() {
-        "unknown".into()
-    } else {
-        out.chars().take(100).collect()
+        return "unknown".to_string();
     }
+
+    const MAX: usize = 100;
+    out.chars().take(MAX).collect()
 }
 
 fn guess_extension(mime: &str) -> String {
     match mime {
         m if m.contains("flac") => "flac".to_string(),
-        m if m.contains("mp4") => "mp4".to_string(),
         m if m.contains("mpeg") => "mp3".to_string(),
         m if m.contains("mp3") => "mp3".to_string(),
         _ => "unknown".to_string(),

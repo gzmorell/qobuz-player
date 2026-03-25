@@ -213,7 +213,7 @@ pub async fn run() -> Result<(), Error> {
             Some(tracing::Level::INFO) => "info",
             Some(tracing::Level::WARN) => "warn",
             Some(tracing::Level::ERROR) => "error",
-            None => "none",
+            None => "info",
         };
 
         let filter = EnvFilter::new(format!(

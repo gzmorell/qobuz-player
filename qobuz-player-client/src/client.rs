@@ -25,7 +25,6 @@ use serde_json::Value;
 use std::{
     collections::{BTreeMap, HashMap},
     fmt::Display,
-    time::{SystemTime, UNIX_EPOCH},
 };
 use time::macros::format_description;
 use tokio::try_join;
@@ -486,7 +485,7 @@ impl Client {
         ))
     }
 
-    async fn renew_session(&mut self) -> Result<()> {
+    async fn session(&mut self) -> Result<()> {
         tracing::info!("Renewing session");
 
         let endpoint = format!("{}{}", &self.base_url, Endpoint::SessionStart);
@@ -517,26 +516,10 @@ impl Client {
         self.session.as_ref().and_then(|s| s.infos.as_deref())
     }
 
-    async fn ensure_valid_session(&mut self) -> Result<()> {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs() as u32;
-
-        let need_new_session = match &self.session {
-            None => true,
-            Some(s) => s.expires_at <= now,
-        };
-
-        if need_new_session {
-            self.renew_session().await?;
-        }
-
-        Ok(())
-    }
-
     pub async fn track_url(&mut self, track_id: u32) -> Result<TrackURL> {
-        self.ensure_valid_session().await?;
+        if self.session.is_none() {
+            self.session().await?;
+        }
 
         let endpoint = format!("{}{}", &self.base_url, Endpoint::TrackURL);
         let now = format!("{}", time::OffsetDateTime::now_utc().unix_timestamp());

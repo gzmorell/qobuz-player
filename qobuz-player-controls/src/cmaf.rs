@@ -11,17 +11,17 @@ const QBZ_SEGMENT_UUID: [u8; 16] = [
 #[derive(Debug, Clone)]
 pub struct SegmentTableEntry {
     /// Byte size of this segment's decrypted FLAC frame data.
-    _byte_len: u32,
+    pub byte_len: u32,
     /// Number of audio samples in this segment (useful for future timestamp-based seeking).
     #[allow(dead_code)]
-    sample_count: u32,
+    pub sample_count: u32,
 }
 
 /// FLAC header and segment table extracted from the init segment.
 pub struct InitInfo {
     pub flac_header: Vec<u8>,
     /// Per-segment sizes (indices 0..n_segments-1 correspond to segments 1..n_segments).
-    _segment_table: Vec<SegmentTableEntry>,
+    pub segment_table: Vec<SegmentTableEntry>,
 }
 
 /// One frame entry from the segment's QBZ_SEGMENT_UUID box.
@@ -151,7 +151,7 @@ fn parse_init_uuid_payload(payload: &[u8]) -> Result<InitInfo, Error> {
     if a + 1 > payload.len() {
         return Ok(InitInfo {
             flac_header,
-            _segment_table: Vec::new(),
+            segment_table: Vec::new(),
         });
     }
     let key_id_len = payload[a] as usize;
@@ -173,7 +173,7 @@ fn parse_init_uuid_payload(payload: &[u8]) -> Result<InitInfo, Error> {
                 u32::from_be_bytes([payload[a], payload[a + 1], payload[a + 2], payload[a + 3]]);
             a += 4;
             segment_table.push(SegmentTableEntry {
-                _byte_len: byte_len,
+                byte_len,
                 sample_count,
             });
         }
@@ -187,7 +187,7 @@ fn parse_init_uuid_payload(payload: &[u8]) -> Result<InitInfo, Error> {
 
     Ok(InitInfo {
         flac_header,
-        _segment_table: segment_table,
+        segment_table,
     })
 }
 
