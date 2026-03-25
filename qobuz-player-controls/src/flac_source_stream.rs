@@ -288,7 +288,7 @@ async fn download_segments(
                     return;
                 }
                 shared.broadcast.send_error(format!("Segment {seg}: {e}"));
-                let _ = tx.send(Err(io::Error::new(io::ErrorKind::Other, e))).await;
+                let _ = tx.send(Err(io::Error::other(e))).await;
                 return;
             }
         }
