@@ -12,7 +12,6 @@ mod crypto;
 pub mod database;
 mod downloader;
 pub mod error;
-mod flac_source_stream;
 pub mod notification;
 pub mod player;
 mod simple_cache;
