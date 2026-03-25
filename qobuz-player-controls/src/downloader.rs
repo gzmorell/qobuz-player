@@ -5,10 +5,14 @@ use std::{
 };
 
 use crate::{cmaf, crypto, database::Database, notification::NotificationBroadcast};
+use futures::future::join_all;
 use qobuz_player_client::qobuz_models::TrackURL;
 use qobuz_player_models::Track;
 use tokio::{
-    sync::watch::{self, Receiver, Sender},
+    sync::{
+        Semaphore,
+        watch::{self, Receiver, Sender},
+    },
     task::JoinHandle,
 };
 
@@ -84,8 +88,8 @@ impl Downloader {
             };
             let key = content_key.unwrap_or([0u8; 16]);
 
-            let seg0_url = template.replace("$SEGMENT$", "0");
-            let init_bytes = match fetch_segment(&seg0_url, 0).await {
+            let segment_0_url = template.replace("$SEGMENT$", "0");
+            let init_bytes = match fetch_segment(&segment_0_url, 0).await {
                 Ok(b) => b,
                 Err(e) => {
                     broadcast.send_error(format!("Init segment error: {e}"));
@@ -105,33 +109,64 @@ impl Downloader {
             let mut out = Vec::new();
             out.extend_from_slice(&flac_header);
 
-            for seg_idx in 1..n_segments {
-                let url = template.replace("$SEGMENT$", &seg_idx.to_string());
-                let seg_bytes = match fetch_segment(&url, seg_idx).await {
-                    Ok(b) => b,
-                    Err(e) => {
-                        broadcast.send_error(format!("Segment {seg_idx} fetch error: {e}"));
+            let concurrency_limit = 8;
+            let concurrent_semaphore = Arc::new(Semaphore::new(concurrency_limit));
+
+            let mut task_handles = Vec::new();
+
+            for segment_index in 1..n_segments {
+                let permit = concurrent_semaphore.clone().acquire_owned().await.unwrap();
+                let url = template.replace("$SEGMENT$", &segment_index.to_string());
+
+                task_handles.push(tokio::spawn(async move {
+                    let _permit = permit;
+
+                    match fetch_segment(&url, segment_index).await {
+                        Ok(bytes) => Ok((segment_index, bytes)),
+                        Err(e) => Err(e),
+                    }
+                }));
+            }
+
+            let results = join_all(task_handles).await;
+
+            let mut segments = Vec::new();
+            for r in results {
+                match r {
+                    Ok(Ok((idx, bytes))) => segments.push((idx, bytes)),
+                    Ok(Err(e)) => {
+                        broadcast.send_error(format!("Segment fetch error: {e}"));
+                    }
+                    Err(join_err) => {
+                        broadcast.send_error(format!("Task join error: {join_err}"));
                         return;
                     }
-                };
+                }
+            }
 
-                let crypto_info = match cmaf::parse_segment_crypto(&seg_bytes) {
+            segments.sort_by_key(|(index, _)| *index);
+
+            for (segment_index, segment_bytes) in segments {
+                let crypto_info = match cmaf::parse_segment_crypto(&segment_bytes) {
                     Ok(c) => c,
                     Err(e) => {
-                        broadcast.send_error(format!("Crypto parse error seg {seg_idx}: {e}"));
+                        broadcast
+                            .send_error(format!("Crypto parse error seg {segment_index}: {e}"));
                         return;
                     }
                 };
 
                 let mut offset = crypto_info.data_offset;
+
                 for entry in crypto_info.entries {
                     let end = offset + entry.size as usize;
-                    if end > seg_bytes.len() {
-                        broadcast.send_error(format!("Segment {seg_idx} truncated"));
+
+                    if end > segment_bytes.len() {
+                        broadcast.send_error(format!("Segment {segment_index} truncated"));
                         return;
                     }
 
-                    let mut frame = seg_bytes[offset..end].to_vec();
+                    let mut frame = segment_bytes[offset..end].to_vec();
                     if entry.flags != 0 {
                         crypto::decrypt_frame(&key, &entry.iv, &mut frame);
                     }
