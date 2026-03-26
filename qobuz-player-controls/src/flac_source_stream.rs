@@ -323,7 +323,7 @@ async fn download_segments(
                     return;
                 }
                 shared.broadcast.send_error(format!("Segment {seg}: {e}"));
-                let _ = tx.send(Err(io::Error::new(io::ErrorKind::Other, e))).await;
+                let _ = tx.send(Err(io::Error::other(e))).await;
                 return;
             }
         }
@@ -555,11 +555,7 @@ async fn fetch_and_stream_segment(
         all_decrypted.extend_from_slice(trailing);
 
         if bytes_accumulated + trailing.len() > total_skip {
-            let send_start = if bytes_accumulated < total_skip {
-                total_skip - bytes_accumulated
-            } else {
-                0
-            };
+            let send_start = total_skip.saturating_sub(bytes_accumulated);
             if send_start < trailing.len() {
                 let _ = tx
                     .send(Ok(Bytes::copy_from_slice(&trailing[send_start..])))
