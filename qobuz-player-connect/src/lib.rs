@@ -265,7 +265,7 @@ impl ConnectState {
                         self.controls.set_volume(volume as f32 / 100.0);
                     }
 
-                    respond.send(VolumeChanged { volume: volume });
+                    respond.send(VolumeChanged { volume });
                 }
                 Command::Heartbeat { respond } => {
                     let status = self.status_receiver.borrow();

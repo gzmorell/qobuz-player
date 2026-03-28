@@ -6,6 +6,9 @@ use axum::{
     response::IntoResponse,
     routing::{get, put},
 };
+use axum_extra::extract::Form;
+use qobuz_player_controls::notification::Notification;
+use serde::Deserialize;
 use serde_json::json;
 
 use crate::{AppState, ResponseResult, ok_or_send_error_toast};
@@ -20,6 +23,47 @@ pub fn routes() -> Router<std::sync::Arc<crate::AppState>> {
         .route("/album/{id}/play", put(play))
         .route("/album/{id}/play/{track_position}", put(play_track))
         .route("/album/{id}/link", put(link))
+        .route("/album/action", put(action))
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum Action {
+    AddToQueue,
+    PlayNext,
+}
+#[derive(Deserialize)]
+struct ActionParameters {
+    id: String,
+    action: Action,
+}
+async fn action(
+    State(state): State<Arc<AppState>>,
+    Form(req): Form<ActionParameters>,
+) -> ResponseResult {
+    match req.action {
+        Action::AddToQueue => {
+            let album_data = ok_or_send_error_toast(&state, state.get_album(&req.id).await)?;
+            let track_ids = album_data.album.tracks.into_iter().map(|x| x.id).collect();
+
+            state.controls.add_tracks_to_queue(track_ids);
+            Ok(state.send_toast(Notification::Success(format!(
+                "{} added to queue",
+                album_data.album.title
+            ))))
+        }
+        Action::PlayNext => {
+            let album_data = ok_or_send_error_toast(&state, state.get_album(&req.id).await)?;
+            let track_ids = album_data.album.tracks.into_iter().map(|x| x.id).collect();
+
+            state.controls.play_tracks_next(track_ids);
+
+            Ok(state.send_toast(Notification::Success(format!(
+                "Playing {} next",
+                album_data.album.title
+            ))))
+        }
+    }
 }
 
 async fn play_track(
@@ -28,6 +72,34 @@ async fn play_track(
 ) -> impl IntoResponse {
     state.controls.play_album(&id, track_position);
 }
+
+// async fn play_next(State(state): State<Arc<AppState>>, Path(id): Path<String>) -> ResponseResult {
+//     let album_data = ok_or_send_error_toast(&state, state.get_album(&id).await)?;
+//     let track_ids = album_data.album.tracks.into_iter().map(|x| x.id).collect();
+
+//     state.controls.play_tracks_next(track_ids);
+//     Ok(
+//         state.send_toast(qobuz_player_controls::notification::Notification::Success(
+//             format!("Playing {} next", album_data.album.title),
+//         )),
+//     )
+// }
+
+// async fn add_to_queue(
+//     State(state): State<Arc<AppState>>,
+//     Path(id): Path<String>,
+// ) -> ResponseResult {
+//     let album_data = ok_or_send_error_toast(&state, state.get_album(&id).await)?;
+//     let track_ids = album_data.album.tracks.into_iter().map(|x| x.id).collect();
+
+//     state.controls.add_tracks_to_queue(track_ids);
+
+//     Ok(
+//         state.send_toast(qobuz_player_controls::notification::Notification::Success(
+//             format!("{} added to queue", album_data.album.title),
+//         )),
+//     )
+// }
 
 async fn set_favorite(
     State(state): State<Arc<AppState>>,

@@ -33,6 +33,47 @@ pub fn routes() -> Router<std::sync::Arc<crate::AppState>> {
         )
         .route("/playlist/add-track", post(add_track_to_playlist_action))
         .route("/playlist/reorder", post(reorder_tracks))
+        .route("/playlist/action", put(action))
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum Action {
+    AddToQueue,
+    PlayNext,
+}
+#[derive(Deserialize)]
+struct ActionParameters {
+    id: u32,
+    action: Action,
+}
+async fn action(
+    State(state): State<Arc<AppState>>,
+    Form(req): Form<ActionParameters>,
+) -> ResponseResult {
+    match req.action {
+        Action::AddToQueue => {
+            let playlist = ok_or_send_error_toast(&state, state.client.playlist(req.id).await)?;
+            let track_ids = playlist.tracks.into_iter().map(|x| x.id).collect();
+
+            state.controls.add_tracks_to_queue(track_ids);
+
+            Ok(state.send_toast(Notification::Success(format!(
+                "{} added to queue",
+                playlist.title
+            ))))
+        }
+        Action::PlayNext => {
+            let playlist = ok_or_send_error_toast(&state, state.client.playlist(req.id).await)?;
+            let track_ids = playlist.tracks.into_iter().map(|x| x.id).collect();
+
+            state.controls.play_tracks_next(track_ids);
+            Ok(state.send_toast(Notification::Success(format!(
+                "Playing {} next",
+                playlist.title
+            ))))
+        }
+    }
 }
 
 #[derive(Deserialize)]

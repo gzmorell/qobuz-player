@@ -70,13 +70,13 @@ enum TrackAction {
     AddToPlaylist,
 }
 #[derive(Deserialize)]
-struct TrackActionParammeters {
+struct TrackActionParameters {
     track_id: u32,
     action: TrackAction,
 }
 async fn track_action(
     State(state): State<Arc<AppState>>,
-    Form(req): Form<TrackActionParammeters>,
+    Form(req): Form<TrackActionParameters>,
 ) -> ResponseResult {
     match req.action {
         TrackAction::AddFavorite => {
