@@ -16,16 +16,22 @@ jobs:
         include:
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
+            features: ""
           - os: ubuntu-22.04-arm
             target: aarch64-unknown-linux-gnu
+            features: "gpio"
           - os: macos-latest
             target: x86_64-apple-darwin
+            features: ""
           - os: macos-latest
             target: aarch64-apple-darwin
+            features: ""
           - os: windows-latest
             target: x86_64-pc-windows-msvc
+            features: ""
           - os: windows-11-arm
             target: aarch64-pc-windows-msvc
+            features: ""
 
     runs-on: ${{ matrix.os }}
 
@@ -36,6 +42,7 @@ jobs:
       - name: Install dependencies
         if: startsWith(matrix.os, 'ubuntu')
         run: |
+          sudo apt-get update
           sudo apt-get install -y pkg-config libasound2-dev
 
       - name: Build and upload binary
@@ -43,5 +50,6 @@ jobs:
         with:
           bin: qobuz-player
           target: ${{ matrix.target }}
+          features: ${{ matrix.features || '' }}
           zip: all
           token: ${{ secrets.GITHUB_TOKEN }}
