@@ -118,8 +118,8 @@ impl Sink {
         tracing::info!("Clearing sink queue");
         *self.duration_played.lock() = Default::default();
 
-        if let Some(player) = self.sink.as_ref() {
-            player.clear();
+        if let Some(sender) = self.sender.as_ref() {
+            sender.clear();
         };
         Ok(())
     }
