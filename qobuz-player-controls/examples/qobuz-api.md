@@ -53,7 +53,10 @@ Signed requests append `request_ts` and `request_sig` as query parameters.
    - `{object}` and `{method}` are derived from the endpoint (e.g. `file/url` → object=`file`, method=`url` → concatenated as `fileurl`)
 3. `request_sig` = MD5 hex digest of the concatenated string
 
-The signing secret (`rng_init`) is obfuscated in the bundle via a timezone lookup table:
+The signing secret (`rng_init`) is obfuscated in the bundle via a timezone lookup table.
+
+It can currently be retrieved by calling `window.rng.prototype.initialization()`.
+It could be useful to retrieve the seeds from the js bundle and port the algorithm to rust.
 
 ```javascript
 // Production: initialSeed("YWJiMjEzNjQ5NDVjMDU4MzMwOTY2N2", window.utimezone.berlin)

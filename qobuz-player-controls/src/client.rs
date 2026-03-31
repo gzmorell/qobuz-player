@@ -87,7 +87,7 @@ impl Client {
     }
 
     async fn init_client(&self) -> Result<QobuzClient> {
-        let client = qobuz_player_client::client::new(
+        let client = QobuzClient::new(
             &self.username,
             &self.password,
             self.max_audio_quality.clone(),

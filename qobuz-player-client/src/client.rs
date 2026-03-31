@@ -30,6 +30,8 @@ use std::{
 use time::macros::format_description;
 use tokio::try_join;
 
+const RNG_INIT: &str = "abb21364945c0583309667d13ca3d93a";
+
 #[derive(Debug)]
 pub struct Client {
     session: Option<StartResponse>,
@@ -92,38 +94,6 @@ impl ReleaseType {
             // ReleaseType::Other => "other",
         }
     }
-}
-
-pub async fn new(
-    username: &str,
-    password: &str,
-    max_audio_quality: AudioQuality,
-) -> Result<Client> {
-    let http_client = reqwest::Client::builder()
-        .cookie_store(true)
-        .build()
-        .expect("infallible");
-
-    let Secrets { app_id } = get_secrets(&http_client).await?;
-
-    tracing::debug!("Got login secrets");
-
-    let base_url = "https://www.qobuz.com/api.json/0.2/".to_string();
-
-    let login = login(username, password, &app_id, &base_url, &http_client).await?;
-    tracing::debug!("Logged in");
-
-    let client = Client {
-        http_client,
-        session: None,
-        user_token: login.user_token,
-        user_id: login.user_id,
-        app_id,
-        base_url,
-        max_audio_quality,
-    };
-
-    Ok(client)
 }
 
 enum Endpoint {
@@ -195,6 +165,38 @@ impl Display for Endpoint {
 }
 
 impl Client {
+    pub async fn new(
+        username: &str,
+        password: &str,
+        max_audio_quality: AudioQuality,
+    ) -> Result<Client> {
+        let http_client = reqwest::Client::builder()
+            .cookie_store(true)
+            .build()
+            .expect("infallible");
+
+        let Secrets { app_id } = get_secrets(&http_client).await?;
+
+        tracing::debug!("Got login secrets");
+
+        let base_url = "https://www.qobuz.com/api.json/0.2/".to_string();
+
+        let login = login(username, password, &app_id, &base_url, &http_client).await?;
+        tracing::debug!("Logged in");
+
+        let client = Client {
+            http_client,
+            session: None,
+            user_token: login.user_token,
+            user_id: login.user_id,
+            app_id,
+            base_url,
+            max_audio_quality,
+        };
+
+        Ok(client)
+    }
+
     pub fn app_id(&self) -> &str {
         &self.app_id
     }
@@ -913,15 +915,13 @@ impl Client {
 }
 
 fn get_request_sig(method: &str, args: BTreeMap<&str, String>, now_string: &str) -> String {
-    let rng_init = "abb21364945c0583309667d13ca3d93a";
-
     let mut n = String::new();
     for (k, v) in args.iter() {
         n.push_str(k);
         n.push_str(v);
     }
 
-    let req_id = format!("{method}{n}{now_string}{rng_init}");
+    let req_id = format!("{method}{n}{now_string}{RNG_INIT}");
     format!("{:x}", md5::compute(req_id.as_bytes()))
 }
 
