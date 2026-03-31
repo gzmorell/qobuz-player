@@ -205,8 +205,6 @@ pub async fn run() -> Result<(), Error> {
     };
 
     {
-        use tracing_subscriber::EnvFilter;
-
         let level_str = match verbosity {
             Some(tracing::Level::TRACE) => "trace",
             Some(tracing::Level::DEBUG) => "debug",
@@ -216,9 +214,12 @@ pub async fn run() -> Result<(), Error> {
             None => "none",
         };
 
-        let filter = EnvFilter::new(format!(
-            "{level_str},stream_download=warn,hyper=warn,reqwest=warn,rustls=warn"
-        ));
+        let filter = match verbosity {
+            Some(_) => {
+                format!("{level_str},stream_download=warn,hyper=warn,reqwest=warn,rustls=warn")
+            }
+            None => level_str.to_string(),
+        };
 
         tracing_subscriber::fmt()
             .with_env_filter(filter)
