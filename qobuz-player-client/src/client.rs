@@ -605,12 +605,17 @@ impl Client {
         } = response;
 
         let mut albums = albums.items;
-        albums.sort_by(|a, b| a.artist.name.cmp(&b.artist.name));
+        albums.sort_by(|a, b| {
+            a.artist
+                .name
+                .to_lowercase()
+                .cmp(&b.artist.name.to_lowercase())
+        });
 
         let mut artists = artists.items;
-        artists.sort_by(|a, b| a.name.cmp(&b.name));
+        artists.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
 
-        favorite_playlists.sort_by(|a, b| a.title.cmp(&b.title));
+        favorite_playlists.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
 
         Ok(qobuz_player_models::Favorites {
             albums: albums
