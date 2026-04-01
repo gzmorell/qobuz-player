@@ -142,6 +142,12 @@ impl TrackList {
                 Ok(Output::Consumed)
             }
 
+            KeyCode::Char('S') => {
+                let ids = self.filter().iter().map(|x| x.id).collect();
+                controls.play_tracks(ids, true);
+                Ok(Output::Consumed)
+            }
+
             KeyCode::Enter => {
                 let Some(index) = self.items.state.selected() else {
                     return Ok(Output::Consumed);

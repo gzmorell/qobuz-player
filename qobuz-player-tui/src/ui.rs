@@ -199,6 +199,7 @@ fn render_help(frame: &mut Frame) {
         ["Select selected item", "Enter"],
         ["Cycle subgroup", "Left/right"],
         ["Add to queue", "B"],
+        ["Shuffle tracks", "S"],
         ["Play next", "N"],
         ["Delete from queue", "D"],
         ["Move up in queue", "u"],

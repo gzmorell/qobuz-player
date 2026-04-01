@@ -5,6 +5,17 @@
   hx-target="this"
   hx-swap="morph:outerHTML"
 >
+  <div class="flex justify-end p-2">
+    <button
+      class="btn btn-secondary btn-icon"
+      hx-swap="none"
+      hx-put="/favorites/tracks/shuffle"
+      title="Shuffle"
+    >
+      @defer (icons/shuffle.html) {}
+    </button>
+  </div>
+
   @defer (
     list-tracks.html;
     now_playing_id=playing_info.now_playing_id;

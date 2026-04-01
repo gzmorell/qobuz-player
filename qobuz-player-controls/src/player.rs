@@ -428,6 +428,25 @@ impl Player {
         self.new_queue(tracklist).await
     }
 
+    async fn play_tracks(&mut self, ids: Vec<u32>, shuffle: bool) -> AppResult<()> {
+        let mut tracks: Vec<_> = self
+            .client
+            .tracks(ids)
+            .await?
+            .into_iter()
+            .filter(|t| t.available)
+            .collect();
+
+        if shuffle {
+            tracks.shuffle(&mut rand::rng());
+        }
+
+        let mut tracklist = Tracklist::new(TracklistType::Tracks, tracks);
+
+        tracklist.skip_to_track(0);
+        self.new_queue(tracklist).await
+    }
+
     async fn play_playlist(
         &mut self,
         playlist_id: u32,
@@ -575,6 +594,9 @@ impl Player {
             }
             ControlCommand::Track { id } => {
                 self.play_track(id).await?;
+            }
+            ControlCommand::Tracks { ids, shuffle } => {
+                self.play_tracks(ids, shuffle).await?;
             }
             ControlCommand::Next => {
                 self.next().await?;
