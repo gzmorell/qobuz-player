@@ -48,35 +48,6 @@ impl Database {
         Ok(Self { pool })
     }
 
-    pub async fn set_username(&self, username: String) -> AppResult<()> {
-        sqlx::query!(
-            r#"
-            UPDATE credentials
-            SET username=?1
-            WHERE ROWID = 1
-            "#,
-            username
-        )
-        .execute(&self.pool)
-        .await?;
-        Ok(())
-    }
-
-    pub async fn set_password(&self, password: String) -> AppResult<()> {
-        sqlx::query!(
-            r#"
-            UPDATE credentials
-            SET password=?1
-            WHERE ROWID = 1
-            "#,
-            password
-        )
-        .execute(&self.pool)
-        .await?;
-
-        Ok(())
-    }
-
     pub async fn set_user_auth_token(&self, token: String) -> AppResult<()> {
         sqlx::query!(
             "UPDATE credentials SET user_auth_token = ? WHERE ROWID = 1",
@@ -344,8 +315,6 @@ impl From<i64> for ReferenceTypeDatabase {
 }
 
 pub struct DatabaseCredentials {
-    pub username: Option<String>,
-    pub password: Option<String>,
     pub user_auth_token: Option<String>,
 }
 

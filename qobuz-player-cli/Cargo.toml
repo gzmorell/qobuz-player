@@ -28,8 +28,6 @@ tokio_schedule.workspace = true
 time.workspace = true
 futures.workspace = true
 rodio.workspace = true
-axum.workspace = true
-open = "5"
 
 [target.'cfg(any(windows, target_os = "linux", target_os = "macos"))'.dependencies]
 keepawake = { workspace = true }

@@ -14,6 +14,7 @@ use crate::{
         track::Track,
     },
 };
+use axum::{extract::Query, response::Html, routing::get};
 use regex::Regex;
 use reqwest::{
     Method, Response, StatusCode,
@@ -24,6 +25,9 @@ use serde_json::Value;
 use std::{
     collections::{BTreeMap, HashMap},
     fmt::Display,
+    io::{Write, stdin, stdout},
+    net::TcpListener,
+    time::Duration,
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -40,7 +44,7 @@ pub struct Client {
     max_audio_quality: AudioQuality,
 }
 
-#[derive(Clone, Debug, clap::ValueEnum)]
+#[derive(Clone, Copy, Debug, clap::ValueEnum)]
 pub enum AudioQuality {
     Mp3 = 5,
     CD = 6,
@@ -216,6 +220,106 @@ impl Display for Endpoint {
 
         f.write_str(endpoint)
     }
+}
+
+pub async fn browser_oauth_login() -> Result<String> {
+    let app_id = get_app_id().await.map_err(|_| Error::Login)?;
+
+    let listener = TcpListener::bind("127.0.0.1:0").map_err(|_| Error::Login)?;
+    let port = listener.local_addr().map_err(|_| Error::Login)?.port();
+    drop(listener);
+
+    let oauth_url = build_oauth_url(&app_id, port);
+
+    let manual_oauth_url = format!(
+        "https://www.qobuz.com/signin/oauth?ext_app_id={app_id}&redirect_url=http%3A%2F%2Flocalhost"
+    );
+
+    let (tx, mut rx) = tokio::sync::mpsc::channel::<String>(1);
+
+    let app = axum::Router::new().route(
+        "/",
+        get(move |Query(params): Query<HashMap<String, String>>| {
+            let tx = tx.clone();
+            async move {
+                if let Some(code) = params.get("code_autorisation") {
+                    let _ = tx.send(code.clone()).await;
+                    Html("<html><body><h2>Login successful!</h2><p>You can close this tab and return to the player.</p></body></html>".to_string())
+                } else {
+                    Html("<html><body><h2>Login failed</h2><p>No authorization code received.</p></body></html>".to_string())
+                }
+            }
+        }),
+    );
+
+    let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{port}"))
+        .await
+        .map_err(|_| Error::Login)?;
+
+    let server = tokio::spawn(async move {
+        axum::serve(listener, app).await.ok();
+    });
+
+    println!("Opening browser for Qobuz login...");
+    println!();
+    println!("  {oauth_url}");
+    println!();
+    println!("Headless? Open this URL on another device instead:");
+    println!();
+    println!("  {manual_oauth_url}");
+    println!();
+    println!("After login, copy the code_autorisation value from the URL bar and paste it here.");
+    println!("Or if on the same network, the redirect will be captured automatically.");
+    println!();
+    let _ = open::that(&oauth_url);
+
+    let code = tokio::select! {
+        result = async {
+            tokio::time::timeout(Duration::from_secs(300), rx.recv())
+                .await
+                .ok()
+                .flatten()
+        } => {
+            match result {
+                Some(code) => code,
+                None => return Err(Error::Login),
+            }
+        }
+        result = read_code_from_stdin() => {
+            result?
+        }
+    };
+
+    server.abort();
+
+    tracing::debug!("Received authorization code: {}", code);
+
+    let result = exchange_oauth_code(&code, &app_id).await.map_err(|e| {
+        tracing::error!("OAuth code exchange failed: {:?}", e);
+        Error::Login
+    })?;
+
+    Ok(result.user_auth_token)
+}
+
+async fn read_code_from_stdin() -> Result<String, Error> {
+    tokio::task::spawn_blocking(|| {
+        print!("Paste code: ");
+        stdout().flush().ok();
+        let mut input = String::new();
+        stdin().read_line(&mut input).map_err(|_| Error::Login)?;
+        let input = input.trim();
+        // Accept either raw code or full URL containing code_autorisation=
+        if let Some(pos) = input.find("code_autorisation=") {
+            let code = &input[pos + "code_autorisation=".len()..];
+            let code = code.split(['&', ' ', '#']).next().unwrap_or(code);
+            Ok(code.to_string())
+        } else {
+            Ok(input.to_string())
+        }
+    })
+    .await
+    .map_err(|_| Error::Login)?
 }
 
 impl Client {
@@ -929,7 +1033,7 @@ pub async fn exchange_oauth_code(code: &str, app_id: &str) -> Result<OAuthResult
 }
 
 /// Build the OAuth URL that the user should open in their browser.
-pub fn build_oauth_url(app_id: &str, redirect_port: u16) -> String {
+fn build_oauth_url(app_id: &str, redirect_port: u16) -> String {
     let redirect = format!("http://localhost:{redirect_port}");
     format!("https://www.qobuz.com/signin/oauth?ext_app_id={app_id}&redirect_url={redirect}",)
 }

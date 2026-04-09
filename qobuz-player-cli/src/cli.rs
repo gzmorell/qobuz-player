@@ -1,17 +1,8 @@
-use std::{
-    collections::{HashMap, HashSet},
-    io::{Write, stdin, stdout},
-    net::TcpListener,
-    path::PathBuf,
-    sync::Arc,
-    time::Duration,
-};
+use std::{collections::HashSet, path::PathBuf, sync::Arc, time::Duration};
 
-use axum::{extract::Query, response::Html, routing::get};
 use clap::{Parser, Subcommand};
 #[cfg(any(windows, target_os = "linux", target_os = "macos"))]
 use futures::executor::block_on;
-use qobuz_player_client::client as qobuz_api;
 use qobuz_player_controls::{
     AudioQuality, client::Client, database::Database, notification::NotificationBroadcast,
     player::Player,
@@ -122,6 +113,7 @@ enum Commands {
     },
     /// Authenticate with Qobuz via browser
     Login,
+    Logout,
     /// Persist configurations
     Config {
         #[clap(subcommand)]
@@ -134,12 +126,6 @@ enum Commands {
 
 #[derive(Subcommand)]
 pub enum ConfigCommands {
-    /// Set username.
-    #[clap(value_parser)]
-    Username { username: String },
-    /// Set password. Leave empty to get a password prompt.
-    #[clap(value_parser)]
-    Password { password: Option<String> },
     /// Set max audio quality.
     #[clap(value_parser)]
     MaxAudioQuality {
@@ -199,29 +185,27 @@ pub async fn run() -> Result<(), Error> {
         _ => cli.verbosity,
     };
 
-    {
-        let level_str = match verbosity {
-            Some(tracing::Level::TRACE) => "trace",
-            Some(tracing::Level::DEBUG) => "debug",
-            Some(tracing::Level::INFO) => "info",
-            Some(tracing::Level::WARN) => "warn",
-            Some(tracing::Level::ERROR) => "error",
-            None => "none",
-        };
+    let level_str = match verbosity {
+        Some(tracing::Level::TRACE) => "trace",
+        Some(tracing::Level::DEBUG) => "debug",
+        Some(tracing::Level::INFO) => "info",
+        Some(tracing::Level::WARN) => "warn",
+        Some(tracing::Level::ERROR) => "error",
+        None => "none",
+    };
 
-        let filter = match verbosity {
-            Some(_) => {
-                format!("{level_str},stream_download=warn,hyper=warn,reqwest=warn,rustls=warn")
-            }
-            None => level_str.to_string(),
-        };
+    let filter = match verbosity {
+        Some(_) => {
+            format!("{level_str},stream_download=warn,hyper=warn,reqwest=warn,rustls=warn")
+        }
+        None => level_str.to_string(),
+    };
 
-        tracing_subscriber::fmt()
-            .with_env_filter(filter)
-            .with_target(false)
-            .compact()
-            .init();
-    }
+    tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_target(false)
+        .compact()
+        .init();
 
     match cli.command.unwrap_or(Commands::Open {
         max_audio_quality: Default::default(),
@@ -284,17 +268,6 @@ pub async fn run() -> Result<(), Error> {
                 cache_dir
             });
 
-            let user_auth_token = match database_credentials.user_auth_token {
-                Some(token) => token,
-                None => {
-                    tracing::info!("No auth token found, starting browser login...");
-                    browser_oauth_login(&database).await?
-                }
-            };
-
-            let state_change_delay = state_change_delay_ms.map(Duration::from_millis);
-            let sample_rate_change_delay = sample_rate_change_delay_ms.map(Duration::from_millis);
-
             let max_audio_quality = max_audio_quality.unwrap_or_else(|| {
                 database_configuration
                     .max_audio_quality
@@ -302,7 +275,20 @@ pub async fn run() -> Result<(), Error> {
                     .expect("This should always convert")
             });
 
-            let client = Arc::new(Client::new(user_auth_token, max_audio_quality.clone()));
+            let client = match database_credentials.user_auth_token {
+                Some(token) => Arc::new(Client::new(token, max_audio_quality)),
+                None => {
+                    tracing::info!("No auth token found, starting browser login...");
+                    let (client, token) = Client::new_with_oauth_login(max_audio_quality).await?;
+
+                    database.set_user_auth_token(token).await?;
+
+                    Arc::new(client)
+                }
+            };
+
+            let state_change_delay = state_change_delay_ms.map(Duration::from_millis);
+            let sample_rate_change_delay = sample_rate_change_delay_ms.map(Duration::from_millis);
 
             let broadcast = Arc::new(NotificationBroadcast::new());
             let mut player = Player::new(
@@ -486,33 +472,18 @@ pub async fn run() -> Result<(), Error> {
             Ok(())
         }
         Commands::Login => {
-            browser_oauth_login(&database).await?;
+            let (_client, token) = Client::new_with_oauth_login(AudioQuality::Mp3).await?;
+
+            database.set_user_auth_token(token).await?;
             println!("Login successful! You can now run qobuz-player.");
             Ok(())
         }
+        Commands::Logout => {
+            database.clear_user_auth_token().await?;
+            println!("Logout successful!");
+            Ok(())
+        }
         Commands::Config { command } => match command {
-            ConfigCommands::Username { username } => {
-                database.set_username(username).await?;
-                println!("Username saved.");
-                Ok(())
-            }
-            ConfigCommands::Password { password } => {
-                let password = match password {
-                    Some(password) => password,
-                    None => {
-                        print!("Password: ");
-                        stdout().flush().or(Err(Error::LoginFailed))?;
-                        stdin()
-                            .lines()
-                            .next()
-                            .expect("encountered EOF")
-                            .or(Err(Error::LoginFailed))?
-                    }
-                };
-                database.set_password(password).await?;
-                println!("Password saved.");
-                Ok(())
-            }
             ConfigCommands::MaxAudioQuality { quality } => {
                 database.set_max_audio_quality(quality).await?;
 
@@ -545,120 +516,6 @@ pub async fn run() -> Result<(), Error> {
             Ok(())
         }
     }
-}
-
-async fn browser_oauth_login(database: &Database) -> Result<String, Error> {
-    let app_id = qobuz_api::get_app_id()
-        .await
-        .map_err(|_| Error::LoginFailed)?;
-
-    let listener = TcpListener::bind("127.0.0.1:0").map_err(|_| Error::LoginFailed)?;
-    let port = listener
-        .local_addr()
-        .map_err(|_| Error::LoginFailed)?
-        .port();
-    drop(listener);
-
-    let oauth_url = qobuz_api::build_oauth_url(&app_id, port);
-
-    let manual_oauth_url = format!(
-        "https://www.qobuz.com/signin/oauth?ext_app_id={app_id}&redirect_url=http%3A%2F%2Flocalhost"
-    );
-
-    let (tx, mut rx) = tokio::sync::mpsc::channel::<String>(1);
-
-    let app = axum::Router::new().route(
-        "/",
-        get(move |Query(params): Query<HashMap<String, String>>| {
-            let tx = tx.clone();
-            async move {
-                if let Some(code) = params.get("code_autorisation") {
-                    let _ = tx.send(code.clone()).await;
-                    Html("<html><body><h2>Login successful!</h2><p>You can close this tab and return to the player.</p></body></html>".to_string())
-                } else {
-                    Html("<html><body><h2>Login failed</h2><p>No authorization code received.</p></body></html>".to_string())
-                }
-            }
-        }),
-    );
-
-    let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{port}"))
-        .await
-        .map_err(|_| Error::LoginFailed)?;
-
-    let server = tokio::spawn(async move {
-        axum::serve(listener, app).await.ok();
-    });
-
-    println!("Opening browser for Qobuz login...");
-    println!();
-    println!("  {oauth_url}");
-    println!();
-    println!("Headless? Open this URL on another device instead:");
-    println!();
-    println!("  {manual_oauth_url}");
-    println!();
-    println!("After login, copy the code_autorisation value from the URL bar and paste it here.");
-    println!("Or if on the same network, the redirect will be captured automatically.");
-    println!();
-    let _ = open::that(&oauth_url);
-
-    let code = tokio::select! {
-        result = async {
-            tokio::time::timeout(Duration::from_secs(300), rx.recv())
-                .await
-                .ok()
-                .flatten()
-        } => {
-            match result {
-                Some(code) => code,
-                None => return Err(Error::LoginFailed),
-            }
-        }
-        result = read_code_from_stdin() => {
-            result?
-        }
-    };
-
-    server.abort();
-
-    tracing::debug!("Received authorization code: {}", code);
-
-    let result = qobuz_api::exchange_oauth_code(&code, &app_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("OAuth code exchange failed: {:?}", e);
-            Error::LoginFailed
-        })?;
-
-    database
-        .set_user_auth_token(result.user_auth_token.clone())
-        .await?;
-
-    tracing::info!("Auth token saved.");
-    Ok(result.user_auth_token)
-}
-
-async fn read_code_from_stdin() -> Result<String, Error> {
-    tokio::task::spawn_blocking(|| {
-        print!("Paste code: ");
-        stdout().flush().ok();
-        let mut input = String::new();
-        stdin()
-            .read_line(&mut input)
-            .map_err(|_| Error::LoginFailed)?;
-        let input = input.trim();
-        // Accept either raw code or full URL containing code_autorisation=
-        if let Some(pos) = input.find("code_autorisation=") {
-            let code = &input[pos + "code_autorisation=".len()..];
-            let code = code.split(['&', ' ', '#']).next().unwrap_or(code);
-            Ok(code.to_string())
-        } else {
-            Ok(input.to_string())
-        }
-    })
-    .await
-    .map_err(|_| Error::LoginFailed)?
 }
 
 fn error_exit(error: Error) {

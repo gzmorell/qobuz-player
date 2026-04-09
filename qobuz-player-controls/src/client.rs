@@ -11,6 +11,7 @@ use moka::future::Cache;
 use qobuz_player_client::{
     client::{
         AudioQuality, FeaturedAlbumType, FeaturedGenreAlbumType, FeaturedPlaylistType, ReleaseType,
+        browser_oauth_login,
     },
     qobuz_models::TrackURL,
 };
@@ -47,6 +48,13 @@ impl Client {
     pub async fn app_id(&self) -> AppResult<String> {
         let client = self.get_client().await?;
         Ok(client.app_id().to_string())
+    }
+
+    pub async fn new_with_oauth_login(max_audio_quality: AudioQuality) -> Result<(Self, String)> {
+        let token = browser_oauth_login().await?;
+        let client = Self::new(token.clone(), max_audio_quality);
+
+        Ok((client, token))
     }
 
     pub fn new(user_auth_token: String, max_audio_quality: AudioQuality) -> Self {
@@ -97,8 +105,7 @@ impl Client {
     }
 
     async fn init_client(&self) -> Result<QobuzClient> {
-        let client =
-            QobuzClient::new(&self.user_auth_token, self.max_audio_quality.clone()).await?;
+        let client = QobuzClient::new(&self.user_auth_token, self.max_audio_quality).await?;
 
         Ok(client)
     }

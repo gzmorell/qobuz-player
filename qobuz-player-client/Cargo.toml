@@ -16,7 +16,9 @@ snafu.workspace = true
 tracing.workspace = true
 url.workspace = true
 clap.workspace = true
+tokio.workspace = true
+axum.workspace = true
+open.workspace = true
 
 [dev-dependencies]
-tokio.workspace = true
 qobuz-player-controls = { version = "*", path = "../qobuz-player-controls" }
