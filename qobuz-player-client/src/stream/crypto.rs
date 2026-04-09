@@ -1,12 +1,13 @@
 use aes::cipher::{BlockDecryptMut, KeyIvInit, StreamCipher};
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
-use hkdf::Hkdf;
+use hkdf::{GenericHkdf, hmac::Hmac};
 use sha2::Sha256;
 
 use crate::Error;
 
 type Aes128CbcDec = cbc::Decryptor<aes::Aes128>;
 type Aes128Ctr = ctr::Ctr128BE<aes::Aes128>;
+type HkdfSha256 = GenericHkdf<Hmac<Sha256>>;
 
 const RNG_INIT: &str = "abb21364945c0583309667d13ca3d93a";
 
@@ -36,7 +37,7 @@ pub fn derive_session_key(infos: &str) -> Result<[u8; 16], Error> {
 
     let ikm = hex_decode(RNG_INIT)?;
 
-    let hk = Hkdf::<Sha256>::new(Some(&salt), &ikm);
+    let hk = HkdfSha256::new(Some(&salt), &ikm);
     let mut okm = [0u8; 16];
     hk.expand(&info, &mut okm).map_err(|e| Error::StreamError {
         message: format!("HKDF expand failed: {e}"),
