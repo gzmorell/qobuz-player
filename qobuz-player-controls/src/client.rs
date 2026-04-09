@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::models::{
     Album, AlbumSimple, ArtistPage, Favorites, Genre, Playlist, PlaylistSimple, SearchResults,
     Track,
@@ -13,7 +15,7 @@ use qobuz_player_client::{
         AudioQuality, FeaturedAlbumType, FeaturedGenreAlbumType, FeaturedPlaylistType, ReleaseType,
         browser_oauth_login,
     },
-    qobuz_models::TrackURL,
+    stream::flac_source_stream::SeekableStreamReader,
 };
 use time::Duration;
 use tokio::{
@@ -134,11 +136,14 @@ impl Client {
         Ok(cell.write().await)
     }
 
-    pub async fn track_url(&self, track_id: u32) -> Result<(TrackURL, Option<String>)> {
+    pub async fn stream_track(
+        &self,
+        track_id: u32,
+        cache_path: PathBuf,
+    ) -> Result<SeekableStreamReader> {
         let mut client = self.get_client_mut().await?;
-        let track_url = client.track_url(track_id).await?;
-        let infos = client.session_infos().map(|s| s.to_string());
-        Ok((track_url, infos))
+        let stream = client.stream_track(track_id, cache_path).await?;
+        Ok(stream)
     }
 
     pub async fn album(&self, id: &str) -> Result<Album> {

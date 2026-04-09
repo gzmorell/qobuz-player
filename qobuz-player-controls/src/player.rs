@@ -65,7 +65,7 @@ impl Player {
         let (volume, volume_receiver) = watch::channel(volume);
         let sink = Sink::new(volume_receiver, preferred_device_id)?;
 
-        let downloader = Downloader::new(audio_cache_dir, broadcast.clone(), database.clone());
+        let downloader = Downloader::new(audio_cache_dir, database.clone(), client.clone());
 
         let track_finished = sink.track_finished();
 
@@ -178,11 +178,7 @@ impl Player {
             self.next_track_is_queried = true;
         }
 
-        let (track_url, session_infos) = self.client.track_url(track.id).await?;
-        let download_result = self
-            .downloader
-            .ensure_track_is_downloaded(track_url, session_infos.as_deref(), track)
-            .await?;
+        let download_result = self.downloader.ensure_track_is_downloaded(track).await?;
 
         self.wait_for_state_change_delay().await;
 

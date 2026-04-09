@@ -6,13 +6,10 @@ use tokio::sync::{broadcast, watch};
 pub use qobuz_player_client::client::AudioQuality;
 
 pub mod client;
-mod cmaf;
 pub mod controls;
-mod crypto;
 pub mod database;
 mod downloader;
 pub mod error;
-mod flac_source_stream;
 pub mod models;
 pub mod notification;
 pub mod player;

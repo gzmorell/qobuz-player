@@ -5,8 +5,8 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::flac_source_stream::SeekableStreamReader;
 use parking_lot::Mutex;
+use qobuz_player_client::stream::flac_source_stream::SeekableStreamReader;
 use rodio::cpal::traits::HostTrait;
 use rodio::queue::queue;
 use rodio::{Decoder, DeviceTrait, Player, Source};

@@ -20,7 +20,7 @@ use stream_download::{
 };
 use tokio::task::JoinHandle;
 
-use crate::{cmaf, crypto, notification::NotificationBroadcast};
+use crate::stream::{cmaf, crypto};
 
 #[derive(Debug, Clone)]
 pub struct SegmentByteInfo {
@@ -34,7 +34,6 @@ struct SharedDownloadState {
     content_key: Option<[u8; 16]>,
     flac_header: Vec<u8>,
     cache_path: PathBuf,
-    broadcast: Arc<NotificationBroadcast>,
     segment_map: Vec<SegmentByteInfo>,
     downloaded: Mutex<Vec<Option<Vec<u8>>>>,
     /// Partial decrypted data from cancelled fetches, persists across task respawns.
@@ -49,7 +48,6 @@ pub struct FlacSourceParams {
     pub content_key: Option<[u8; 16]>,
     pub flac_header: Vec<u8>,
     pub cache_path: PathBuf,
-    pub broadcast: Arc<NotificationBroadcast>,
     pub segment_map: Vec<SegmentByteInfo>,
 }
 
@@ -86,7 +84,6 @@ impl SourceStream for FlacSourceStream {
             content_key: params.content_key,
             flac_header: params.flac_header,
             cache_path: params.cache_path,
-            broadcast: params.broadcast,
             segment_map: params.segment_map,
             downloaded: Mutex::new(vec![None; total_segs]),
             in_progress: Mutex::new(vec![None; total_segs]),
@@ -322,7 +319,6 @@ async fn download_segments(
                 if tx.is_closed() {
                     return;
                 }
-                shared.broadcast.send_error(format!("Segment {seg}: {e}"));
                 let _ = tx.send(Err(io::Error::other(e))).await;
                 return;
             }

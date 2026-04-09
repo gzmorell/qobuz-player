@@ -13,6 +13,12 @@ use crate::{
         search_results::SearchAllResults,
         track::Track,
     },
+    stream::{
+        cmaf, crypto, fetch_segment,
+        flac_source_stream::{
+            FlacSourceParams, FlacSourceStream, SeekableStreamReader, SegmentByteInfo,
+        },
+    },
 };
 use axum::{extract::Query, response::Html, routing::get};
 use regex::Regex;
@@ -27,9 +33,10 @@ use std::{
     fmt::Display,
     io::{Write, stdin, stdout},
     net::TcpListener,
-    time::Duration,
-    time::{SystemTime, UNIX_EPOCH},
+    path::PathBuf,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
+use stream_download::{Settings, StreamDownload, storage::temp::TempStorageProvider};
 
 const RNG_INIT: &str = "abb21364945c0583309667d13ca3d93a";
 
@@ -588,8 +595,89 @@ impl Client {
         Ok(())
     }
 
-    pub fn session_infos(&self) -> Option<&str> {
+    fn session_infos(&self) -> Option<&str> {
         self.session.as_ref().and_then(|s| s.infos.as_deref())
+    }
+
+    pub async fn stream_track(
+        &mut self,
+        track_id: u32,
+        cache_path: PathBuf,
+    ) -> Result<SeekableStreamReader> {
+        let track_url = self.track_url(track_id).await?;
+        let session_infos = self.session_infos().map(|s| s.to_string());
+
+        let content_key = match (&track_url.key, session_infos) {
+            (Some(key_str), Some(infos)) => {
+                let session_key = crypto::derive_session_key(&infos)?;
+                let content_key = crypto::unwrap_content_key(&session_key, key_str)?;
+                tracing::debug!("Derived content key for key_id: {:?}", track_url.key_id);
+                Some(content_key)
+            }
+            _ => {
+                tracing::warn!("No encryption key available");
+                None
+            }
+        };
+
+        let seg0_url = track_url.url_template.replace("$SEGMENT$", "0");
+        let init_bytes = fetch_segment(&seg0_url, 0).await?;
+        let init_info = cmaf::parse_init_segment(&init_bytes)?;
+
+        tracing::info!(
+            "Init segment: {} bytes, FLAC header: {} bytes",
+            init_bytes.len(),
+            init_info.flac_header.len(),
+        );
+
+        // Segment table may list more audio segments than the API's n_segments-1.
+        let audio_segments = init_info.segment_table.len() as u8;
+        if audio_segments == 0 {
+            return Err(Error::StreamError {
+                message: "Track has no audio segments".to_string(),
+            });
+        }
+
+        let flac_header_len = init_info.flac_header.len() as u64;
+        let mut segment_map = Vec::new();
+        let mut cumulative_offset: u64 = 0;
+        for entry in &init_info.segment_table {
+            segment_map.push(SegmentByteInfo {
+                byte_offset: cumulative_offset,
+                byte_len: entry.byte_len as u64,
+            });
+            cumulative_offset += entry.byte_len as u64;
+        }
+        let total_byte_len = flac_header_len + cumulative_offset;
+
+        let n_segments_to_download = audio_segments + 1; // +1 for init segment
+
+        tracing::info!(
+            "Segment map: {} audio segments, total FLAC size: {} bytes",
+            audio_segments,
+            total_byte_len,
+        );
+
+        let params = FlacSourceParams {
+            url_template: track_url.url_template,
+            n_segments: n_segments_to_download,
+            content_key,
+            flac_header: init_info.flac_header,
+            cache_path,
+            segment_map: segment_map.clone(),
+        };
+
+        let reader = StreamDownload::new::<FlacSourceStream>(
+            params,
+            TempStorageProvider::default(),
+            Settings::default().prefetch_bytes(4096),
+        )
+        .await
+        .map_err(|e| Error::StreamError {
+            message: format!("Failed to create stream: {e}"),
+        })?;
+
+        Ok(SeekableStreamReader::new(reader, total_byte_len))
     }
 
     pub async fn track_url(&mut self, track_id: u32) -> Result<TrackURL> {

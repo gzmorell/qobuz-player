@@ -10,7 +10,6 @@ description.workspace = true
 gpio = ["qobuz-player-gpio/gpio"]
 
 [dependencies]
-qobuz-player-client = { version = "*", path = "../qobuz-player-client" }
 qobuz-player-controls = { version = "*", path = "../qobuz-player-controls" }
 qobuz-player-mpris = { version = "*", path = "../qobuz-player-mpris" }
 qobuz-player-web = { version = "*", path = "../qobuz-player-web" }

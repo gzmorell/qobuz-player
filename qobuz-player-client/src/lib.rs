@@ -2,6 +2,7 @@ use snafu::prelude::*;
 
 pub mod client;
 pub mod qobuz_models;
+pub mod stream;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -19,6 +20,8 @@ pub enum Error {
     Api { message: String },
     #[snafu(display("Failed to deserialize json: {message}"))]
     DeserializeJSON { message: String },
+    #[snafu(display("Unable to start stream: {message}"))]
+    StreamError { message: String },
 }
 
 impl From<reqwest::Error> for Error {
