@@ -48,7 +48,9 @@ jobs:
       - name: Build and upload binary
         uses: taiki-e/upload-rust-binary-action@v1
         with:
-          bin: qobuz-player
+          bin: |
+            qobuz-player
+            qobuz-tui
           target: ${{ matrix.target }}
           features: ${{ matrix.features || '' }}
           zip: all

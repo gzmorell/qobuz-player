@@ -1,3 +1,4 @@
+
 [package]
 name = "qobuz-player-tui"
 
@@ -6,8 +7,13 @@ edition.workspace = true
 license-file.workspace = true
 repository.workspace = true
 
+[[bin]]
+name = "qobuz-tui"
+path = "src/main.rs"
+
 [dependencies]
 qobuz-player-controls = { version = "*", path = "../qobuz-player-controls" }
+qobuz-player-mpris = { version = "*", path = "../qobuz-player-mpris" }
 
 ratatui.workspace = true
 crossterm.workspace = true
@@ -17,3 +23,11 @@ tui-input.workspace = true
 image.workspace = true
 reqwest.workspace = true
 tokio.workspace = true
+
+# binary dependencies
+clap.workspace = true
+tokio_schedule.workspace = true
+time.workspace = true
+
+[target.'cfg(any(windows, target_os = "linux", target_os = "macos"))'.dependencies]
+keepawake = { workspace = true }

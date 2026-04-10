@@ -467,31 +467,51 @@ impl Client {
         let favorites_result = client.favorites(1000).await?;
         let user_playlists = client.user_playlists().await?;
 
+        let mut albums: Vec<_> = favorites_result
+            .albums
+            .items
+            .into_iter()
+            .map(|x| parse_album(x, &self.max_audio_quality).into())
+            .collect();
+
+        albums.sort_by(|a: &AlbumSimple, b| {
+            a.artist
+                .name
+                .to_lowercase()
+                .cmp(&b.artist.name.to_lowercase())
+        });
+
+        let mut artists: Vec<_> = favorites_result
+            .artists
+            .items
+            .into_iter()
+            .map(parse_artist)
+            .collect();
+        artists.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+
+        let mut playlists: Vec<_> = user_playlists
+            .playlists
+            .items
+            .into_iter()
+            .map(|x| parse_playlist(x, client.user_id(), &self.max_audio_quality))
+            .collect();
+
+        playlists.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+
+        let mut tracks: Vec<_> = favorites_result
+            .tracks
+            .items
+            .into_iter()
+            .map(|x| parse_track(x, &self.max_audio_quality))
+            .collect();
+
+        tracks.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+
         let favorites = Favorites {
-            albums: favorites_result
-                .albums
-                .items
-                .into_iter()
-                .map(|x| parse_album(x, &self.max_audio_quality).into())
-                .collect(),
-            artists: favorites_result
-                .artists
-                .items
-                .into_iter()
-                .map(parse_artist)
-                .collect(),
-            playlists: user_playlists
-                .playlists
-                .items
-                .into_iter()
-                .map(|x| parse_playlist(x, client.user_id(), &self.max_audio_quality))
-                .collect(),
-            tracks: favorites_result
-                .tracks
-                .items
-                .into_iter()
-                .map(|x| parse_track(x, &self.max_audio_quality))
-                .collect(),
+            albums,
+            artists,
+            playlists,
+            tracks,
         };
 
         self.favorites_cache.set(favorites.clone()).await;

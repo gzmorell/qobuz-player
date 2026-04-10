@@ -3877,14 +3877,19 @@ dependencies = [
 name = "qobuz-player-tui"
 version = "0.9.0"
 dependencies = [
+ "clap",
  "crossterm",
  "futures",
  "image",
+ "keepawake",
  "qobuz-player-controls",
+ "qobuz-player-mpris",
  "ratatui",
  "ratatui-image",
  "reqwest 0.12.28",
+ "time",
  "tokio",
+ "tokio_schedule",
  "tui-input",
 ]
 
