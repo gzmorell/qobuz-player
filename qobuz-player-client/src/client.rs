@@ -31,12 +31,12 @@ use serde_json::Value;
 use std::{
     collections::{BTreeMap, HashMap},
     fmt::Display,
-    io::{Write, stdin, stdout},
     net::TcpListener,
     path::PathBuf,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 use stream_download::{Settings, StreamDownload, storage::temp::TempStorageProvider};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 
 const RNG_INIT: &str = "abb21364945c0583309667d13ca3d93a";
 
@@ -280,6 +280,8 @@ pub async fn browser_oauth_login() -> Result<String> {
     println!();
     let _ = open::that(&oauth_url);
 
+    let mut stdin_task = Some(tokio::spawn(read_code_from_stdin()));
+
     let code = tokio::select! {
         result = async {
             tokio::time::timeout(Duration::from_secs(300), rx.recv())
@@ -287,13 +289,15 @@ pub async fn browser_oauth_login() -> Result<String> {
                 .ok()
                 .flatten()
         } => {
-            match result {
-                Some(code) => code,
-                None => return Err(Error::Login),
+            if let Some(task) = stdin_task.take() {
+                task.abort();
             }
+            result.ok_or(Error::Login)?
         }
-        result = read_code_from_stdin() => {
-            result?
+
+        result = stdin_task.as_mut().unwrap() => {
+            // stdin path won → task already completed
+            result.map_err(|_| Error::Login)??
         }
     };
 
@@ -310,23 +314,26 @@ pub async fn browser_oauth_login() -> Result<String> {
 }
 
 async fn read_code_from_stdin() -> Result<String, Error> {
-    tokio::task::spawn_blocking(|| {
-        print!("Paste code: ");
-        stdout().flush().ok();
-        let mut input = String::new();
-        stdin().read_line(&mut input).map_err(|_| Error::Login)?;
-        let input = input.trim();
-        // Accept either raw code or full URL containing code_autorisation=
-        if let Some(pos) = input.find("code_autorisation=") {
-            let code = &input[pos + "code_autorisation=".len()..];
-            let code = code.split(['&', ' ', '#']).next().unwrap_or(code);
-            Ok(code.to_string())
-        } else {
-            Ok(input.to_string())
-        }
-    })
-    .await
-    .map_err(|_| Error::Login)?
+    print!("Paste code: ");
+    let mut reader = tokio::io::BufReader::new(tokio::io::stdin());
+    let mut out = tokio::io::stdout();
+    out.flush().await.map_err(|_| Error::Login)?;
+    let mut input = String::new();
+
+    let _n = reader
+        .read_line(&mut input)
+        .await
+        .map_err(|_| Error::Login)?;
+
+    let input = input.trim();
+    // Accept either raw code or full URL containing code_autorisation=
+    if let Some(pos) = input.find("code_autorisation=") {
+        let code = &input[pos + "code_autorisation=".len()..];
+        let code = code.split(['&', ' ', '#']).next().unwrap_or(code);
+        Ok(code.to_string())
+    } else {
+        Ok(input.to_string())
+    }
 }
 
 impl Client {
