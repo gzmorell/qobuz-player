@@ -53,6 +53,6 @@ jobs:
             qobuz-tui
           target: ${{ matrix.target }}
           features: ${{ matrix.features || '' }}
-          archive: $bin-$target
+          archive: app-$target
           zip: all
           token: ${{ secrets.GITHUB_TOKEN }}
