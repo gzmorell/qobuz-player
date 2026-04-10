@@ -39,9 +39,16 @@ The terminal ui needs a [nerdfont](https://www.nerdfonts.com/) to display icons 
 Download the tar.gz file for your supported OS from the releases page, extract the file and execute `qobuz-player` or copy it to your `$PATH`.
 
 ### Installation with cargo
+Full cli version:
 ```
-cargo install --git https://github.com/SofusA/qobuz-player
+cargo install --git https://github.com/SofusA/qobuz-player --bin qobuz-player
 ```
+
+tui-only binary:
+```
+cargo install --git https://github.com/SofusA/qobuz-player --bin qobuz-tui
+```
+
 ### Installation from the aur (unofficial)
 Users on arch-linux (based) systems can install it from the aur as [qobuz-player](https://aur.archlinux.org/packages/qobuz-player) ([-git](https://aur.archlinux.org/packages/qobuz-player-git))
 
@@ -69,11 +76,6 @@ Run `qobuz-player --help` or `qobuz-player <subcommand> --help` to see all avail
 To get started:
 
 ```shell
-qobuz-player config username {USERNAME}
-qobuz-player config password {PASSWORD}
-# or to get prompted for the password
-qobuz-player config password
-
 # open tui player
 qobuz-player
 
