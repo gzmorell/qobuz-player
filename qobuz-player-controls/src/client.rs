@@ -15,6 +15,7 @@ use qobuz_player_client::{
         AudioQuality, FeaturedAlbumType, FeaturedGenreAlbumType, FeaturedPlaylistType, ReleaseType,
         browser_oauth_login,
     },
+    qobuz_models::TrackInfo,
     stream::flac_source_stream::SeekableStreamReader,
 };
 use time::Duration;
@@ -136,13 +137,19 @@ impl Client {
         Ok(cell.write().await)
     }
 
+    pub async fn track_url(&self, track_id: u32) -> Result<TrackInfo> {
+        let mut client = self.get_client_mut().await?;
+        let info = client.track_url(track_id).await?;
+        Ok(info)
+    }
+
     pub async fn stream_track(
         &self,
-        track_id: u32,
         cache_path: PathBuf,
+        track_info: TrackInfo,
     ) -> Result<SeekableStreamReader> {
         let mut client = self.get_client_mut().await?;
-        let stream = client.stream_track(track_id, cache_path).await?;
+        let stream = client.stream_track(track_info, cache_path).await?;
         Ok(stream)
     }
 

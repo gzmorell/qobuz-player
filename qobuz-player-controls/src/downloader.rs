@@ -28,7 +28,14 @@ impl Downloader {
     }
 
     pub async fn ensure_track_is_downloaded(&mut self, track: &Track) -> AppResult<DownloadResult> {
-        let cache_path = cache_path(track, &self.audio_cache_dir);
+        let track_info = self.client.track_url(track.id).await?;
+
+        let cache_path = cache_path(
+            track,
+            &track_info.mime_type,
+            track_info.sampling_rate,
+            &self.audio_cache_dir,
+        );
         self.database.set_cache_entry(cache_path.as_path()).await;
 
         if cache_path.exists() {
@@ -36,13 +43,18 @@ impl Downloader {
             return Ok(DownloadResult::Cached(cache_path));
         }
 
-        let stream = self.client.stream_track(track.id, cache_path).await?;
+        let stream = self.client.stream_track(cache_path, track_info).await?;
 
         Ok(DownloadResult::Streaming(stream))
     }
 }
 
-fn cache_path(track: &Track, audio_cache_dir: &Path) -> PathBuf {
+fn cache_path(
+    track: &Track,
+    mime: &str,
+    sample_rate: Option<u32>,
+    audio_cache_dir: &Path,
+) -> PathBuf {
     let artist_name = track.artist_name.as_deref().unwrap_or("unknown");
     let artist_id = track
         .artist_id
@@ -62,11 +74,16 @@ fn cache_path(track: &Track, audio_cache_dir: &Path) -> PathBuf {
         sanitize_name(album_title),
         sanitize_name(album_id),
     );
-    let extension = "flac";
+    let extension = guess_extension(mime);
+
+    let sample_rate_suffix = sample_rate.map(|sr| format!("_{sr}")).unwrap_or_default();
+
     let track_file = format!(
-        "{}_{}.{extension}",
+        "{}_{}{}.{}",
         track.number,
-        sanitize_name(track_title)
+        sanitize_name(track_title),
+        sample_rate_suffix,
+        extension
     );
 
     audio_cache_dir
@@ -108,4 +125,13 @@ fn sanitize_name(input: &str) -> String {
 
     const MAX: usize = 100;
     out.chars().take(MAX).collect()
+}
+
+fn guess_extension(mime: &str) -> String {
+    match mime {
+        m if m.contains("flac") => "flac".to_string(),
+        m if m.contains("mpeg") => "mp3".to_string(),
+        m if m.contains("mp3") => "mp3".to_string(),
+        _ => "unknown".to_string(),
+    }
 }

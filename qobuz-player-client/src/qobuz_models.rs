@@ -29,7 +29,7 @@ pub struct Image {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct TrackURL {
+pub struct TrackInfo {
     pub url_template: String,
     pub mime_type: String,
     pub n_segments: u8,

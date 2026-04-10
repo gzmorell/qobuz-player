@@ -1,7 +1,7 @@
 use crate::{
     Error, Result,
     qobuz_models::{
-        TrackURL,
+        TrackInfo,
         album::Album,
         album_suggestion::{AlbumOfTheWeekQuery, AlbumSuggestionResponse, ReleaseQuery},
         artist::{Artist, ArtistsResponse},
@@ -601,17 +601,16 @@ impl Client {
 
     pub async fn stream_track(
         &mut self,
-        track_id: u32,
+        track_info: TrackInfo,
         cache_path: PathBuf,
     ) -> Result<SeekableStreamReader> {
-        let track_url = self.track_url(track_id).await?;
         let session_infos = self.session_infos().map(|s| s.to_string());
 
-        let content_key = match (&track_url.key, session_infos) {
+        let content_key = match (&track_info.key, session_infos) {
             (Some(key_str), Some(infos)) => {
                 let session_key = crypto::derive_session_key(&infos)?;
                 let content_key = crypto::unwrap_content_key(&session_key, key_str)?;
-                tracing::debug!("Derived content key for key_id: {:?}", track_url.key_id);
+                tracing::debug!("Derived content key for key_id: {:?}", track_info.key_id);
                 Some(content_key)
             }
             _ => {
@@ -620,7 +619,7 @@ impl Client {
             }
         };
 
-        let seg0_url = track_url.url_template.replace("$SEGMENT$", "0");
+        let seg0_url = track_info.url_template.replace("$SEGMENT$", "0");
         let init_bytes = fetch_segment(&seg0_url, 0).await?;
         let init_info = cmaf::parse_init_segment(&init_bytes)?;
 
@@ -659,7 +658,7 @@ impl Client {
         );
 
         let params = FlacSourceParams {
-            url_template: track_url.url_template,
+            url_template: track_info.url_template,
             n_segments: n_segments_to_download,
             content_key,
             flac_header: init_info.flac_header,
@@ -680,7 +679,7 @@ impl Client {
         Ok(SeekableStreamReader::new(reader, total_byte_len))
     }
 
-    pub async fn track_url(&mut self, track_id: u32) -> Result<TrackURL> {
+    pub async fn track_url(&mut self, track_id: u32) -> Result<TrackInfo> {
         self.ensure_valid_session().await?;
 
         let endpoint = format!("{}{}", &self.base_url, Endpoint::TrackURL);
@@ -715,7 +714,7 @@ impl Client {
         )
         .await
         {
-            Ok(response) => match serde_json::from_str::<TrackURL>(response.as_str()) {
+            Ok(response) => match serde_json::from_str::<TrackInfo>(response.as_str()) {
                 Ok(item) => Ok(item),
                 Err(error) => {
                     tracing::debug!("TrackURL deserialize error: {}", error);

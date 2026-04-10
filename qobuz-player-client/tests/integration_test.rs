@@ -4,16 +4,9 @@ use qobuz_player_client::client::{
 use qobuz_player_controls::database::Database;
 
 async fn get_token() -> Option<String> {
-    let token = match std::env::var("QOBUZ_USER_AUTH_TOKEN") {
-        Ok(token) => token,
-        Err(_) => {
-            let database = Database::new().await.unwrap();
-            let credentials = database.get_credentials().await.unwrap();
-            let token = credentials.user_auth_token?;
-            println!("Use token: {:?}", token);
-            return None;
-        }
-    };
+    let database = Database::new().await.unwrap();
+    let credentials = database.get_credentials().await.unwrap();
+    let token = credentials.user_auth_token?;
 
     Some(token)
 }
