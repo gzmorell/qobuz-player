@@ -168,6 +168,13 @@ impl App {
         let (image_tx, mut image_rx) =
             tokio::sync::mpsc::channel::<Option<(StatefulProtocol, f32)>>(1);
 
+        if let Some(image_url) = self.current_image_url.as_ref()
+            && !self.disable_tui_album_cover
+        {
+            let image = fetch_image(image_url).await;
+            self.now_playing.image = image;
+        };
+
         while !self.exit {
             tokio::select! {
                 // Prioritize keyboard events by checking them first with biased
