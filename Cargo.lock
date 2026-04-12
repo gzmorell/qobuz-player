@@ -3926,9 +3926,9 @@ dependencies = [
 
 [[package]]
 name = "qonductor"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5dc899aa38036c13e899e73ac28ea7ba3f8d7e491aa369c948c2077e5a58c89"
+checksum = "7e382869c16a2a73795b344631b73fb03651cbb2403dc6d61071655f613622f9"
 dependencies = [
  "async-stream",
  "axum",

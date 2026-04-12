@@ -166,11 +166,9 @@ impl ConnectState {
     }
 
     async fn run(&mut self, app_id: &str, connect_name: String) -> qonductor::Result<()> {
-        let mut manager = SessionManager::start(0).await?;
+        let mut manager = SessionManager::start(0, app_id).await?;
 
-        let mut session = manager
-            .add_device(DeviceConfig::new(connect_name, app_id))
-            .await?;
+        let mut session = manager.add_device(DeviceConfig::new(connect_name)).await?;
 
         tokio::spawn(async move { manager.run().await });
 
@@ -226,7 +224,7 @@ impl ConnectState {
                     let current_position = self.tracklist_receiver.borrow().current_position();
                     let tracklist_position = cmd
                         .current_queue_item
-                        .and_then(|x| x.queue_item_id)
+                        .map(|x| x.queue_item_id)
                         .map(|x| x as usize);
 
                     if let Some(tracklist_position) = tracklist_position
@@ -296,7 +294,7 @@ impl ConnectState {
                         .into_iter()
                         .map(|x| NewQueueItem {
                             track_id: x.track_id(),
-                            queue_id: x.queue_item_id(),
+                            queue_id: x.queue_item_id,
                         })
                         .collect();
                     self.controls.new_queue(queue_items, false);
@@ -315,7 +313,7 @@ impl ConnectState {
                         .into_iter()
                         .map(|x| NewQueueItem {
                             track_id: x.track_id(),
-                            queue_id: x.queue_item_id(),
+                            queue_id: x.queue_item_id,
                         })
                         .collect();
                     self.controls.new_queue(queue_items, false);
