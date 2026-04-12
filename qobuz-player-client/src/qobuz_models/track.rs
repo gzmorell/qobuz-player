@@ -12,42 +12,15 @@ pub struct Tracks {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Track {
     pub album: Option<Album>,
-    pub audio_info: AudioInfo,
-    pub copyright: Option<String>,
-    pub displayable: bool,
-    pub downloadable: bool,
     pub duration: u32,
-    pub hires: bool,
     pub hires_streamable: bool,
     pub id: u32,
-    pub isrc: Option<String>,
-    pub maximum_bit_depth: i64,
-    pub maximum_channel_count: i64,
-    pub maximum_sampling_rate: Option<f64>,
-    pub media_number: i64,
-    pub parental_warning: bool,
     pub performer: Option<Performer>,
-    pub performers: Option<String>,
-    pub position: Option<usize>,
-    pub previewable: bool,
-    pub purchasable: bool,
-    pub purchasable_at: Option<i64>,
-    pub release_date_download: Option<String>,
-    pub release_date_original: Option<String>,
-    pub release_date_stream: Option<String>,
-    pub sampleable: bool,
     pub streamable: bool,
-    pub streamable_at: Option<i64>,
     pub title: String,
     pub track_number: u32,
-    pub version: Option<String>,
+    pub parental_warning: bool,
     pub playlist_track_id: Option<u64>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AudioInfo {
-    pub replaygain_track_gain: Option<f64>,
-    pub replaygain_track_peak: Option<f64>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

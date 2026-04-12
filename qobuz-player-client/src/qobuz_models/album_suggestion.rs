@@ -5,17 +5,11 @@ use serde::{Deserialize, Serialize};
 pub struct AlbumSuggestion {
     pub id: String,
     pub title: String,
-    pub version: Option<String>,
     pub artists: Option<Vec<OtherArtists>>,
     pub image: Image,
-    pub label: Label,
-    pub genre: Genre,
-    pub release_type: Option<String>,
-    pub release_tags: Option<Vec<String>>,
     pub duration: u32,
     pub dates: Dates,
     pub parental_warning: bool,
-    pub audio_info: AudioInfo,
     pub rights: Rights,
 }
 

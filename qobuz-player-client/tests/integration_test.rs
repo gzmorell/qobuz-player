@@ -124,6 +124,12 @@ async fn album() {
 }
 
 #[tokio::test]
+async fn album_2() {
+    let client = get_client().await.unwrap();
+    client.album("dpognys4zadzb").await.unwrap();
+}
+
+#[tokio::test]
 async fn track() {
     let client = get_client().await.unwrap();
     client.track(64868955).await.unwrap();

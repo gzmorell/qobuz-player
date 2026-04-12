@@ -878,10 +878,9 @@ impl Client {
                 message: error.to_string(),
             })?;
 
-        let item = serde_json::from_str::<T>(response.as_str()).map_err(|error| {
-            Error::DeserializeJSON {
-                message: error.to_string(),
-            }
+        let str = response.as_str();
+        let item = serde_json::from_str::<T>(str).map_err(|error| Error::DeserializeJSON {
+            message: format!("{}, {}", error, str),
         })?;
 
         Ok(item)

@@ -62,7 +62,7 @@ pub fn parse_album_simple(
 ) -> AlbumSimple {
     let artist = s.artists.and_then(|vec| vec.into_iter().next());
     let (artist_id, artist_name) = artist.map_or((0, "Unknown".into()), |artist| {
-        (artist.id as u32, artist.name)
+        (artist.id as u32, artist.name.unwrap_or("Unknown".into()))
     });
 
     AlbumSimple {

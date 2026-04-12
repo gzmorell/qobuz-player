@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::qobuz_models::album_suggestion::{Artist, AudioInfo, PhysicalSupport, Rights};
-
-use super::artist::OtherArtists;
+use crate::qobuz_models::album_suggestion::{Artist, PhysicalSupport, Rights};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ArtistName {
@@ -22,13 +20,10 @@ pub struct ArtistPage {
 pub struct Track {
     pub id: u32,
     pub album: Album,
-    pub isrc: String,
     pub title: String,
     pub artist: Artist,
-    pub artists: Vec<OtherArtists>,
     pub duration: u32,
     pub parental_warning: bool,
-    pub audio_info: AudioInfo,
     pub rights: Rights,
     pub physical_support: PhysicalSupport,
 }
@@ -43,7 +38,6 @@ pub struct Album {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Biography {
     pub content: String,
-    language: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
