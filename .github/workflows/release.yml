@@ -62,3 +62,12 @@ jobs:
           features: ${{ matrix.features || '' }}
           zip: all
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and upload qobuz-tui
+        uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: qobuz-player-web
+          target: ${{ matrix.target }}
+          features: ${{ matrix.features || '' }}
+          zip: all
+          token: ${{ secrets.GITHUB_TOKEN }}

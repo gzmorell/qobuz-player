@@ -3899,11 +3899,13 @@ version = "0.9.1"
 dependencies = [
  "axum",
  "axum-extra",
+ "clap",
  "filesentry",
  "futures",
  "mime",
  "mime_guess",
  "qobuz-player-controls",
+ "qobuz-player-gpio",
  "qobuz-player-rfid",
  "rust-embed",
  "serde",
@@ -3912,6 +3914,7 @@ dependencies = [
  "time",
  "tokio",
  "tokio-stream",
+ "tokio_schedule",
  "tracing",
 ]
 

@@ -33,7 +33,7 @@ mime = "0.3"
 mime_guess = "2"
 rand = "0.10"
 regex = "1"
-reqwest = { version = "0.12", features = ["rustls-tls", "cookies"] }
+reqwest = { version = "0.12", features = ["rustls-tls", "cookies", "json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 snafu = "0.9"
