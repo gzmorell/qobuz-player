@@ -19,7 +19,7 @@ use qobuz_player_controls::{
 use qobuz_player_rfid::RfidState;
 use serde_json::json;
 use skabelon::Templates;
-use std::{convert::Infallible, env, sync::Arc};
+use std::{convert::Infallible, env, path::PathBuf, sync::Arc};
 use tokio::sync::{
     broadcast::{self, Receiver, Sender},
     watch,
@@ -94,10 +94,7 @@ async fn create_router(
     let (tx, _rx) = broadcast::channel::<ServerSentEvent>(100);
     let broadcast_subscribe = broadcast.subscribe();
 
-    let template_path = {
-        let current_dir = env::current_dir().expect("Failed to get current directory");
-        current_dir.join("qobuz-player-web/templates")
-    };
+    let template_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("templates");
 
     let templates = templates(&template_path);
 

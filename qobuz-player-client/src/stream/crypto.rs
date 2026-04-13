@@ -1,4 +1,4 @@
-use aes::cipher::{BlockDecryptMut, KeyIvInit, StreamCipher};
+use aes::cipher::{BlockModeDecrypt, KeyIvInit, StreamCipher};
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use hkdf::{GenericHkdf, hmac::Hmac};
 use sha2::Sha256;
@@ -76,8 +76,8 @@ pub fn unwrap_content_key(session_key: &[u8; 16], key_str: &str) -> Result<[u8; 
     }
 
     let mut buf = wrapped.clone();
-    let decrypted = Aes128CbcDec::new(session_key.into(), iv.as_slice().into())
-        .decrypt_padded_mut::<aes::cipher::block_padding::Pkcs7>(&mut buf)
+    let decrypted = Aes128CbcDec::new(session_key.into(), iv.as_slice().try_into().unwrap())
+        .decrypt_padded::<aes::cipher::block_padding::Pkcs7>(&mut buf)
         .map_err(|e| Error::StreamError {
             message: format!("AES-CBC unwrap failed: {e}"),
         })?;
