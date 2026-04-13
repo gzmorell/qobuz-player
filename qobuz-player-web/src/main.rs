@@ -159,6 +159,16 @@ pub async fn run() -> AppResult<()> {
         });
     }
 
+    #[cfg(feature = "gpio")]
+    if args.gpio {
+        let status_receiver = player.status();
+        tokio::spawn(async move {
+            if let Err(e) = qobuz_player_gpio::init(status_receiver).await {
+                error_exit(e.into());
+            }
+        });
+    }
+
     if let Some(rfid_state) = rfid_state {
         let tracklist_receiver = player.tracklist();
         let controls = player.controls();
