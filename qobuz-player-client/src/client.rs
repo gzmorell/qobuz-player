@@ -879,9 +879,15 @@ impl Client {
             })?;
 
         let str = response.as_str();
-        let item = serde_json::from_str::<T>(str).map_err(|error| Error::DeserializeJSON {
-            message: format!("{}, {}", error, str),
-        })?;
+        let item = match serde_json::from_str::<T>(str) {
+            Ok(item) => item,
+            Err(err) => {
+                tracing::error!("Failed to deserialize: {str}. Error: {err}");
+                return Err(Error::DeserializeJSON {
+                    message: err.to_string(),
+                });
+            }
+        };
 
         Ok(item)
     }
