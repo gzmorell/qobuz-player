@@ -16,6 +16,7 @@ gpio = ["qobuz-player-gpio/gpio"]
 [dependencies]
 qobuz-player-controls = { version = "*", path = "../qobuz-player-controls" }
 qobuz-player-gpio = { version = "*", path = "../qobuz-player-gpio", optional = true }
+qobuz-player-cli = { version = "*", path = "../qobuz-player-cli" }
 
 qonductor.workspace = true
 tokio.workspace = true

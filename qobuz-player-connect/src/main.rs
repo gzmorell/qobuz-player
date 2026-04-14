@@ -1,62 +1,36 @@
-use std::{path::PathBuf, sync::Arc, time::Duration};
+#[cfg(feature = "gpio")]
+use qobuz_player_cli::GpioArgs;
+use qobuz_player_cli::{
+    ConnectNameArgs, DelayArgs, SharedArgs, SharedCommands, handle_shared_commands,
+};
+use std::{sync::Arc, time::Duration};
 use tokio::sync::broadcast;
 use tokio_schedule::{Job, every};
 
 use clap::Parser;
 use qobuz_player_controls::{
-    AppResult, AudioQuality, client::Client, database::Database, error::Error,
+    AppResult, client::Client, database::Database, error::Error,
     notification::NotificationBroadcast, player::Player,
 };
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Arguments {
-    #[clap(short, long)]
-    /// Provide max audio quality (overrides any configured value)
-    max_audio_quality: Option<AudioQuality>,
+    #[clap(flatten)]
+    shared: SharedArgs,
 
-    #[clap(long)]
-    /// Use provided device for audio output, instead of default.
-    /// Use qobuz-player list-devices for output device list
-    output_device_id: Option<String>,
+    #[clap(flatten)]
+    delay: DelayArgs,
 
-    #[clap(long)]
-    /// Delay playback when changing state from paused to playing in milliseconds
-    state_change_delay_ms: Option<u64>,
-
-    #[clap(long)]
-    /// Delay playback when changing sample rate in milliseconds
-    sample_rate_change_delay_ms: Option<u64>,
-
-    #[clap(long, default_value_t = String::from("qobuz-player"))]
-    /// Set qobuz connect device name
-    connect_name: String,
+    #[clap(flatten)]
+    connect: ConnectNameArgs,
 
     #[cfg(feature = "gpio")]
-    #[clap(long, default_value_t = false)]
-    /// Enable gpio interface for raspberry pi. Pin 16 (gpio-23) will be high when playing
-    gpio: bool,
+    #[clap(flatten)]
+    gpio: GpioArgs,
 
-    #[clap(long)]
-    /// Cache audio files in directory [default: Temporary directory]
-    audio_cache: Option<PathBuf>,
-
-    #[clap(long, default_value_t = 1)]
-    /// Hours before audio cache is cleaned. 0 for disable
-    audio_cache_time_to_live: u32,
-
-    #[clap(long)]
-    /// Authenticate with Qobuz via browser
-    login: bool,
-
-    #[clap(long)]
-    /// Logout
-    logout: bool,
-
-    #[clap(long)]
-    /// Set max audio quality. Persisted
-    #[clap(value_enum)]
-    set_max_audio_quality: Option<AudioQuality>,
+    #[clap(subcommand)]
+    command: Option<SharedCommands>,
 }
 
 #[tokio::main]
@@ -73,24 +47,8 @@ pub async fn run() -> AppResult<()> {
     let args = Arguments::parse();
     let database = Arc::new(Database::new().await?);
 
-    if args.logout {
-        database.clear_user_auth_token().await?;
-        println!("Logout successful!");
-        return Ok(());
-    }
-
-    if args.login {
-        let (_client, token) = Client::new_with_oauth_login(AudioQuality::Mp3).await?;
-
-        database.set_user_auth_token(token).await?;
-        println!("Login successful! You can now run qobuz-player.");
-        return Ok(());
-    }
-
-    if let Some(quality) = args.set_max_audio_quality {
-        database.set_max_audio_quality(quality).await?;
-
-        println!("Max audio quality saved.");
+    if let Some(command) = args.command {
+        handle_shared_commands(command, &database).await?;
         return Ok(());
     }
 
@@ -101,13 +59,13 @@ pub async fn run() -> AppResult<()> {
 
     let (_, exit_receiver) = broadcast::channel(5);
 
-    let audio_cache = args.audio_cache.unwrap_or_else(|| {
+    let audio_cache = args.shared.audio_cache.unwrap_or_else(|| {
         let mut cache_dir = std::env::temp_dir();
         cache_dir.push("qobuz-player-cache");
         cache_dir
     });
 
-    let max_audio_quality = args.max_audio_quality.unwrap_or_else(|| {
+    let max_audio_quality = args.shared.max_audio_quality.unwrap_or_else(|| {
         database_configuration
             .max_audio_quality
             .try_into()
@@ -127,8 +85,11 @@ pub async fn run() -> AppResult<()> {
 
     let broadcast = Arc::new(NotificationBroadcast::new());
 
-    let state_change_delay = args.state_change_delay_ms.map(Duration::from_millis);
-    let sample_rate_change_delay = args.sample_rate_change_delay_ms.map(Duration::from_millis);
+    let state_change_delay = args.delay.state_change_delay_ms.map(Duration::from_millis);
+    let sample_rate_change_delay = args
+        .delay
+        .sample_rate_change_delay_ms
+        .map(Duration::from_millis);
 
     let mut player = Player::new(
         tracklist,
@@ -139,7 +100,7 @@ pub async fn run() -> AppResult<()> {
         database.clone(),
         state_change_delay,
         sample_rate_change_delay,
-        args.output_device_id,
+        args.shared.output_device_id,
     )?;
 
     #[cfg(feature = "gpio")]
@@ -163,7 +124,7 @@ pub async fn run() -> AppResult<()> {
         tokio::spawn(async move {
             if let Err(e) = qobuz_player_connect::init(
                 &app_id,
-                args.connect_name,
+                args.connect.connect_name,
                 controls,
                 position_receiver,
                 tracklist_receiver,
@@ -178,13 +139,13 @@ pub async fn run() -> AppResult<()> {
         });
     }
 
-    if args.audio_cache_time_to_live != 0 {
+    if args.shared.audio_cache_time_to_live != 0 {
         let clean_up_schedule = every(1).hour().perform(move || {
             let database = database.clone();
             async move {
                 if let Ok(deleted_paths) = database
                     .clean_up_cache_entries(time::Duration::hours(
-                        args.audio_cache_time_to_live.into(),
+                        args.shared.audio_cache_time_to_live.into(),
                     ))
                     .await
                 {

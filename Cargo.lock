@@ -3748,6 +3748,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "qobuz-player-cli"
+version = "0.9.1"
+dependencies = [
+ "clap",
+ "qobuz-player-controls",
+]
+
+[[package]]
 name = "qobuz-player-client"
 version = "0.9.1"
 dependencies = [
@@ -3782,6 +3790,7 @@ name = "qobuz-player-connect"
 version = "0.9.1"
 dependencies = [
  "clap",
+ "qobuz-player-cli",
  "qobuz-player-controls",
  "qobuz-player-gpio",
  "qonductor",
@@ -3836,6 +3845,7 @@ name = "qobuz-player-rfid"
 version = "0.9.1"
 dependencies = [
  "clap",
+ "qobuz-player-cli",
  "qobuz-player-connect",
  "qobuz-player-controls",
  "qobuz-player-gpio",
@@ -3857,6 +3867,7 @@ dependencies = [
  "futures",
  "image",
  "keepawake",
+ "qobuz-player-cli",
  "qobuz-player-connect",
  "qobuz-player-controls",
  "qobuz-player-mpris",
@@ -3880,6 +3891,7 @@ dependencies = [
  "futures",
  "mime",
  "mime_guess",
+ "qobuz-player-cli",
  "qobuz-player-connect",
  "qobuz-player-controls",
  "qobuz-player-gpio",
