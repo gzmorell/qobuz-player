@@ -1,3 +1,5 @@
+#[cfg(feature = "gpio")]
+use qobuz_player_cli::GpioArgs;
 use qobuz_player_cli::{
     ConnectArgs, DelayArgs, RfidArgs, SharedArgs, SharedCommands, handle_shared_commands,
 };
