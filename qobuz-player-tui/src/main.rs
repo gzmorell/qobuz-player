@@ -129,7 +129,7 @@ pub async fn run() -> AppResult<()> {
     let client = client.clone();
     let broadcast = broadcast.clone();
 
-    if args.connect.enable_connect {
+    if args.connect.connect {
         let app_id = client.app_id().await?;
         let position_receiver = player.position();
         let tracklist_receiver = player.tracklist();

@@ -23,7 +23,7 @@ pub struct SharedArgs {
 #[derive(Args, Debug)]
 pub struct ConnectArgs {
     #[clap(long)]
-    pub enable_connect: bool,
+    pub connect: bool,
 
     #[clap(flatten)]
     pub name_args: ConnectNameArgs,
