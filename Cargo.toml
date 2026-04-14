@@ -7,12 +7,13 @@ members = [
   "qobuz-player-client",
   "qobuz-player-gpio",
   "qobuz-player-rfid",
-  "qobuz-player-connect", "qobuz-player-cli",
+  "qobuz-player-connect",
+  "qobuz-player-cli",
 ]
 resolver = "2"
 
 [workspace.package]
-version = "0.9.1"
+version = "0.10.0"
 edition = "2024"
 license-file = "LICENSE"
 repository = "https://github.com/sofusa/qobuz-player"
