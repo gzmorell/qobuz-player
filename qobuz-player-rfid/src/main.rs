@@ -1,3 +1,5 @@
+#[cfg(feature = "gpio")]
+use qobuz_player_cli::GpioArgs;
 use qobuz_player_cli::{
     ConnectArgs, DelayArgs, RfidArgs, SharedArgs, SharedCommands, handle_shared_commands,
 };
@@ -23,6 +25,10 @@ struct Arguments {
 
     #[clap(flatten)]
     shared: SharedArgs,
+
+    #[cfg(feature = "gpio")]
+    #[clap(flatten)]
+    gpio: GpioArgs,
 
     #[clap(flatten)]
     connect: ConnectArgs,
@@ -102,7 +108,7 @@ pub async fn run() -> AppResult<()> {
     )?;
 
     #[cfg(feature = "gpio")]
-    if args.gpio {
+    if args.gpio.gpio {
         let status_receiver = player.status();
         tokio::spawn(async move {
             if let Err(e) = qobuz_player_gpio::init(status_receiver).await {
