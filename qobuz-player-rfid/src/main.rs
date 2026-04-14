@@ -1,11 +1,9 @@
-use futures::executor::block_on;
-use std::{path::PathBuf, sync::Arc};
+use qobuz_player_rfid::RfidState;
+use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::sync::broadcast;
 use tokio_schedule::{Job, every};
 
 use clap::Parser;
-#[cfg(any(windows, target_os = "linux", target_os = "macos"))]
-use qobuz_player_controls::StatusReceiver;
 use qobuz_player_controls::{
     AppResult, AudioQuality, client::Client, database::Database, error::Error,
     notification::NotificationBroadcast, player::Player,
@@ -23,9 +21,26 @@ struct Arguments {
     /// Use qobuz-player list-devices for output device list
     output_device_id: Option<String>,
 
+    #[clap(long)]
+    /// Delay playback when changing state from paused to playing in milliseconds
+    state_change_delay_ms: Option<u64>,
+
+    #[clap(long)]
+    /// Delay playback when changing sample rate in milliseconds
+    sample_rate_change_delay_ms: Option<u64>,
+
+    #[clap(long)]
+    /// Use other qobuz-player with web for rfid database
+    rfid_server_base_address: Option<String>,
+
+    #[clap(long)]
+    /// Secret for optional qobuz-player rfid server
+    rfid_server_secret: Option<String>,
+
+    #[cfg(feature = "gpio")]
     #[clap(long, default_value_t = false)]
-    /// Disable the album cover image
-    disable_album_cover: bool,
+    /// Enable gpio interface for raspberry pi. Pin 16 (gpio-23) will be high when playing
+    gpio: bool,
 
     #[clap(long)]
     /// Cache audio files in directory [default: Temporary directory]
@@ -97,7 +112,7 @@ pub async fn run() -> AppResult<()> {
     let tracklist = database.get_tracklist().await.unwrap_or_default();
     let volume = database.get_volume().await.unwrap_or(1.0);
 
-    let (exit_sender, exit_receiver) = broadcast::channel(5);
+    let (_, exit_receiver) = broadcast::channel(5);
 
     let audio_cache = args.audio_cache.unwrap_or_else(|| {
         let mut cache_dir = std::env::temp_dir();
@@ -124,6 +139,10 @@ pub async fn run() -> AppResult<()> {
     };
 
     let broadcast = Arc::new(NotificationBroadcast::new());
+
+    let state_change_delay = args.state_change_delay_ms.map(Duration::from_millis);
+    let sample_rate_change_delay = args.sample_rate_change_delay_ms.map(Duration::from_millis);
+
     let mut player = Player::new(
         tracklist,
         client.clone(),
@@ -131,27 +150,36 @@ pub async fn run() -> AppResult<()> {
         broadcast.clone(),
         audio_cache,
         database.clone(),
-        None,
-        None,
+        state_change_delay,
+        sample_rate_change_delay,
         args.output_device_id,
     )?;
 
-    #[cfg(target_os = "linux")]
-    {
-        let position_receiver = player.position();
-        let tracklist_receiver = player.tracklist();
-        let volume_receiver = player.volume();
+    #[cfg(feature = "gpio")]
+    if args.gpio {
         let status_receiver = player.status();
-        let controls = player.controls();
-        let exit_sender = exit_sender.clone();
         tokio::spawn(async move {
-            if let Err(e) = qobuz_player_mpris::init(
-                position_receiver,
+            if let Err(e) = qobuz_player_gpio::init(status_receiver).await {
+                error_exit(e.into());
+            }
+        });
+    }
+
+    {
+        let rfid_state = RfidState::default();
+        let tracklist_receiver = player.tracklist();
+        let controls = player.controls();
+        let database = database.clone();
+
+        tokio::spawn(async move {
+            if let Err(e) = qobuz_player_rfid::init(
+                rfid_state,
                 tracklist_receiver,
-                volume_receiver,
-                status_receiver,
                 controls,
-                exit_sender,
+                database,
+                broadcast,
+                args.rfid_server_base_address,
+                args.rfid_server_secret,
             )
             .await
             {
@@ -159,19 +187,6 @@ pub async fn run() -> AppResult<()> {
             }
         });
     }
-
-    #[cfg(any(windows, target_os = "linux", target_os = "macos"))]
-    {
-        let status_receiver = player.status();
-        sleep_inhibitor(status_receiver);
-    }
-
-    let position_receiver = player.position();
-    let tracklist_receiver = player.tracklist();
-    let status_receiver = player.status();
-    let controls = player.controls();
-    let client = client.clone();
-    let broadcast = broadcast.clone();
 
     if args.connect {
         let app_id = client.app_id().await?;
@@ -198,23 +213,6 @@ pub async fn run() -> AppResult<()> {
             }
         });
     }
-
-    tokio::spawn(async move {
-        if let Err(e) = qobuz_player_tui::init(
-            client,
-            broadcast,
-            controls,
-            position_receiver,
-            tracklist_receiver,
-            status_receiver,
-            exit_sender,
-            args.disable_album_cover,
-        )
-        .await
-        {
-            error_exit(e);
-        };
-    });
 
     if args.audio_cache_time_to_live != 0 {
         let clean_up_schedule = every(1).hour().perform(move || {
@@ -243,58 +241,4 @@ pub async fn run() -> AppResult<()> {
 fn error_exit(error: Error) {
     eprintln!("{error}");
     std::process::exit(1);
-}
-
-#[cfg(any(windows, target_os = "linux", target_os = "macos"))]
-pub fn sleep_inhibitor(mut status_receiver: StatusReceiver) {
-    std::thread::spawn(move || {
-        let mut sleep_inhibitor = SleepInhibitor::new();
-
-        loop {
-            use qobuz_player_controls::Status;
-
-            let changed = block_on(async { status_receiver.changed().await });
-            if changed.is_err() {
-                sleep_inhibitor.restore_sleep();
-                break;
-            }
-
-            let status = *status_receiver.borrow_and_update();
-            match status {
-                Status::Paused => sleep_inhibitor.restore_sleep(),
-                Status::Playing | Status::Buffering => sleep_inhibitor.block_sleep(),
-            }
-        }
-    });
-}
-
-#[cfg(any(windows, target_os = "linux", target_os = "macos"))]
-struct SleepInhibitor {
-    awake: Option<keepawake::KeepAwake>,
-}
-
-#[cfg(any(windows, target_os = "linux", target_os = "macos"))]
-impl SleepInhibitor {
-    fn new() -> Self {
-        Self { awake: None }
-    }
-
-    fn block_sleep(&mut self) {
-        if self.awake.is_none() {
-            let mut builder = keepawake::Builder::default();
-            builder
-                .idle(true)
-                .sleep(true)
-                .reason("Audio playback")
-                .app_name("qobuz-player");
-
-            if let Ok(awake) = builder.create() {
-                self.awake = Some(awake);
-            }
-        }
-    }
-
-    fn restore_sleep(&mut self) {
-        let _ = self.awake.take();
-    }
 }

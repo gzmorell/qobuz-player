@@ -1,12 +1,12 @@
 use std::time::{Duration, SystemTime};
 
 use qobuz_player_controls::{
-    AudioQuality, PositionReceiver, Status, StatusReceiver, TracklistReceiver, VolumeReceiver,
+    AppResult, AudioQuality, PositionReceiver, Status, StatusReceiver, TracklistReceiver,
+    VolumeReceiver,
     controls::{Controls, NewQueueItem},
+    error::Error,
     tracklist::Tracklist,
 };
-
-pub use qonductor::Error;
 
 use qonductor::{
     ActivationState, BufferState, Command, DeviceConfig, DeviceSession, Notification, PlayingState,
@@ -34,7 +34,7 @@ pub async fn init(
     status_receiver: StatusReceiver,
     volume_receiver: VolumeReceiver,
     max_audio_quality: AudioQuality,
-) -> qonductor::Result<()> {
+) -> AppResult<()> {
     let audio_quality = convert_audio_quality(max_audio_quality);
 
     let mut connect_state = ConnectState {
@@ -47,7 +47,10 @@ pub async fn init(
         connected: false,
     };
 
-    connect_state.run(app_id, connect_name).await?;
+    connect_state
+        .run(app_id, connect_name)
+        .await
+        .map_err(map_err)?;
 
     Ok(())
 }
@@ -411,5 +414,11 @@ impl ConnectState {
                 _ => {}
             },
         }
+    }
+}
+
+fn map_err(err: qonductor::Error) -> Error {
+    Error::ConnectError {
+        error: err.to_string(),
     }
 }

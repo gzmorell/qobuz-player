@@ -50,24 +50,28 @@ jobs:
         with:
           bin: qobuz-player
           target: ${{ matrix.target }}
-          features: ${{ matrix.features || '' }}
-          zip: all
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and upload qobuz-tui
-        uses: taiki-e/upload-rust-binary-action@v1
-        with:
-          bin: qobuz-tui
-          target: ${{ matrix.target }}
-          features: ${{ matrix.features || '' }}
-          zip: all
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and upload qobuz-tui
+      - name: Build and upload qobuz-player-web
         uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: qobuz-player-web
           target: ${{ matrix.target }}
           features: ${{ matrix.features || '' }}
-          zip: all
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and upload qobuz-player-rfid
+        uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: qobuz-player-rfid
+          target: ${{ matrix.target }}
+          features: ${{ matrix.features || '' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and upload qobuz-player-connect
+        uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: qobuz-player-connect
+          target: ${{ matrix.target }}
+          features: ${{ matrix.features || '' }}
           token: ${{ secrets.GITHUB_TOKEN }}

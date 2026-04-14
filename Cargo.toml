@@ -1,6 +1,5 @@
 [workspace]
 members = [
-  "qobuz-player-cli",
   "qobuz-player-controls",
   "qobuz-player-web",
   "qobuz-player-mpris",

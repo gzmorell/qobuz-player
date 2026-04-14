@@ -61,6 +61,27 @@ struct Arguments {
     #[clap(long, default_value_t = 1)]
     /// Hours before audio cache is cleaned. 0 for disable
     audio_cache_time_to_live: u32,
+
+    #[clap(long, default_value_t = false)]
+    /// Enable qobuz connect (experimental)
+    connect: bool,
+
+    #[clap(long, default_value_t = String::from("qobuz-player"))]
+    /// Set qobuz connect device name
+    connect_name: String,
+
+    #[clap(long)]
+    /// Authenticate with Qobuz via browser
+    login: bool,
+
+    #[clap(long)]
+    /// Logout
+    logout: bool,
+
+    #[clap(long)]
+    /// Set max audio quality. Persisted
+    #[clap(value_enum)]
+    set_max_audio_quality: Option<AudioQuality>,
 }
 
 #[tokio::main]
@@ -75,8 +96,29 @@ async fn main() {
 
 pub async fn run() -> AppResult<()> {
     let args = Arguments::parse();
-
     let database = Arc::new(Database::new().await?);
+
+    if args.logout {
+        database.clear_user_auth_token().await?;
+        println!("Logout successful!");
+        return Ok(());
+    }
+
+    if args.login {
+        let (_client, token) = Client::new_with_oauth_login(AudioQuality::Mp3).await?;
+
+        database.set_user_auth_token(token).await?;
+        println!("Login successful! You can now run qobuz-player.");
+        return Ok(());
+    }
+
+    if let Some(quality) = args.set_max_audio_quality {
+        database.set_max_audio_quality(quality).await?;
+
+        println!("Max audio quality saved.");
+        return Ok(());
+    }
+
     let database_credentials = database.get_credentials().await?;
     let database_configuration = database.get_configuration().await?;
     let tracklist = database.get_tracklist().await.unwrap_or_default();
@@ -183,6 +225,32 @@ pub async fn run() -> AppResult<()> {
                 broadcast,
                 args.rfid_server_base_address,
                 args.rfid_server_secret,
+            )
+            .await
+            {
+                error_exit(e);
+            }
+        });
+    }
+
+    if args.connect {
+        let app_id = client.app_id().await?;
+        let position_receiver = player.position();
+        let tracklist_receiver = player.tracklist();
+        let volume_receiver = player.volume();
+        let status_receiver = player.status();
+        let controls = player.controls();
+
+        tokio::spawn(async move {
+            if let Err(e) = qobuz_player_connect::init(
+                &app_id,
+                args.connect_name,
+                controls,
+                position_receiver,
+                tracklist_receiver,
+                status_receiver,
+                volume_receiver,
+                max_audio_quality,
             )
             .await
             {

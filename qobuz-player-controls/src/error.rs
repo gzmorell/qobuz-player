@@ -59,6 +59,10 @@ pub enum Error {
     },
     #[snafu(display("Unable to reorder playlist"))]
     PlaylistReorderError,
+    #[snafu(display("{error}"))]
+    ConnectError {
+        error: String,
+    },
 }
 
 impl From<sqlx::migrate::MigrateError> for Error {

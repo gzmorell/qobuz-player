@@ -5,11 +5,25 @@ edition.workspace = true
 license-file.workspace = true
 repository.workspace = true
 
+[[bin]]
+name = "qobuz-player-rfid"
+path = "src/main.rs"
+
+[features]
+gpio = ["qobuz-player-gpio/gpio"]
+
 [dependencies]
 qobuz-player-controls = { version = "*", path = "../qobuz-player-controls" }
+qobuz-player-connect = { version = "*", path = "../qobuz-player-connect" }
+qobuz-player-gpio = { version = "*", path = "../qobuz-player-gpio", optional = true }
 
 tokio.workspace = true
 tracing.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+
+# binary dependencies
+clap.workspace = true
+tokio_schedule.workspace = true
+time.workspace = true

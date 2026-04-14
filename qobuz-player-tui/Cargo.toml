@@ -1,4 +1,3 @@
-
 [package]
 name = "qobuz-player-tui"
 
@@ -8,12 +7,13 @@ license-file.workspace = true
 repository.workspace = true
 
 [[bin]]
-name = "qobuz-tui"
+name = "qobuz-player"
 path = "src/main.rs"
 
 [dependencies]
 qobuz-player-controls = { version = "*", path = "../qobuz-player-controls" }
 qobuz-player-mpris = { version = "*", path = "../qobuz-player-mpris" }
+qobuz-player-connect = { version = "*", path = "../qobuz-player-connect" }
 
 ratatui.workspace = true
 crossterm.workspace = true
