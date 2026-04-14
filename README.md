@@ -4,7 +4,10 @@
 
 Powered by [Qobuz](https://www.qobuz.com). Requires a paid subscription. This does not allow you to listen for free.
 
-The player includes a terminal ui, a web-ui and a RFID player. 
+This is a mono repo for multiple third party apps for Qobuz.
+
+This includes a terminal app, a web server and web-ui, a RFID player, and a minimal Qobuz Connect player. 
+
 The web interface is ideal for a setup with a single board computer, e.g. Raspberry Pi, connected to the speaker system and controlled with a smartphone or tablet.
 
 ### Terminal UI
@@ -39,14 +42,14 @@ The terminal ui needs a [nerdfont](https://www.nerdfonts.com/) to display icons 
 Download the tar.gz file for your supported OS from the releases page, extract the file and execute `qobuz-player` or copy it to your `$PATH`.
 
 ### Installation with cargo
-Full cli version:
+Terminal app:
 ```
 cargo install --git https://github.com/SofusA/qobuz-player --bin qobuz-player
 ```
 
-tui-only binary:
+Web server app:
 ```
-cargo install --git https://github.com/SofusA/qobuz-player --bin qobuz-tui
+cargo install --git https://github.com/SofusA/qobuz-player --bin qobuz-player-web
 ```
 
 ### Installation from the aur (unofficial)
@@ -70,18 +73,9 @@ cargo build
   - `npm run watch`. Watch for style changes. 
 
 ## Get started
+Install your favorites app.
 
 Run `qobuz-player --help` or `qobuz-player <subcommand> --help` to see all available options.
-
-To get started:
-
-```shell
-# open tui player
-qobuz-player
-
-# open player with web ui
-qobuz-player open --web 
-```
 
 ## Web UI
 
