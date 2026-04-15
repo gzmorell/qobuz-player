@@ -24,5 +24,3 @@ tracing.workspace = true
 
 # binary dependencies
 clap.workspace = true
-tokio_schedule.workspace = true
-time.workspace = true

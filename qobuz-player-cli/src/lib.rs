@@ -1,6 +1,10 @@
 use clap::{Args, Subcommand};
-use qobuz_player_controls::{AppResult, AudioQuality, client::Client, database::Database};
-use std::path::PathBuf;
+use qobuz_player_controls::{
+    AppResult, AudioQuality, client::Client, database::Database,
+    notification::NotificationBroadcast, player::Player,
+};
+use std::{path::PathBuf, sync::Arc, time::Duration};
+use tokio_schedule::{Job, every};
 
 #[derive(Args, Debug)]
 pub struct SharedArgs {
@@ -100,4 +104,93 @@ pub async fn handle_shared_commands(command: SharedCommands, database: &Database
             Ok(())
         }
     }
+}
+
+pub async fn get_client(database: &Database, max_audio_quality: AudioQuality) -> AppResult<Client> {
+    let database_credentials = database.get_credentials().await?;
+
+    let client = match database_credentials.user_auth_token {
+        Some(token) => Client::new(token, max_audio_quality),
+        None => {
+            let (client, token) = Client::new_with_oauth_login(max_audio_quality).await?;
+
+            database.set_user_auth_token(token).await?;
+
+            client
+        }
+    };
+
+    Ok(client)
+}
+
+pub fn spawn_clean_up(database: Arc<Database>, audio_cache_time_to_live: u32) {
+    if audio_cache_time_to_live != 0 {
+        let clean_up_schedule = every(1).hour().perform(move || {
+            let database = database.clone();
+            async move {
+                if let Ok(deleted_paths) = database
+                    .clean_up_cache_entries(time::Duration::hours(audio_cache_time_to_live.into()))
+                    .await
+                {
+                    for path in deleted_paths {
+                        _ = tokio::fs::remove_file(path.as_path()).await;
+                    }
+                };
+            }
+        });
+
+        tokio::spawn(clean_up_schedule);
+    }
+}
+
+fn default_audio_cache(path: Option<PathBuf>) -> PathBuf {
+    path.unwrap_or_else(|| {
+        let mut cache_dir = std::env::temp_dir();
+        cache_dir.push("qobuz-player-cache");
+        cache_dir
+    })
+}
+
+pub async fn default_audio_quality(
+    database: &Database,
+    args: Option<AudioQuality>,
+) -> AppResult<AudioQuality> {
+    match args {
+        Some(quality) => Ok(quality),
+        None => {
+            let database_configuration = database.get_configuration().await?;
+            Ok(database_configuration.max_audio_quality.into())
+        }
+    }
+}
+
+pub async fn create_player(
+    audio_cache: Option<PathBuf>,
+    database: Arc<Database>,
+    client: Arc<Client>,
+    broadcast: Arc<NotificationBroadcast>,
+    state_change_delay_ms: Option<u64>,
+    sample_rate_change_delay_ms: Option<u64>,
+    output_device_id: Option<String>,
+) -> AppResult<Player> {
+    let tracklist = database.get_tracklist().await.unwrap_or_default();
+    let volume = database.get_volume().await.unwrap_or(1.0);
+    let audio_cache = default_audio_cache(audio_cache);
+
+    let state_change_delay = state_change_delay_ms.map(Duration::from_millis);
+    let sample_rate_change_delay = sample_rate_change_delay_ms.map(Duration::from_millis);
+
+    let player = Player::new(
+        tracklist,
+        client,
+        volume,
+        broadcast,
+        audio_cache,
+        database,
+        state_change_delay,
+        sample_rate_change_delay,
+        output_device_id,
+    )?;
+
+    Ok(player)
 }

@@ -319,7 +319,7 @@ pub struct DatabaseCredentials {
 }
 
 pub struct DatabaseConfiguration {
-    pub max_audio_quality: i64,
+    pub max_audio_quality: Option<i64>,
 }
 
 #[derive(Debug, sqlx::FromRow, serde::Deserialize)]

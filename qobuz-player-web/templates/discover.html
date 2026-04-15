@@ -59,15 +59,12 @@
           @for (genre in genres) {
             <a
               href="/discover/genres/{{ genre.id }}"
-              class="group relative flex aspect-video items-end overflow-hidden rounded-xl bg-gray-800 p-4 transition-all hover:bg-gray-700 active:scale-95"
+              class="flex aspect-video items-end rounded-xl bg-gray-800 p-4 transition-all duration-200 hover:bg-blue-900 active:scale-95"
               preload="mousedown"
               hx-boost="true"
             >
-              <div
-                class="absolute inset-0 bg-linear-to-tr from-blue-500/10 to-purple-500/10 opacity-0 transition-opacity group-hover:opacity-100"
-              ></div>
               <h3
-                class="z-10 text-lg leading-tight font-bold text-gray-100 group-hover:text-white"
+                class="text-lg leading-tight font-bold text-gray-100 hover:text-white"
               >
                 {{ genre.name }}
               </h3>

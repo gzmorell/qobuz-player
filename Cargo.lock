@@ -3753,6 +3753,9 @@ version = "0.10.0"
 dependencies = [
  "clap",
  "qobuz-player-controls",
+ "time",
+ "tokio",
+ "tokio_schedule",
 ]
 
 [[package]]
@@ -3794,9 +3797,7 @@ dependencies = [
  "qobuz-player-controls",
  "qobuz-player-gpio",
  "qonductor",
- "time",
  "tokio",
- "tokio_schedule",
  "tracing",
 ]
 
@@ -3852,9 +3853,7 @@ dependencies = [
  "reqwest 0.12.28",
  "serde",
  "serde_json",
- "time",
  "tokio",
- "tokio_schedule",
  "tracing",
 ]
 
@@ -3874,9 +3873,7 @@ dependencies = [
  "ratatui",
  "ratatui-image",
  "reqwest 0.12.28",
- "time",
  "tokio",
- "tokio_schedule",
  "tui-input",
 ]
 
@@ -3903,7 +3900,6 @@ dependencies = [
  "time",
  "tokio",
  "tokio-stream",
- "tokio_schedule",
  "tracing",
 ]
 

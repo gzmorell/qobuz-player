@@ -70,16 +70,19 @@ impl Display for AudioQuality {
     }
 }
 
-impl TryFrom<i64> for AudioQuality {
-    type Error = ();
+impl From<Option<i64>> for AudioQuality {
+    fn from(value: Option<i64>) -> Self {
+        let default = AudioQuality::HIFI192;
 
-    fn try_from(value: i64) -> std::result::Result<Self, Self::Error> {
         match value {
-            5 => Ok(AudioQuality::Mp3),
-            6 => Ok(AudioQuality::CD),
-            7 => Ok(AudioQuality::HIFI96),
-            27 => Ok(AudioQuality::HIFI192),
-            _ => Err(()),
+            Some(value) => match value {
+                5 => AudioQuality::Mp3,
+                6 => AudioQuality::CD,
+                7 => AudioQuality::HIFI96,
+                27 => AudioQuality::HIFI192,
+                _ => default,
+            },
+            None => default,
         }
     }
 }

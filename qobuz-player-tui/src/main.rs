@@ -1,15 +1,16 @@
 use futures::executor::block_on;
-use qobuz_player_cli::{ConnectArgs, SharedArgs, SharedCommands, handle_shared_commands};
+use qobuz_player_cli::{
+    ConnectArgs, SharedArgs, SharedCommands, create_player, default_audio_quality, get_client,
+    handle_shared_commands, spawn_clean_up,
+};
 use std::sync::Arc;
 use tokio::sync::broadcast;
-use tokio_schedule::{Job, every};
 
 use clap::Parser;
 #[cfg(any(windows, target_os = "linux", target_os = "macos"))]
 use qobuz_player_controls::StatusReceiver;
 use qobuz_player_controls::{
-    AppResult, client::Client, database::Database, error::Error,
-    notification::NotificationBroadcast, player::Player,
+    AppResult, database::Database, error::Error, notification::NotificationBroadcast,
 };
 
 #[derive(Parser)]
@@ -48,49 +49,24 @@ pub async fn run() -> AppResult<()> {
         return Ok(());
     }
 
-    let database_credentials = database.get_credentials().await?;
-    let database_configuration = database.get_configuration().await?;
-    let tracklist = database.get_tracklist().await.unwrap_or_default();
-    let volume = database.get_volume().await.unwrap_or(1.0);
-
     let (exit_sender, exit_receiver) = broadcast::channel(5);
 
-    let audio_cache = args.shared.audio_cache.unwrap_or_else(|| {
-        let mut cache_dir = std::env::temp_dir();
-        cache_dir.push("qobuz-player-cache");
-        cache_dir
-    });
-
-    let max_audio_quality = args.shared.max_audio_quality.unwrap_or_else(|| {
-        database_configuration
-            .max_audio_quality
-            .try_into()
-            .expect("This should always convert")
-    });
-
-    let client = match database_credentials.user_auth_token {
-        Some(token) => Arc::new(Client::new(token, max_audio_quality)),
-        None => {
-            let (client, token) = Client::new_with_oauth_login(max_audio_quality).await?;
-
-            database.set_user_auth_token(token).await?;
-
-            Arc::new(client)
-        }
-    };
+    let max_audio_quality = default_audio_quality(&database, args.shared.max_audio_quality).await?;
+    let client = get_client(&database, max_audio_quality).await?;
+    let client = Arc::new(client);
 
     let broadcast = Arc::new(NotificationBroadcast::new());
-    let mut player = Player::new(
-        tracklist,
-        client.clone(),
-        volume,
-        broadcast.clone(),
-        audio_cache,
+
+    let mut player = create_player(
+        args.shared.audio_cache,
         database.clone(),
+        client.clone(),
+        broadcast.clone(),
         None,
         None,
         args.shared.output_device_id,
-    )?;
+    )
+    .await?;
 
     #[cfg(target_os = "linux")]
     {
@@ -172,27 +148,9 @@ pub async fn run() -> AppResult<()> {
         };
     });
 
-    if args.shared.audio_cache_time_to_live != 0 {
-        let clean_up_schedule = every(1).hour().perform(move || {
-            let database = database.clone();
-            async move {
-                if let Ok(deleted_paths) = database
-                    .clean_up_cache_entries(time::Duration::hours(
-                        args.shared.audio_cache_time_to_live.into(),
-                    ))
-                    .await
-                {
-                    for path in deleted_paths {
-                        _ = tokio::fs::remove_file(path.as_path()).await;
-                    }
-                };
-            }
-        });
-
-        tokio::spawn(clean_up_schedule);
-    }
-
+    spawn_clean_up(database, args.shared.audio_cache_time_to_live);
     player.player_loop(exit_receiver).await?;
+
     Ok(())
 }
 

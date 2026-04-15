@@ -36,7 +36,6 @@ skabelon.workspace = true
 
 # binary dependencies
 clap.workspace = true
-tokio_schedule.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 filesentry = "0.2.1"

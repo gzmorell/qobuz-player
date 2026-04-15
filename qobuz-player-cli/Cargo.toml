@@ -10,3 +10,6 @@ description.workspace = true
 qobuz-player-controls = { version = "*", path = "../qobuz-player-controls" }
 
 clap.workspace = true
+tokio.workspace = true
+tokio_schedule.workspace = true
+time.workspace = true

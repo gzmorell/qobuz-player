@@ -27,8 +27,6 @@ tokio.workspace = true
 
 # binary dependencies
 clap.workspace = true
-tokio_schedule.workspace = true
-time.workspace = true
 
 [target.'cfg(any(windows, target_os = "linux", target_os = "macos"))'.dependencies]
 keepawake = { workspace = true }
