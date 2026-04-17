@@ -59,8 +59,8 @@ fn build_ui(
     let window = adw::ApplicationWindow::builder()
         .application(app)
         .title("Qobuz Player")
-        .default_width(900)
-        .default_height(600)
+        .default_width(800)
+        .default_height(1000)
         .build();
 
     let tabs = adw::ViewStack::builder().vexpand(true).build();
@@ -102,7 +102,8 @@ fn build_ui(
     let albums_page = AlbumsPage::new(client.clone(), on_open_album.clone());
     albums_page.load();
 
-    tabs.add_titled(albums_page.widget(), Some("albums"), "Albums")
+    // TODO: Finish renaming
+    tabs.add_titled(albums_page.widget(), Some("albums"), "Library")
         .set_icon_name(Some("media-optical-symbolic"));
 
     let search_page = SearchPage::new(client.clone(), on_open_album.clone());
