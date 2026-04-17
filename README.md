@@ -11,7 +11,7 @@ This includes a terminal app, a web server and web-ui, a RFID player, and a mini
 The web interface is ideal for a setup with a single board computer, e.g. Raspberry Pi, connected to the speaker system and controlled with a smartphone or tablet.
 
 ### Terminal UI
-![TUI Screenshot](/assets/qobuz-player.png?raw=true)
+![TUI Screenshot](/assets/qobuz-player.png)
 
 #### Keyboard Shortcuts
 Press <kbd>?</kbd> for an overview of all available keyboard shortcuts
