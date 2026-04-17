@@ -1,19 +1,19 @@
-use std::sync::Arc;
+use std::{rc::Rc, sync::Arc};
 
 use gtk4::prelude::*;
-use qobuz_player_controls::{client::Client, controls::Controls};
+use qobuz_player_controls::client::Client;
 
-use crate::ui::build_album_tile;
+use crate::ui::{album_detail_page::AlbumHeaderInfo, build_album_tile};
 
 pub struct AlbumsPage {
     widget: gtk4::Stack,
     flow: gtk4::FlowBox,
-    controls: Controls,
     client: Arc<Client>,
+    on_open_album: Rc<dyn Fn(AlbumHeaderInfo)>,
 }
 
 impl AlbumsPage {
-    pub fn new(controls: Controls, client: Arc<Client>) -> Self {
+    pub fn new(client: Arc<Client>, on_open_album: Rc<dyn Fn(AlbumHeaderInfo)>) -> Self {
         let spinner = gtk4::Spinner::new();
         spinner.start();
 
@@ -51,8 +51,8 @@ impl AlbumsPage {
         Self {
             widget: stack,
             flow,
-            controls,
             client,
+            on_open_album,
         }
     }
 
@@ -62,9 +62,9 @@ impl AlbumsPage {
 
     pub fn load(&self) {
         let flow = self.flow.clone();
-        let controls = self.controls.clone();
         let client = self.client.clone();
         let stack = self.widget.clone();
+        let on_open_album = self.on_open_album.clone();
 
         stack.set_visible_child_name("loading");
 
@@ -74,7 +74,7 @@ impl AlbumsPage {
                     clear_flowbox(&flow);
 
                     for album in favorites.albums {
-                        let tile = build_album_tile(&album, controls.clone());
+                        let tile = build_album_tile(&album, on_open_album.clone());
                         flow.insert(&tile, -1);
                     }
 

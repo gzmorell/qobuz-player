@@ -1,12 +1,15 @@
-use std::{sync::Arc, time::Duration};
+use std::{rc::Rc, sync::Arc, time::Duration};
 
-use libadwaita::{Application, ApplicationWindow, prelude::*};
+use adw::{Application, prelude::*};
+use glib::clone;
+use libadwaita as adw;
 use qobuz_player_controls::{
     PositionReceiver, Status, StatusReceiver, TracklistReceiver, client::Client,
     controls::Controls, tracklist::Tracklist,
 };
 
 use crate::ui::{
+    album_detail_page::{AlbumDetailPage, AlbumHeaderInfo},
     albums_page::AlbumsPage,
     now_playing_bar::{
         NowPlayingBar, build_now_playing_bar, update_now_playing, update_now_playing_button_icon,
@@ -53,51 +56,74 @@ fn build_ui(
     controls: Controls,
     client: Arc<Client>,
 ) {
-    let window = ApplicationWindow::builder()
+    let window = adw::ApplicationWindow::builder()
         .application(app)
         .title("Qobuz Player")
         .default_width(900)
         .default_height(600)
         .build();
 
-    let stack = libadwaita::ViewStack::builder().vexpand(true).build();
-    let album_page = AlbumsPage::new(controls.clone(), client.clone());
-    album_page.load();
+    let tabs = adw::ViewStack::builder().vexpand(true).build();
 
-    stack
-        .add_titled(album_page.widget(), Some("albums"), "Albums")
-        .set_icon_name(Some("media-optical-symbolic"));
-    let search_page = SearchPage::new(client, controls.clone());
-
-    stack
-        .add_titled(search_page.widget(), Some("search"), "Search")
-        .set_icon_name(Some("system-search-symbolic"));
-
-    let view_switcher = libadwaita::ViewSwitcher::builder()
-        .stack(&stack)
-        .policy(libadwaita::ViewSwitcherPolicy::Wide)
+    let view_switcher = adw::ViewSwitcher::builder()
+        .stack(&tabs)
+        .policy(adw::ViewSwitcherPolicy::Wide)
         .build();
 
-    let header = libadwaita::HeaderBar::builder()
+    let header = adw::HeaderBar::builder()
         .title_widget(&view_switcher)
         .build();
+
+    let root_toolbar = adw::ToolbarView::new();
+    root_toolbar.add_top_bar(&header);
+    root_toolbar.set_content(Some(&tabs));
+
+    let root_page = adw::NavigationPage::builder()
+        .title("Qobuz Player")
+        .child(&root_toolbar)
+        .build();
+
+    let app_nav = adw::NavigationView::new();
+    app_nav.add(&root_page);
+
+    let on_open_album: Rc<dyn Fn(AlbumHeaderInfo)> = Rc::new(clone!(
+        #[weak]
+        app_nav,
+        #[strong]
+        controls,
+        #[strong]
+        client,
+        move |info: AlbumHeaderInfo| {
+            let detail = AlbumDetailPage::new(info.id, controls.clone(), client.clone());
+            app_nav.push(detail.page());
+        }
+    ));
+
+    let albums_page = AlbumsPage::new(client.clone(), on_open_album.clone());
+    albums_page.load();
+
+    tabs.add_titled(albums_page.widget(), Some("albums"), "Albums")
+        .set_icon_name(Some("media-optical-symbolic"));
+
+    let search_page = SearchPage::new(client.clone(), on_open_album.clone());
+
+    tabs.add_titled(search_page.widget(), Some("search"), "Search")
+        .set_icon_name(Some("system-search-symbolic"));
 
     let now_playing = build_now_playing_bar(controls);
 
     let vbox = gtk4::Box::builder()
         .orientation(gtk4::Orientation::Vertical)
         .build();
-
-    vbox.append(&header);
-    vbox.append(&stack);
+    vbox.append(&app_nav);
     vbox.append(&now_playing.revealer);
 
     window.set_content(Some(&vbox));
-    window.show();
+
+    window.present();
 
     let tracklist_value = tracklist_receiver.borrow().clone();
-    let current_track = tracklist_value.current_track();
-    if let Some(track) = current_track {
+    if let Some(track) = tracklist_value.current_track() {
         update_now_playing(&now_playing, track);
     }
 

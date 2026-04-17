@@ -3,7 +3,7 @@ use std::time::Duration;
 use libadwaita::prelude::*;
 use qobuz_player_controls::{Status, controls::Controls, models::Track};
 
-use crate::ui::set_image_from_url;
+use crate::ui::{format_time, set_image_from_url};
 
 #[derive(Clone)]
 pub struct NowPlayingBar {
@@ -125,8 +125,8 @@ pub fn build_now_playing_bar(controls: Controls) -> NowPlayingBar {
     let content = gtk4::Box::builder()
         .orientation(gtk4::Orientation::Horizontal)
         .spacing(8)
-        .margin_start(8)
-        .margin_end(8)
+        .margin_start(24)
+        .margin_end(24)
         .margin_top(8)
         .margin_bottom(8)
         .build();
@@ -189,12 +189,6 @@ pub fn update_now_playing_button_icon(status: &Status, button: &gtk4::Button) {
         Status::Buffering => button.set_icon_name("content-loading-symbolic"),
         Status::Paused => button.set_icon_name("media-playback-start-symbolic"),
     }
-}
-
-fn format_time(seconds: u32) -> String {
-    let m = seconds / 60;
-    let s = seconds % 60;
-    format!("{m}:{s:02}")
 }
 
 fn animate_scale_to(scale: &gtk4::Scale, target: f64, duration_ms: u32) {

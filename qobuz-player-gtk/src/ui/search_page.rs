@@ -1,18 +1,19 @@
+use crate::ui::album_detail_page::AlbumHeaderInfo;
 use crate::ui::build_album_tile;
 
+use std::rc::Rc;
 use std::sync::Arc;
 
 use gtk4::prelude::*;
 use gtk4::{Align, glib};
 use qobuz_player_controls::client::Client;
-use qobuz_player_controls::controls::Controls;
 
 pub struct SearchPage {
     root: gtk4::Box,
 }
 
 impl SearchPage {
-    pub fn new(client: Arc<Client>, controls: Controls) -> Self {
+    pub fn new(client: Arc<Client>, on_open_album: Rc<dyn Fn(AlbumHeaderInfo)>) -> Self {
         let search_entry = gtk4::SearchEntry::builder()
             .placeholder_text("Search albums…")
             .hexpand(true)
@@ -46,7 +47,6 @@ impl SearchPage {
         root.append(&scroller);
 
         let client = client.clone();
-        let controls = controls.clone();
         let flow = flow.clone();
 
         search_entry.connect_activate(move |entry| {
@@ -64,8 +64,8 @@ impl SearchPage {
             flow.insert(&spinner, 0);
 
             let client = client.clone();
-            let controls = controls.clone();
             let flow = flow.clone();
+            let on_open_album = on_open_album.clone();
 
             glib::MainContext::default().spawn_local(async move {
                 match client.search(query).await {
@@ -73,7 +73,7 @@ impl SearchPage {
                         clear_flowbox(&flow);
 
                         for album in search.albums {
-                            let tile = build_album_tile(&album.into(), controls.clone());
+                            let tile = build_album_tile(&album.into(), on_open_album.clone());
                             flow.insert(&tile, -1);
                         }
                     }

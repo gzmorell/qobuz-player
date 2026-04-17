@@ -1,6 +1,11 @@
-use gtk4::{Image, gdk, gio, prelude::*};
-use qobuz_player_controls::{controls::Controls, models::AlbumSimple};
+use std::rc::Rc;
 
+use gtk4::{Image, gdk, gio, prelude::*};
+use qobuz_player_controls::models::AlbumSimple;
+
+use crate::ui::album_detail_page::AlbumHeaderInfo;
+
+pub mod album_detail_page;
 pub mod albums_page;
 pub mod now_playing_bar;
 pub mod search_page;
@@ -23,7 +28,7 @@ pub fn set_image_from_url(url: Option<&str>, image: &Image) {
     }
 }
 
-pub fn build_album_tile(album: &AlbumSimple, controls: Controls) -> gtk4::Box {
+pub fn build_album_tile(album: &AlbumSimple, on_open: Rc<dyn Fn(AlbumHeaderInfo)>) -> gtk4::Box {
     let vbox = gtk4::Box::builder()
         .orientation(gtk4::Orientation::Vertical)
         .spacing(6)
@@ -54,14 +59,21 @@ pub fn build_album_tile(album: &AlbumSimple, controls: Controls) -> gtk4::Box {
     vbox.append(&title);
     vbox.append(&artist);
 
-    let controls_clone = controls.clone();
-    let album_id = album.id.clone();
+    let info = AlbumHeaderInfo {
+        id: album.id.clone(),
+    };
 
     let click = gtk4::GestureClick::new();
     click.connect_pressed(move |_, _, _, _| {
-        controls_clone.play_album(&album_id, 0);
+        (on_open)(info.clone());
     });
-
     vbox.add_controller(click);
+
     vbox
+}
+
+pub fn format_time(seconds: u32) -> String {
+    let m = seconds / 60;
+    let s = seconds % 60;
+    format!("{m}:{s:02}")
 }
