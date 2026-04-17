@@ -16,8 +16,11 @@ The web interface is ideal for a setup with a single board computer, e.g. Raspbe
 #### Keyboard Shortcuts
 Press <kbd>?</kbd> for an overview of all available keyboard shortcuts
 
+### Linux client
+<img src="/assets/qobuz-player-gtk.png?raw=true" width="240">
+
 ### Web UI
-<img src="/assets/qobuz-player-webui.png?raw=true" width="240">
+<img src="/assets/qobuz-player-webui.jpg?raw=true" width="240">
 
 ### RFID player
 ![RFID player](/assets/rfid-player.gif?raw=true)
