@@ -39,11 +39,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install Flatpak and GNOME SDK
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+
+          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          sudo flatpak install -y flathub org.gnome.Sdk//49 org.gnome.Platform//49
+
       - name: Install dependencies
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libasound2-dev librust-gtk4-dev librust-libadwaita-dev
+          sudo apt-get install -y pkg-config libasound2-dev
 
       - name: Build and upload qobuz-player
         uses: taiki-e/upload-rust-binary-action@v1
@@ -76,11 +85,30 @@ jobs:
           features: ${{ matrix.features || '' }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and upload qobuz-player-gtk
+      - name: Build qobuz-player-gtk in Flatpak
+        if: startsWith(matrix.os, 'ubuntu-latest')
+        run: |
+          mkdir -p target-flatpak
+
+          flatpak run \
+            --filesystem=$PWD \
+            --filesystem=$PWD/target-flatpak \
+            --command=bash \
+            org.gnome.Sdk//46 -c "
+              source /usr/lib/sdk/rust-stable/enable.sh
+              cargo build \
+                --release \
+                -p qobuz-player-gtk \
+                --target x86_64-unknown-linux-gnu
+              cp target/x86_64-unknown-linux-gnu/release/qobuz-player-gtk \
+                target-flatpak/
+            "
+      - name: Upload binary to GitHub Release
         if: startsWith(matrix.os, 'ubuntu')
-        uses: taiki-e/upload-rust-binary-action@v1
-        with:
-          bin: qobuz-player-gtk
-          target: ${{ matrix.target }}
-          features: ${{ matrix.features || '' }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload \
+            "${{ github.ref_name }}" \
+            target-flatpak/qobuz-player-gtk \
+            --clobber
