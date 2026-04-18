@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.sofusa.QobuzPlayer</id>
+  <name>Qobuz Player</name>
+
+  <summary>Unofficial Linux client for Qobuz</summary>
+
+  <description>
+    <p>
+      Qobuz Player is a native GTK application for listening to Qobuz music on Linux.
+    </p>
+  </description>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>file:///app/share/metainfo/qobuz-player-gtk.png</image>
+    </screenshot>
+  </screenshots>
+</component>

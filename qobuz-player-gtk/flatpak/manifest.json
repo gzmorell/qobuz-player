@@ -1,0 +1,35 @@
+{
+  "app-id": "io.github.you.QobuzPlayer",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "49",
+  "sdk": "org.gnome.Sdk",
+  "command": "qobuz-player-gtk",
+
+  "finish-args": [
+    "--share=network",
+    "--socket=wayland",
+    "--socket=fallback-x11",
+    "--device=dri"
+  ],
+
+  "modules": [
+    {
+      "name": "qobuz-player-gtk",
+      "buildsystem": "simple",
+      "build-commands": [
+        "cargo install --locked --path qobuz-player-gtk --root /app",
+
+        "install -Dm644 qobuz-player-web/assets/favicon.svg /app/share/icons/hicolor/scalable/apps/io.github.you.QobuzPlayer.svg",
+        "install -Dm644 qobuz-player-gtk/flatpak/io.github.you.QobuzPlayer.desktop /app/share/applications/io.github.you.QobuzPlayer.desktop",
+        "install -Dm644 assets/qobuz-player-gtk.png /app/share/metainfo/qobuz-player-gtk.png",
+        "install -Dm644 qobuz-player-gtk/flatpak/io.github.you.QobuzPlayer.metainfo.xml /app/share/metainfo/io.github.you.QobuzPlayer.metainfo.xml"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": "../../"
+        }
+      ]
+    }
+  ]
+}

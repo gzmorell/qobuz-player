@@ -85,30 +85,37 @@ jobs:
           features: ${{ matrix.features || '' }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build qobuz-player-gtk in Flatpak
-        if: startsWith(matrix.os, 'ubuntu-latest')
-        run: |
-          mkdir -p target-flatpak
 
-          flatpak run \
-            --filesystem=$PWD \
-            --filesystem=$PWD/target-flatpak \
-            --command=bash \
-            org.gnome.Sdk//46 -c "
-              source /usr/lib/sdk/rust-stable/enable.sh
-              cargo build \
-                --release \
-                -p qobuz-player-gtk \
-                --target x86_64-unknown-linux-gnu
-              cp target/x86_64-unknown-linux-gnu/release/qobuz-player-gtk \
-                target-flatpak/
-            "
-      - name: Upload binary to GitHub Release
-        if: startsWith(matrix.os, 'ubuntu')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload \
-            "${{ github.ref_name }}" \
-            target-flatpak/qobuz-player-gtk \
-            --clobber
+  flatpak:
+      runs-on: ubuntu-latest
+
+      container:
+        image: ghcr.io/flatpak/flatpak-builder:gnome-49
+
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Add Flathub remote
+          run: |
+            flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+        - name: Build Flatpak
+          run: |
+            flatpak-builder \
+              --repo=repo \
+              --force-clean \
+              build-dir \
+              qobuz-player-gtk/flatpak/manifest.json
+
+        - name: Export Flatpak bundle
+          run: |
+            flatpak build-bundle \
+              repo \
+              qobuz-player-gtk-${{ github.ref_name }}.flatpak \
+              io.github.you.QobuzPlayer
+
+        - name: Upload Flatpak to release
+          uses: softprops/action-gh-release@v2
+          with:
+            files: qobuz-player-gtk-${{ github.ref_name }}.flatpak
