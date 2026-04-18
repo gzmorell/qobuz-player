@@ -3,17 +3,17 @@ use std::{rc::Rc, sync::Arc};
 use gtk4::prelude::*;
 use qobuz_player_controls::client::Client;
 
-use crate::ui::{album_detail_page::AlbumHeaderInfo, build_album_tile};
+use crate::ui::{artist_detail_page::ArtistHeaderInfo, build_artist_tile};
 
-pub struct AlbumsPage {
+pub struct ArtistsPage {
     widget: gtk4::Stack,
     flow: gtk4::FlowBox,
     client: Arc<Client>,
-    on_open: Rc<dyn Fn(AlbumHeaderInfo)>,
+    on_open: Rc<dyn Fn(ArtistHeaderInfo)>,
 }
 
-impl AlbumsPage {
-    pub fn new(client: Arc<Client>, on_open: Rc<dyn Fn(AlbumHeaderInfo)>) -> Self {
+impl ArtistsPage {
+    pub fn new(client: Arc<Client>, on_open: Rc<dyn Fn(ArtistHeaderInfo)>) -> Self {
         let spinner = gtk4::Spinner::new();
         spinner.start();
 
@@ -73,8 +73,8 @@ impl AlbumsPage {
                 Ok(favorites) => {
                     clear_flowbox(&flow);
 
-                    for album in favorites.albums {
-                        let tile = build_album_tile(&album, on_open.clone());
+                    for artist in favorites.artists {
+                        let tile = build_artist_tile(&artist, on_open.clone());
                         flow.insert(&tile, -1);
                     }
 

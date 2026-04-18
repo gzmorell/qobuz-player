@@ -13,7 +13,7 @@ pub struct SearchPage {
 }
 
 impl SearchPage {
-    pub fn new(client: Arc<Client>, on_open_album: Rc<dyn Fn(AlbumHeaderInfo)>) -> Self {
+    pub fn new(client: Arc<Client>, on_open: Rc<dyn Fn(AlbumHeaderInfo)>) -> Self {
         let search_entry = gtk4::SearchEntry::builder()
             .placeholder_text("Search albums…")
             .hexpand(true)
@@ -25,7 +25,6 @@ impl SearchPage {
             .selection_mode(gtk4::SelectionMode::None)
             .row_spacing(12)
             .column_spacing(12)
-            .hexpand(true)
             .build();
 
         let scroller = gtk4::ScrolledWindow::builder()
@@ -65,7 +64,7 @@ impl SearchPage {
 
             let client = client.clone();
             let flow = flow.clone();
-            let on_open_album = on_open_album.clone();
+            let on_open = on_open.clone();
 
             glib::MainContext::default().spawn_local(async move {
                 match client.search(query).await {
@@ -73,7 +72,7 @@ impl SearchPage {
                         clear_flowbox(&flow);
 
                         for album in search.albums {
-                            let tile = build_album_tile(&album.into(), on_open_album.clone());
+                            let tile = build_album_tile(&album.into(), on_open.clone());
                             flow.insert(&tile, -1);
                         }
                     }

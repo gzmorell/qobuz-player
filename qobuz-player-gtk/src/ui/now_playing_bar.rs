@@ -20,14 +20,14 @@ pub struct NowPlayingBar {
 
 pub fn build_now_playing_bar(controls: Controls) -> NowPlayingBar {
     let title_label = gtk4::Label::builder()
-        .xalign(0.0)
+        .halign(gtk4::Align::Center)
         .ellipsize(gtk4::pango::EllipsizeMode::End)
         .wrap(false)
         .build();
     title_label.add_css_class("title-3");
 
     let subtitle_label = gtk4::Label::builder()
-        .xalign(0.0)
+        .halign(gtk4::Align::Center)
         .ellipsize(gtk4::pango::EllipsizeMode::End)
         .wrap(false)
         .build();
@@ -35,6 +35,7 @@ pub fn build_now_playing_bar(controls: Controls) -> NowPlayingBar {
 
     let text_box = gtk4::Box::builder()
         .orientation(gtk4::Orientation::Vertical)
+        .halign(gtk4::Align::Center)
         .spacing(4)
         .hexpand(true)
         .build();
@@ -99,7 +100,6 @@ pub fn build_now_playing_bar(controls: Controls) -> NowPlayingBar {
 
     let progress_box = gtk4::Box::builder()
         .orientation(gtk4::Orientation::Horizontal)
-        .spacing(8)
         .hexpand(true)
         .build();
 
@@ -118,24 +118,24 @@ pub fn build_now_playing_bar(controls: Controls) -> NowPlayingBar {
     left_box.append(&controls_box);
     left_box.append(&progress_box);
 
-    let cover = gtk4::Image::builder().pixel_size(200).build();
+    let cover = gtk4::Image::builder().pixel_size(150).build();
     let cover_frame = gtk4::Frame::builder().child(&cover).build();
     cover_frame.add_css_class("card");
 
     let content = gtk4::Box::builder()
         .orientation(gtk4::Orientation::Horizontal)
-        .spacing(8)
+        .spacing(24)
         .margin_start(24)
         .margin_end(24)
-        .margin_top(8)
-        .margin_bottom(8)
+        .margin_top(24)
+        .margin_bottom(24)
         .build();
 
-    content.append(&left_box);
     content.append(&cover_frame);
+    content.append(&left_box);
 
     let frame = gtk4::Frame::builder().child(&content).build();
-    frame.add_css_class("content");
+    frame.add_css_class("card");
 
     let revealer = gtk4::Revealer::builder()
         .transition_type(gtk4::RevealerTransitionType::SlideUp)

@@ -1,0 +1,374 @@
+use std::{cell::RefCell, rc::Rc, sync::Arc};
+
+use gtk4::prelude::*;
+use libadwaita as adw;
+
+use qobuz_player_controls::{
+    client::Client,
+    controls::Controls,
+    models::{AlbumSimple, Artist},
+};
+
+use crate::ui::{
+    album_detail_page::AlbumHeaderInfo, build_album_tile, build_artist_tile, format_time,
+    set_image_from_url,
+};
+
+#[derive(Clone, Debug)]
+pub struct ArtistHeaderInfo {
+    pub id: u32,
+}
+
+pub struct ArtistDetailPage {
+    page: adw::NavigationPage,
+
+    client: Arc<Client>,
+    controls: Controls,
+    artist_id: u32,
+
+    on_open_album: Rc<dyn Fn(AlbumHeaderInfo)>,
+    on_open_artist: Rc<dyn Fn(ArtistHeaderInfo)>,
+
+    stack: gtk4::Stack,
+
+    cover: gtk4::Image,
+    name: gtk4::Label,
+
+    content: gtk4::Box,
+    tracks_list: gtk4::ListBox,
+
+    loaded: RefCell<bool>,
+}
+
+impl ArtistDetailPage {
+    pub fn new(
+        artist_id: u32,
+        controls: Controls,
+        client: Arc<Client>,
+        on_open_album: Rc<dyn Fn(AlbumHeaderInfo)>,
+        on_open_artist: Rc<dyn Fn(ArtistHeaderInfo)>,
+    ) -> Self {
+        let empty_title = gtk4::Box::builder().hexpand(true).build();
+
+        let nav_bar = adw::HeaderBar::builder().title_widget(&empty_title).build();
+
+        let spinner = gtk4::Spinner::new();
+        spinner.start();
+        let spinner_box = gtk4::Box::builder()
+            .vexpand(true)
+            .hexpand(true)
+            .halign(gtk4::Align::Center)
+            .valign(gtk4::Align::Center)
+            .build();
+        spinner_box.append(&spinner);
+
+        let cover = gtk4::Image::builder().pixel_size(200).build();
+        let cover_frame = gtk4::Frame::builder().child(&cover).build();
+        cover_frame.add_css_class("card");
+
+        let name = gtk4::Label::builder()
+            .xalign(0.0)
+            .css_classes(["title-1"])
+            .wrap(true)
+            .build();
+
+        let header_text = gtk4::Box::builder()
+            .orientation(gtk4::Orientation::Vertical)
+            .valign(gtk4::Align::End)
+            .spacing(12)
+            .hexpand(true)
+            .build();
+        header_text.append(&name);
+
+        let play_button = gtk4::Button::builder()
+            .label("Play")
+            .icon_name("media-playback-start-symbolic")
+            .css_classes(vec!["suggested-action", "pill"])
+            .build();
+
+        {
+            let controls = controls.clone();
+            play_button.connect_clicked(move |_| {
+                controls.play_top_tracks(artist_id, 0);
+            });
+        }
+
+        play_button.set_halign(gtk4::Align::Start);
+        header_text.append(&play_button);
+
+        let header_section = gtk4::Box::builder()
+            .orientation(gtk4::Orientation::Horizontal)
+            .spacing(18)
+            .margin_top(18)
+            .margin_bottom(18)
+            .margin_start(18)
+            .margin_end(18)
+            .build();
+
+        header_section.append(&cover_frame);
+        header_section.append(&header_text);
+
+        let tracks_list = gtk4::ListBox::builder()
+            .selection_mode(gtk4::SelectionMode::None)
+            .css_classes(vec!["boxed-list"])
+            .margin_start(18)
+            .margin_end(18)
+            .margin_bottom(18)
+            .build();
+
+        let content = gtk4::Box::builder()
+            .orientation(gtk4::Orientation::Vertical)
+            .spacing(18)
+            .hexpand(true)
+            .vexpand(true)
+            .build();
+
+        content.append(&header_section);
+        content.append(&tracks_list);
+
+        let clamp = adw::Clamp::builder()
+            .maximum_size(900)
+            .tightening_threshold(700)
+            .child(&content)
+            .build();
+
+        let scroller = gtk4::ScrolledWindow::builder()
+            .vexpand(true)
+            .hexpand(true)
+            .child(&clamp)
+            .build();
+
+        let stack = gtk4::Stack::builder()
+            .transition_type(gtk4::StackTransitionType::Crossfade)
+            .build();
+
+        stack.add_named(&spinner_box, Some("loading"));
+        stack.add_named(&scroller, Some("content"));
+        stack.set_visible_child_name("loading");
+
+        let toolbar = adw::ToolbarView::new();
+        toolbar.add_top_bar(&nav_bar);
+        toolbar.set_content(Some(&stack));
+
+        let page = adw::NavigationPage::builder()
+            .title("Artist")
+            .child(&toolbar)
+            .build();
+
+        let s = Self {
+            page,
+            client,
+            controls,
+            artist_id,
+            stack,
+            on_open_album,
+            on_open_artist,
+            content,
+            cover,
+            name,
+            tracks_list,
+            loaded: RefCell::new(false),
+        };
+
+        s.load_artist();
+
+        s
+    }
+
+    pub fn page(&self) -> &adw::NavigationPage {
+        &self.page
+    }
+
+    fn load_artist(&self) {
+        if *self.loaded.borrow() {
+            return;
+        }
+        *self.loaded.borrow_mut() = true;
+
+        let client = self.client.clone();
+        let artist_id = self.artist_id;
+
+        let stack = self.stack.clone();
+
+        let cover = self.cover.clone();
+        let name = self.name.clone();
+        let tracks_list = self.tracks_list.clone();
+        let controls = self.controls.clone();
+
+        let on_open_album = self.on_open_album.clone();
+        let on_open_artist = self.on_open_artist.clone();
+
+        let content = self.content.clone();
+
+        stack.set_visible_child_name("loading");
+
+        glib::spawn_future_local(async move {
+            match client.artist_page(artist_id).await {
+                Ok(artist) => {
+                    name.set_label(&artist.name);
+                    set_image_from_url(artist.image.as_deref(), &cover);
+
+                    clear_listbox(&tracks_list);
+
+                    for (idx, track) in artist.top_tracks.iter().take(10).enumerate() {
+                        let row = build_track_row(&track.title, track.duration_seconds);
+
+                        let controls = controls.clone();
+                        let click_index = idx as i32;
+
+                        let click = gtk4::GestureClick::new();
+                        click.connect_pressed(move |_, _, _, _| {
+                            controls.play_top_tracks(artist_id, click_index as usize);
+                        });
+
+                        row.add_controller(click);
+                        tracks_list.append(&row);
+                    }
+
+                    if !artist.albums.is_empty() {
+                        content.append(&section(
+                            "Albums",
+                            album_scroller(&artist.albums, on_open_album.clone()),
+                        ));
+                    }
+
+                    if !artist.singles.is_empty() {
+                        content.append(&section(
+                            "Singles",
+                            album_scroller(&artist.singles, on_open_album.clone()),
+                        ));
+                    }
+
+                    if !artist.live.is_empty() {
+                        content.append(&section(
+                            "Live",
+                            album_scroller(&artist.live, on_open_album.clone()),
+                        ));
+                    }
+
+                    if !artist.compilations.is_empty() {
+                        content.append(&section(
+                            "Compilations",
+                            album_scroller(&artist.compilations, on_open_album.clone()),
+                        ));
+                    }
+
+                    if !artist.similar_artists.is_empty() {
+                        content.append(&section(
+                            "Similar Artists",
+                            artist_scroller(&artist.similar_artists, on_open_artist.clone()),
+                        ));
+                    }
+
+                    stack.set_visible_child_name("content");
+                }
+                Err(err) => {
+                    eprintln!("Failed to load artist {artist_id}: {err}");
+                    stack.set_visible_child_name("content");
+                }
+            }
+        });
+    }
+}
+
+fn section(title: &str, content: gtk4::Widget) -> gtk4::Box {
+    let title = gtk4::Label::builder()
+        .label(title)
+        .css_classes(["title-3"])
+        .halign(gtk4::Align::Start)
+        .build();
+
+    let box_ = gtk4::Box::builder()
+        .orientation(gtk4::Orientation::Vertical)
+        .spacing(12)
+        .margin_top(24)
+        .build();
+
+    box_.append(&title);
+    box_.append(&content);
+
+    box_
+}
+
+fn album_scroller(
+    albums: &[AlbumSimple],
+    on_open_album: Rc<dyn Fn(AlbumHeaderInfo)>,
+) -> gtk4::Widget {
+    let box_ = gtk4::Box::builder()
+        .orientation(gtk4::Orientation::Horizontal)
+        .spacing(12)
+        .margin_top(6)
+        .margin_bottom(6)
+        .build();
+
+    for album in albums {
+        box_.append(&build_album_tile(album, on_open_album.clone()));
+    }
+
+    let scroller = gtk4::ScrolledWindow::builder()
+        .hscrollbar_policy(gtk4::PolicyType::Automatic)
+        .vscrollbar_policy(gtk4::PolicyType::Never)
+        .child(&box_)
+        .build();
+
+    scroller.upcast()
+}
+
+fn artist_scroller(
+    artists: &[Artist],
+    on_open_artist: Rc<dyn Fn(ArtistHeaderInfo)>,
+) -> gtk4::Widget {
+    let box_ = gtk4::Box::builder()
+        .orientation(gtk4::Orientation::Horizontal)
+        .spacing(12)
+        .margin_top(6)
+        .margin_bottom(6)
+        .build();
+
+    for artist in artists {
+        box_.append(&build_artist_tile(artist, on_open_artist.clone()));
+    }
+
+    let scroller = gtk4::ScrolledWindow::builder()
+        .hscrollbar_policy(gtk4::PolicyType::Automatic)
+        .vscrollbar_policy(gtk4::PolicyType::Never)
+        .child(&box_)
+        .build();
+
+    scroller.upcast()
+}
+
+fn clear_listbox(list: &gtk4::ListBox) {
+    while let Some(child) = list.first_child() {
+        list.remove(&child);
+    }
+}
+
+fn build_track_row(title: &str, duration_secs: u32) -> gtk4::ListBoxRow {
+    let title_label = gtk4::Label::builder()
+        .label(title)
+        .xalign(0.0)
+        .hexpand(true)
+        .ellipsize(gtk4::pango::EllipsizeMode::End)
+        .build();
+
+    let duration_label = gtk4::Label::builder()
+        .label(format_time(duration_secs))
+        .xalign(1.0)
+        .css_classes(vec!["dim-label"])
+        .build();
+
+    let track_row_box = gtk4::Box::builder()
+        .orientation(gtk4::Orientation::Horizontal)
+        .spacing(12)
+        .margin_top(10)
+        .margin_bottom(10)
+        .margin_start(12)
+        .margin_end(12)
+        .build();
+
+    track_row_box.append(&title_label);
+    track_row_box.append(&duration_label);
+
+    gtk4::ListBoxRow::builder().child(&track_row_box).build()
+}

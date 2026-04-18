@@ -48,7 +48,6 @@ impl AlbumDetailPage {
         spinner_box.append(&spinner);
 
         let cover = gtk4::Image::builder().pixel_size(400).build();
-
         let cover_frame = gtk4::Frame::builder().child(&cover).build();
         cover_frame.add_css_class("card");
 

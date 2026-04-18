@@ -222,6 +222,7 @@ impl Player {
         match self.sink.seek(duration) {
             Ok(()) => {
                 self.position.send(self.sink.position())?;
+                self.set_target_status(Status::Playing);
             }
             Err(e) => {
                 tracing::warn!("Seek to {:?} failed: {e:?}", duration);

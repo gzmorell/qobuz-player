@@ -1,4 +1,4 @@
-use std::{rc::Rc, sync::Arc, time::Duration};
+use std::{cell::RefCell, rc::Rc, sync::Arc, time::Duration};
 
 use adw::{Application, prelude::*};
 use glib::clone;
@@ -10,7 +10,8 @@ use qobuz_player_controls::{
 
 use crate::ui::{
     album_detail_page::{AlbumDetailPage, AlbumHeaderInfo},
-    albums_page::AlbumsPage,
+    artist_detail_page::{ArtistDetailPage, ArtistHeaderInfo},
+    library_page::LibraryPage,
     now_playing_bar::{
         NowPlayingBar, build_now_playing_bar, update_now_playing, update_now_playing_button_icon,
         update_progress,
@@ -47,6 +48,8 @@ pub fn init(
     let args: &[&str] = &[];
     application.run_with_args(args);
 }
+
+type OpenArtistDetailCallback = Rc<RefCell<Option<Rc<dyn Fn(ArtistHeaderInfo) + 'static>>>>;
 
 fn build_ui(
     app: &Application,
@@ -99,12 +102,45 @@ fn build_ui(
         }
     ));
 
-    let albums_page = AlbumsPage::new(client.clone(), on_open_album.clone());
-    albums_page.load();
+    let on_open_artist: OpenArtistDetailCallback = Rc::new(RefCell::new(None));
 
-    // TODO: Finish renaming
-    tabs.add_titled(albums_page.widget(), Some("albums"), "Library")
-        .set_icon_name(Some("media-optical-symbolic"));
+    let on_open_artist_clone = on_open_artist.clone();
+
+    let controls_clone = controls.clone();
+    let callback: Rc<dyn Fn(ArtistHeaderInfo)> = Rc::new(clone!(
+        #[weak]
+        app_nav,
+        #[strong]
+        client,
+        #[strong]
+        on_open_album,
+        move |info: ArtistHeaderInfo| {
+            let detail = ArtistDetailPage::new(
+                info.id,
+                controls_clone.clone(),
+                client.clone(),
+                on_open_album.clone(),
+                on_open_artist_clone
+                    .borrow()
+                    .as_ref()
+                    .expect("on_open_artist not initialized")
+                    .clone(),
+            );
+
+            app_nav.push(detail.page());
+        }
+    ));
+
+    *on_open_artist.borrow_mut() = Some(callback.clone());
+
+    let library_page = LibraryPage::new(
+        client.clone(),
+        on_open_album.clone(),
+        on_open_artist.borrow().as_ref().unwrap().clone(),
+    );
+
+    tabs.add_titled(library_page.widget(), Some("library"), "Library")
+        .set_icon_name(Some("audio-x-generic-symbolic"));
 
     let search_page = SearchPage::new(client.clone(), on_open_album.clone());
 
