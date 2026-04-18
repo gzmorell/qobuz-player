@@ -1,31 +1,19 @@
-use std::{rc::Rc, sync::Arc};
+use std::rc::Rc;
 
 use gtk4::prelude::*;
-use qobuz_player_controls::client::Client;
+use qobuz_player_controls::models::AlbumSimple;
 
 use crate::ui::{album_detail_page::AlbumHeaderInfo, build_album_tile};
 
+#[derive(Clone)]
 pub struct AlbumsPage {
-    widget: gtk4::Stack,
+    widget: gtk4::ScrolledWindow,
     flow: gtk4::FlowBox,
-    client: Arc<Client>,
-    on_open: Rc<dyn Fn(AlbumHeaderInfo)>,
+    items: Vec<AlbumSimple>,
 }
 
 impl AlbumsPage {
-    pub fn new(client: Arc<Client>, on_open: Rc<dyn Fn(AlbumHeaderInfo)>) -> Self {
-        let spinner = gtk4::Spinner::new();
-        spinner.start();
-
-        let spinner_box = gtk4::Box::builder()
-            .vexpand(true)
-            .hexpand(true)
-            .halign(gtk4::Align::Center)
-            .valign(gtk4::Align::Center)
-            .build();
-
-        spinner_box.append(&spinner);
-
+    pub fn new() -> Self {
         let flow = gtk4::FlowBox::builder()
             .valign(gtk4::Align::Start)
             .halign(gtk4::Align::Center)
@@ -40,59 +28,62 @@ impl AlbumsPage {
             .child(&flow)
             .build();
 
-        let stack = gtk4::Stack::builder()
-            .transition_type(gtk4::StackTransitionType::Crossfade)
-            .build();
-
-        stack.add_named(&spinner_box, Some("loading"));
-        stack.add_named(&scroller, Some("content"));
-        stack.set_visible_child_name("loading");
-
         Self {
-            widget: stack,
+            widget: scroller,
             flow,
-            client,
-            on_open,
+            items: Default::default(),
         }
     }
 
-    pub fn widget(&self) -> &gtk4::Stack {
+    pub fn widget(&self) -> &gtk4::ScrolledWindow {
         &self.widget
     }
 
-    pub fn load(&self) {
-        let flow = self.flow.clone();
-        let client = self.client.clone();
-        let stack = self.widget.clone();
-        let on_open = self.on_open.clone();
+    pub fn load(&mut self, albums: Vec<AlbumSimple>, on_open: Rc<dyn Fn(AlbumHeaderInfo)>) {
+        self.clear_flowbox();
 
-        stack.set_visible_child_name("loading");
+        for album in &albums {
+            let tile = build_album_tile(album, on_open.clone());
+            self.flow.insert(&tile, -1);
+        }
+        self.items = albums;
 
-        glib::spawn_future_local(async move {
-            match client.favorites().await {
-                Ok(favorites) => {
-                    clear_flowbox(&flow);
-
-                    for album in favorites.albums {
-                        let tile = build_album_tile(&album, on_open.clone());
-                        flow.insert(&tile, -1);
-                    }
-
-                    stack.set_visible_child_name("content");
-                }
-                Err(err) => {
-                    clear_flowbox(&flow);
-                    eprintln!("Favorites failed: {err}");
-
-                    stack.set_visible_child_name("content");
-                }
-            }
-        });
+        self.flow.set_filter_func(|_| true);
+        self.flow.invalidate_filter();
     }
-}
 
-fn clear_flowbox(flow: &gtk4::FlowBox) {
-    while let Some(child) = flow.first_child() {
-        flow.remove(&child);
+    pub fn filter(&self, query: &str) {
+        let query = query.trim().to_lowercase();
+
+        if query.is_empty() {
+            self.flow.set_filter_func(|_| true);
+            self.flow.invalidate_filter();
+            return;
+        }
+
+        let items = self.items.clone();
+
+        self.flow.set_filter_func(move |child| {
+            let index = child.index() as usize;
+
+            let item = match items.get(index) {
+                Some(item) => item,
+                None => return false,
+            };
+
+            item.title.to_lowercase().contains(&query) || item.artist.name.contains(&query)
+        });
+
+        self.flow.invalidate_filter();
+    }
+
+    pub fn clear(&self) {
+        self.clear_flowbox();
+    }
+
+    fn clear_flowbox(&self) {
+        while let Some(child) = self.flow.first_child() {
+            self.flow.remove(&child);
+        }
     }
 }

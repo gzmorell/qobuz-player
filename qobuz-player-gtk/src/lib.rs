@@ -146,18 +146,24 @@ fn build_ui(
     ));
 
     *on_open_artist.borrow_mut() = Some(callback.clone());
+    let on_open_artist = on_open_artist.borrow().as_ref().unwrap().clone();
 
     let library_page = LibraryPage::new(
         client.clone(),
         on_open_album.clone(),
-        on_open_artist.borrow().as_ref().unwrap().clone(),
+        on_open_artist.clone(),
         on_open_playlist.clone(),
     );
 
     tabs.add_titled(library_page.widget(), Some("library"), "Library")
         .set_icon_name(Some("audio-x-generic-symbolic"));
 
-    let search_page = SearchPage::new(client.clone(), on_open_album.clone());
+    let search_page = SearchPage::new(
+        client.clone(),
+        on_open_album.clone(),
+        on_open_artist.clone(),
+        on_open_playlist.clone(),
+    );
 
     tabs.add_titled(search_page.widget(), Some("search"), "Search")
         .set_icon_name(Some("system-search-symbolic"));

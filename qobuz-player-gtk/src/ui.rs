@@ -70,25 +70,26 @@ pub fn build_album_tile(album: &AlbumSimple, on_open: Rc<dyn Fn(AlbumHeaderInfo)
         id: album.id.clone(),
     };
 
-    let click = gtk4::GestureClick::new();
-    click.connect_pressed(move |_, _, _, _| {
-        (on_open)(info.clone());
-    });
-    vbox.add_controller(click);
-
-    adw::Bin::builder()
+    let bin = adw::Bin::builder()
         .child(&vbox)
         .margin_end(12)
         .margin_bottom(12)
         .margin_top(12)
         .margin_start(12)
-        .build()
+        .build();
+
+    let click = gtk4::GestureClick::new();
+    click.connect_pressed(move |_, _, _, _| {
+        (on_open)(info.clone());
+    });
+    bin.add_controller(click);
+    bin
 }
 
 pub fn build_playlist_tile(
     playlist: &PlaylistSimple,
     on_open: Rc<dyn Fn(PlaylistHeaderInfo)>,
-) -> adw::Bin {
+) -> gtk4::Button {
     let vbox = gtk4::Box::builder()
         .orientation(gtk4::Orientation::Vertical)
         .spacing(6)
@@ -111,19 +112,21 @@ pub fn build_playlist_tile(
 
     let info = PlaylistHeaderInfo { id: playlist.id };
 
-    let click = gtk4::GestureClick::new();
-    click.connect_pressed(move |_, _, _, _| {
+    let button = gtk4::Button::builder()
+        .child(&vbox)
+        .margin_start(12)
+        .margin_end(12)
+        .margin_top(12)
+        .margin_bottom(12)
+        .build();
+
+    button.add_css_class("flat");
+
+    button.connect_clicked(move |_| {
         (on_open)(info.clone());
     });
-    vbox.add_controller(click);
 
-    adw::Bin::builder()
-        .child(&vbox)
-        .margin_end(12)
-        .margin_bottom(12)
-        .margin_top(12)
-        .margin_start(12)
-        .build()
+    button
 }
 
 pub fn build_artist_tile(artist: &Artist, on_open: Rc<dyn Fn(ArtistHeaderInfo)>) -> adw::Bin {
@@ -149,19 +152,20 @@ pub fn build_artist_tile(artist: &Artist, on_open: Rc<dyn Fn(ArtistHeaderInfo)>)
 
     let info = ArtistHeaderInfo { id: artist.id };
 
-    let click = gtk4::GestureClick::new();
-    click.connect_pressed(move |_, _, _, _| {
-        (on_open)(info.clone());
-    });
-    vbox.add_controller(click);
-
-    adw::Bin::builder()
+    let bin = adw::Bin::builder()
         .child(&vbox)
         .margin_end(12)
         .margin_bottom(12)
         .margin_top(12)
         .margin_start(12)
-        .build()
+        .build();
+
+    let click = gtk4::GestureClick::new();
+    click.connect_pressed(move |_, _, _, _| {
+        (on_open)(info.clone());
+    });
+    bin.add_controller(click);
+    bin
 }
 
 pub fn format_time(seconds: u32) -> String {
