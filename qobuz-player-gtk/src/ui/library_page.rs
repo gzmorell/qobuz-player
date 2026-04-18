@@ -8,6 +8,7 @@ use qobuz_player_controls::client::Client;
 use crate::ui::{
     album_detail_page::AlbumHeaderInfo, albums_page::AlbumsPage,
     artist_detail_page::ArtistHeaderInfo, artists_page::ArtistsPage,
+    playlist_detail_page::PlaylistHeaderInfo, playlists_page::PlaylistsPage,
 };
 
 pub struct LibraryPage {
@@ -19,17 +20,22 @@ impl LibraryPage {
         client: Arc<Client>,
         on_open_album: Rc<dyn Fn(AlbumHeaderInfo)>,
         on_open_artist: Rc<dyn Fn(ArtistHeaderInfo)>,
+        on_open_playlist: Rc<dyn Fn(PlaylistHeaderInfo)>,
     ) -> Self {
         let stack = adw::ViewStack::new();
 
         let albums_page = AlbumsPage::new(client.clone(), on_open_album);
         albums_page.load();
 
-        let artists_page = ArtistsPage::new(client, on_open_artist);
+        let artists_page = ArtistsPage::new(client.clone(), on_open_artist);
         artists_page.load();
+
+        let playlists_page = PlaylistsPage::new(client, on_open_playlist);
+        playlists_page.load();
 
         stack.add_titled(albums_page.widget(), Some("albums"), "Albums");
         stack.add_titled(artists_page.widget(), Some("artists"), "Artists");
+        stack.add_titled(playlists_page.widget(), Some("playlists"), "playlists");
 
         let switcher = adw::InlineViewSwitcher::builder()
             .stack(&stack)

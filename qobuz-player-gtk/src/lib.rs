@@ -16,6 +16,7 @@ use crate::ui::{
         NowPlayingBar, build_now_playing_bar, update_now_playing, update_now_playing_button_icon,
         update_progress,
     },
+    playlist_detail_page::{PlaylistDetailPage, PlaylistHeaderInfo},
     search_page::SearchPage,
 };
 
@@ -102,6 +103,19 @@ fn build_ui(
         }
     ));
 
+    let on_open_playlist: Rc<dyn Fn(PlaylistHeaderInfo)> = Rc::new(clone!(
+        #[weak]
+        app_nav,
+        #[strong]
+        controls,
+        #[strong]
+        client,
+        move |info: PlaylistHeaderInfo| {
+            let detail = PlaylistDetailPage::new(info.id, controls.clone(), client.clone());
+            app_nav.push(detail.page());
+        }
+    ));
+
     let on_open_artist: OpenArtistDetailCallback = Rc::new(RefCell::new(None));
 
     let on_open_artist_clone = on_open_artist.clone();
@@ -137,6 +151,7 @@ fn build_ui(
         client.clone(),
         on_open_album.clone(),
         on_open_artist.borrow().as_ref().unwrap().clone(),
+        on_open_playlist.clone(),
     );
 
     tabs.add_titled(library_page.widget(), Some("library"), "Library")
