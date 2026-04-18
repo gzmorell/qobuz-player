@@ -10,7 +10,6 @@ on:
 
 jobs:
   build-and-upload:
-    if: false
     strategy:
       fail-fast: false
       matrix:
