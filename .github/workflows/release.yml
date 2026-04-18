@@ -86,7 +86,6 @@ jobs:
           features: ${{ matrix.features || '' }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-
   flatpak:
     runs-on: ubuntu-latest
 
@@ -101,7 +100,7 @@ jobs:
 
       - name: Add Flathub remote
         run: |
-          flatpak remote-add --if-not-exists flathub \
+          sudo flatpak remote-add --if-not-exists flathub \
             https://dl.flathub.org/repo/flathub.flatpakrepo
 
       - name: Build Flatpak
@@ -118,10 +117,9 @@ jobs:
           flatpak build-bundle \
             repo \
             qobuz-player-gtk-${{ github.ref_name }}.flatpak \
-            io.github.you.QobuzPlayer
+            io.github.you.QobuzPlayerGtk
 
       - name: Upload Flatpak to release
         uses: softprops/action-gh-release@v2
         with:
           files: qobuz-player-gtk-${{ github.ref_name }}.flatpak
-
