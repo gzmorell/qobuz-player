@@ -10,6 +10,10 @@
     "--share=network",
     "--socket=wayland",
     "--socket=fallback-x11",
+    "--socket=pulseaudio",
+    "--socket=session-bus",
+    "--filesystem=xdg-run/gvfsd",
+    "--filesystem=xdg-run/gvfs",
     "--device=dri"
   ],
 

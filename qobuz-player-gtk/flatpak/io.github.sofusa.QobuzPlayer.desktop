@@ -6,7 +6,7 @@ Name=Qobuz Player
 Comment=Unofficial Linux client for Qobuz
 
 Exec=qobuz-player-gtk
-Icon=io.github.you.QobuzPlayer
+Icon=io.github.sofusa.QobuzPlayer
 
 Categories=Audio;Music;Player;
 StartupNotify=true
