@@ -91,11 +91,15 @@ jobs:
       runs-on: ubuntu-latest
 
       container:
-        image: ghcr.io/flatpak/flatpak-builder:latest
+        image: fedora:rawhide
 
       steps:
         - name: Checkout
           uses: actions/checkout@v4
+
+        - name: Install Flatpak tooling
+          run: |
+            dnf -y install flatpak-builder 
 
         - name: Add Flathub remote
           run: |
@@ -104,6 +108,7 @@ jobs:
         - name: Build Flatpak
           run: |
             flatpak-builder \
+              --install-deps-from=flathub \
               --repo=repo \
               --force-clean \
               build-dir \
