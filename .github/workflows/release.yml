@@ -108,6 +108,7 @@ jobs:
         - name: Build Flatpak
           run: |
             flatpak-builder \
+              --disable-sandbox \
               --disable-rofiles-fuse \
               --install-deps-from=flathub \
               --repo=repo \
