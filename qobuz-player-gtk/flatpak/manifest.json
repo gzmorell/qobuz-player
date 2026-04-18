@@ -5,10 +5,6 @@
   "sdk": "org.gnome.Sdk",
   "command": "qobuz-player-gtk",
 
-  "build-options": {
-    "no-sandbox": true
-  },
-
   "finish-args": [
     "--share=network",
     "--socket=wayland",

@@ -88,41 +88,40 @@ jobs:
 
 
   flatpak:
-      runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
 
-      container:
-        image: fedora:rawhide
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
+      - name: Install Flatpak tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
 
-        - name: Install Flatpak tooling
-          run: |
-            dnf -y install flatpak-builder 
+      - name: Add Flathub remote
+        run: |
+          flatpak remote-add --if-not-exists flathub \
+            https://dl.flathub.org/repo/flathub.flatpakrepo
 
-        - name: Add Flathub remote
-          run: |
-            flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+      - name: Build Flatpak
+        run: |
+          flatpak-builder \
+            --install-deps-from=flathub \
+            --repo=repo \
+            --force-clean \
+            build-dir \
+            qobuz-player-gtk/flatpak/manifest.json
 
-        - name: Build Flatpak
-          run: |
-            flatpak-builder \
-              --disable-rofiles-fuse \
-              --install-deps-from=flathub \
-              --repo=repo \
-              --force-clean \
-              build-dir \
-              qobuz-player-gtk/flatpak/manifest.json
+      - name: Export Flatpak bundle
+        run: |
+          flatpak build-bundle \
+            repo \
+            qobuz-player-gtk-${{ github.ref_name }}.flatpak \
+            io.github.you.QobuzPlayer
 
-        - name: Export Flatpak bundle
-          run: |
-            flatpak build-bundle \
-              repo \
-              qobuz-player-gtk-${{ github.ref_name }}.flatpak \
-              io.github.you.QobuzPlayer
+      - name: Upload Flatpak to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: qobuz-player-gtk-${{ github.ref_name }}.flatpak
 
-        - name: Upload Flatpak to release
-          uses: softprops/action-gh-release@v2
-          with:
-            files: qobuz-player-gtk-${{ github.ref_name }}.flatpak
