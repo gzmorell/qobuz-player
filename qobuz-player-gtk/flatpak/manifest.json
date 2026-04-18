@@ -1,44 +1,29 @@
 {
-  "app-id": "io.github.you.QobuzPlayer",
-  "runtime": "org.gnome.Platform",
-  "runtime-version": "49",
-  "sdk": "org.gnome.Sdk",
-  "sdk-extensions": ["org.freedesktop.Sdk.Extension.rust-stable"],
-  "command": "qobuz-player-gtk",
+  "name": "qobuz-player-gtk",
+  "buildsystem": "simple",
 
-  "finish-args": [
-    "--share=network",
-    "--socket=wayland",
-    "--socket=fallback-x11",
-    "--device=dri"
+  "build-options": {
+    "pkg-config-path": "/app/lib/pkgconfig:/app/share/pkgconfig",
+    "pkg-configs": ["alsa"],
+    "append-path": "/usr/lib/sdk/rust-stable/bin",
+    "env": {
+      "CARGO_NET_OFFLINE": "true"
+    }
+  },
+
+  "build-commands": [
+    "cargo install --locked --path qobuz-player-gtk --root /app",
+
+    "install -Dm644 qobuz-player-web/assets/favicon.svg /app/share/icons/hicolor/scalable/apps/io.github.sofusa.QobuzPlayer.svg",
+    "install -Dm644 qobuz-player-gtk/flatpak/io.github.sofusa.QobuzPlayer.desktop /app/share/applications/io.github.sofusa.QobuzPlayer.desktop",
+    "install -Dm644 assets/qobuz-player-gtk.png /app/share/metainfo/qobuz-player-gtk.png",
+    "install -Dm644 qobuz-player-gtk/flatpak/io.github.sofusa.QobuzPlayer.metainfo.xml /app/share/metainfo/io.github.sofusa.QobuzPlayer.metainfo.xml"
   ],
-  "modules": [
-    {
-      "name": "qobuz-player-gtk",
-      "buildsystem": "simple",
-      "build-options": {
-        "pkg-config-path": "/app/lib/pkgconfig:/app/share/pkgconfig",
-        "pkg-configs": ["alsa"],
-        "append-path": "/usr/lib/sdk/rust-stable/bin",
-        "env": {
-          "CARGO_NET_OFFLINE": "true"
-        }
-      },
-      "build-commands": [
-        "cargo install --locked --path . --root /app",
 
-        "install -Dm644 ../qobuz-player-web/assets/favicon.svg /app/share/icons/hicolor/scalable/apps/io.github.you.QobuzPlayer.svg",
-        "install -Dm644 flatpak/io.github.you.QobuzPlayer.desktop /app/share/applications/io.github.you.QobuzPlayer.desktop",
-        "install -Dm644 ../assets/qobuz-player-gtk.png /app/share/metainfo/qobuz-player-gtk.png",
-        "install -Dm644 flatpak/io.github.you.QobuzPlayer.metainfo.xml /app/share/metainfo/io.github.you.QobuzPlayer.metainfo.xml"
-      ],
-      "sources": [
-        {
-          "type": "dir",
-          "path": "../../"
-        },
-        "cargo-sources.json"
-      ]
+  "sources": [
+    {
+      "type": "dir",
+      "path": "../../"
     }
   ]
 }
