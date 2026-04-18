@@ -91,7 +91,7 @@ jobs:
     runs-on: ${{ matrix.variant.runner }}
 
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-49
       options: --privileged
 
     strategy:
@@ -104,9 +104,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           bundle: qobuz-player-${{ matrix.variant.arch }}.flatpak
           manifest-path: qobuz-player-gtk/flatpak/manifest.json
           cache-key: flatpak-builder-${{ matrix.variant.arch }}-${{ github.sha }}
           arch: ${{ matrix.variant.arch }}
+
+      - name: Upload Flatpak
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: qobuz-player-${{ matrix.variant.arch }}.flatpak

@@ -3,6 +3,7 @@
   "runtime": "org.gnome.Platform",
   "runtime-version": "49",
   "sdk": "org.gnome.Sdk",
+  "sdk-extensions": ["org.freedesktop.Sdk.Extension.rust-stable"],
   "command": "qobuz-player-gtk",
 
   "finish-args": [
@@ -11,11 +12,18 @@
     "--socket=fallback-x11",
     "--device=dri"
   ],
-
   "modules": [
     {
       "name": "qobuz-player-gtk",
       "buildsystem": "simple",
+      "build-options": {
+        "pkg-config-path": "/app/lib/pkgconfig:/app/share/pkgconfig",
+        "pkg-configs": ["alsa"],
+        "append-path": "/usr/lib/sdk/rust-stable/bin",
+        "env": {
+          "CARGO_NET_OFFLINE": "true"
+        }
+      },
       "build-commands": [
         "cargo install --locked --path qobuz-player-gtk --root /app",
 
@@ -28,7 +36,8 @@
         {
           "type": "dir",
           "path": "../../"
-        }
+        },
+        "cargo-sources.json"
       ]
     }
   ]
