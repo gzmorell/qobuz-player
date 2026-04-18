@@ -11,7 +11,10 @@
     "--socket=wayland",
     "--socket=fallback-x11",
     "--socket=pulseaudio",
-    "--socket=session-bus",
+
+    "--own-name=org.mpris.MediaPlayer2.qobuz-player",
+    "--talk-name=org.mpris.MediaPlayer2.*",
+
     "--filesystem=xdg-run/gvfsd",
     "--filesystem=xdg-run/gvfs",
     "--device=dri"
