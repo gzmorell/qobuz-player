@@ -19,21 +19,24 @@ pub mod playlists_page;
 pub mod search_page;
 
 pub fn set_image_from_url(url: Option<&str>, image: &Image) {
-    if let Some(url) = url {
-        let file = gio::File::for_uri(url);
+    let Some(url) = url else {
+        return;
+    };
 
-        match gdk::Texture::from_file(&file) {
-            Ok(texture) => {
+    let file = gio::File::for_uri(url);
+
+    let image = image.clone();
+    file.load_bytes_async(gio::Cancellable::NONE, move |result| match result {
+        Ok((bytes, _)) => {
+            if let Ok(texture) = gdk::Texture::from_bytes(&bytes) {
                 image.set_paintable(Some(&texture));
             }
-            Err(err) => {
-                eprintln!("Failed to load image: {err}");
-                image.set_paintable(None::<&gdk::Paintable>);
-            }
         }
-    } else {
-        image.set_paintable(None::<&gdk::Paintable>);
-    }
+        Err(err) => {
+            eprintln!("Failed to load image: {err}");
+            image.set_icon_name(Some("image-missing"));
+        }
+    });
 }
 
 pub fn build_album_tile(album: &AlbumSimple, on_open: Rc<dyn Fn(AlbumHeaderInfo)>) -> adw::Bin {
