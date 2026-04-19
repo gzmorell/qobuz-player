@@ -6,10 +6,12 @@ use libadwaita as adw;
 
 use qobuz_player_controls::client::Client;
 
+use crate::ui::albums_page::new_albums_page;
+use crate::ui::artists_page::new_artists_page;
+use crate::ui::playlists_page::new_playlists_page;
 use crate::ui::{
-    album_detail_page::AlbumHeaderInfo, albums_page::AlbumsPage,
-    artist_detail_page::ArtistHeaderInfo, artists_page::ArtistsPage,
-    playlist_detail_page::PlaylistHeaderInfo, playlists_page::PlaylistsPage,
+    album_detail_page::AlbumHeaderInfo, artist_detail_page::ArtistHeaderInfo,
+    playlist_detail_page::PlaylistHeaderInfo,
 };
 
 pub struct LibraryPage {
@@ -23,9 +25,9 @@ impl LibraryPage {
         on_open_artist: Rc<dyn Fn(ArtistHeaderInfo)>,
         on_open_playlist: Rc<dyn Fn(PlaylistHeaderInfo)>,
     ) -> Self {
-        let albums_page = Rc::new(RefCell::new(AlbumsPage::new()));
-        let artists_page = Rc::new(RefCell::new(ArtistsPage::new()));
-        let playlists_page = Rc::new(RefCell::new(PlaylistsPage::new()));
+        let albums_page = Rc::new(RefCell::new(new_albums_page(on_open_album)));
+        let artists_page = Rc::new(RefCell::new(new_artists_page(on_open_artist)));
+        let playlists_page = Rc::new(RefCell::new(new_playlists_page(on_open_playlist)));
 
         let stack = adw::ViewStack::new();
 
@@ -106,18 +108,13 @@ impl LibraryPage {
                         spinner.set_visible(false);
                         spinner.stop();
 
-                        albums_page
-                            .borrow_mut()
-                            .load(favorites.albums, on_open_album);
+                        albums_page.borrow_mut().load(favorites.albums);
 
-                        artists_page
-                            .borrow_mut()
-                            .load(favorites.artists, on_open_artist);
+                        artists_page.borrow_mut().load(favorites.artists);
 
-                        playlists_page.borrow_mut().load(
-                            favorites.playlists.into_iter().map(|x| x.into()).collect(),
-                            on_open_playlist,
-                        );
+                        playlists_page
+                            .borrow_mut()
+                            .load(favorites.playlists.into_iter().map(|x| x.into()).collect());
                     }
                     Err(err) => {
                         spinner.set_visible(false);

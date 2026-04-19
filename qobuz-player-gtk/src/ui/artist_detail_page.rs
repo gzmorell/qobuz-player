@@ -10,8 +10,8 @@ use qobuz_player_controls::{
 };
 
 use crate::ui::{
-    album_detail_page::AlbumHeaderInfo, build_album_tile, build_artist_tile, format_time,
-    set_image_from_url,
+    album_detail_page::AlbumHeaderInfo, build_album_tile, build_artist_tile, clickable_tile,
+    format_time, set_image_from_url,
 };
 
 #[derive(Clone, Debug)]
@@ -302,7 +302,18 @@ fn album_scroller(
         .build();
 
     for album in albums {
-        box_.append(&build_album_tile(album, on_open_album.clone()));
+        let tile = build_album_tile(album).upcast::<gtk4::Widget>();
+
+        let album_id = album.id.clone();
+        let on_open = on_open_album.clone();
+
+        let button = clickable_tile(&tile, move || {
+            on_open(AlbumHeaderInfo {
+                id: album_id.clone(),
+            });
+        });
+
+        box_.append(&button);
     }
 
     let scroller = gtk4::ScrolledWindow::builder()
@@ -326,7 +337,16 @@ fn artist_scroller(
         .build();
 
     for artist in artists {
-        box_.append(&build_artist_tile(artist, on_open_artist.clone()));
+        let tile = build_artist_tile(artist).upcast::<gtk4::Widget>();
+
+        let artist_id = artist.id;
+        let on_open = on_open_artist.clone();
+
+        let button = clickable_tile(&tile, move || {
+            on_open(ArtistHeaderInfo { id: artist_id });
+        });
+
+        box_.append(&button);
     }
 
     let scroller = gtk4::ScrolledWindow::builder()

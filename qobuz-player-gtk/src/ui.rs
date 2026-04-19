@@ -1,17 +1,12 @@
 use gtk4::{Image, gdk, gio, prelude::*};
 use libadwaita as adw;
 use qobuz_player_controls::models::{AlbumSimple, Artist, PlaylistSimple};
-use std::rc::Rc;
-
-use crate::ui::{
-    album_detail_page::AlbumHeaderInfo, artist_detail_page::ArtistHeaderInfo,
-    playlist_detail_page::PlaylistHeaderInfo,
-};
 
 pub mod album_detail_page;
 pub mod albums_page;
 pub mod artist_detail_page;
 pub mod artists_page;
+pub mod grid_page;
 pub mod library_page;
 pub mod now_playing_bar;
 pub mod playlist_detail_page;
@@ -39,7 +34,7 @@ pub fn set_image_from_url(url: Option<&str>, image: &Image) {
     });
 }
 
-pub fn build_album_tile(album: &AlbumSimple, on_open: Rc<dyn Fn(AlbumHeaderInfo)>) -> adw::Bin {
+pub fn build_album_tile(album: &AlbumSimple) -> adw::Bin {
     let vbox = gtk4::Box::builder()
         .orientation(gtk4::Orientation::Vertical)
         .spacing(6)
@@ -69,30 +64,16 @@ pub fn build_album_tile(album: &AlbumSimple, on_open: Rc<dyn Fn(AlbumHeaderInfo)
     vbox.append(&title);
     vbox.append(&artist);
 
-    let info = AlbumHeaderInfo {
-        id: album.id.clone(),
-    };
-
-    let bin = adw::Bin::builder()
+    adw::Bin::builder()
         .child(&vbox)
         .margin_end(12)
         .margin_bottom(12)
         .margin_top(12)
         .margin_start(12)
-        .build();
-
-    let click = gtk4::GestureClick::new();
-    click.connect_pressed(move |_, _, _, _| {
-        (on_open)(info.clone());
-    });
-    bin.add_controller(click);
-    bin
+        .build()
 }
 
-pub fn build_playlist_tile(
-    playlist: &PlaylistSimple,
-    on_open: Rc<dyn Fn(PlaylistHeaderInfo)>,
-) -> gtk4::Button {
+pub fn build_playlist_tile(playlist: &PlaylistSimple) -> adw::Bin {
     let vbox = gtk4::Box::builder()
         .orientation(gtk4::Orientation::Vertical)
         .spacing(6)
@@ -113,26 +94,16 @@ pub fn build_playlist_tile(
     vbox.append(&cover_frame);
     vbox.append(&title);
 
-    let info = PlaylistHeaderInfo { id: playlist.id };
-
-    let button = gtk4::Button::builder()
+    adw::Bin::builder()
         .child(&vbox)
-        .margin_start(12)
         .margin_end(12)
-        .margin_top(12)
         .margin_bottom(12)
-        .build();
-
-    button.add_css_class("flat");
-
-    button.connect_clicked(move |_| {
-        (on_open)(info.clone());
-    });
-
-    button
+        .margin_top(12)
+        .margin_start(12)
+        .build()
 }
 
-pub fn build_artist_tile(artist: &Artist, on_open: Rc<dyn Fn(ArtistHeaderInfo)>) -> adw::Bin {
+pub fn build_artist_tile(artist: &Artist) -> adw::Bin {
     let vbox = gtk4::Box::builder()
         .orientation(gtk4::Orientation::Vertical)
         .spacing(6)
@@ -153,22 +124,27 @@ pub fn build_artist_tile(artist: &Artist, on_open: Rc<dyn Fn(ArtistHeaderInfo)>)
     vbox.append(&cover_frame);
     vbox.append(&title);
 
-    let info = ArtistHeaderInfo { id: artist.id };
-
-    let bin = adw::Bin::builder()
+    adw::Bin::builder()
         .child(&vbox)
         .margin_end(12)
         .margin_bottom(12)
         .margin_top(12)
         .margin_start(12)
-        .build();
+        .build()
+}
 
-    let click = gtk4::GestureClick::new();
-    click.connect_pressed(move |_, _, _, _| {
-        (on_open)(info.clone());
-    });
-    bin.add_controller(click);
-    bin
+pub fn clickable_tile<F>(child: &gtk4::Widget, on_click: F) -> gtk4::Button
+where
+    F: Fn() + 'static,
+{
+    let button = gtk4::Button::builder().child(child).build();
+
+    button.set_has_frame(false);
+    button.add_css_class("flat");
+    button.set_focus_on_click(false);
+    button.connect_clicked(move |_| on_click());
+
+    button
 }
 
 pub fn format_time(seconds: u32) -> String {

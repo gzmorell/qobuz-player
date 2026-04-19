@@ -7,10 +7,12 @@ use libadwaita as adw;
 
 use qobuz_player_controls::client::Client;
 
+use crate::ui::albums_page::new_albums_page;
+use crate::ui::artists_page::new_artists_page;
+use crate::ui::playlists_page::new_playlists_page;
 use crate::ui::{
-    album_detail_page::AlbumHeaderInfo, albums_page::AlbumsPage,
-    artist_detail_page::ArtistHeaderInfo, artists_page::ArtistsPage,
-    playlist_detail_page::PlaylistHeaderInfo, playlists_page::PlaylistsPage,
+    album_detail_page::AlbumHeaderInfo, artist_detail_page::ArtistHeaderInfo,
+    playlist_detail_page::PlaylistHeaderInfo,
 };
 
 pub struct SearchPage {
@@ -26,9 +28,9 @@ impl SearchPage {
     ) -> Self {
         let stack = adw::ViewStack::new();
 
-        let albums_page = AlbumsPage::new();
-        let artists_page = ArtistsPage::new();
-        let playlists_page = PlaylistsPage::new();
+        let albums_page = new_albums_page(on_open_album.clone());
+        let artists_page = new_artists_page(on_open_artist.clone());
+        let playlists_page = new_playlists_page(on_open_playlist.clone());
 
         stack.add_titled(albums_page.widget(), Some("albums"), "Albums");
         stack.add_titled(artists_page.widget(), Some("artists"), "Artists");
@@ -100,9 +102,6 @@ impl SearchPage {
                 playlists_page.clear();
 
                 let client = client.clone();
-                let on_open_album = on_open_album.clone();
-                let on_open_artist = on_open_artist.clone();
-                let on_open_playlist = on_open_playlist.clone();
                 let spinner = spinner.clone();
 
                 glib::MainContext::default().spawn_local(async move {
@@ -110,13 +109,13 @@ impl SearchPage {
                         Ok(search) => {
                             let albums: Vec<_> =
                                 search.albums.into_iter().map(|x| x.into()).collect();
-                            albums_page.load(albums, on_open_album);
+                            albums_page.load(albums);
 
-                            artists_page.load(search.artists, on_open_artist);
+                            artists_page.load(search.artists);
 
                             let playlists: Vec<_> =
                                 search.playlists.into_iter().map(|x| x.into()).collect();
-                            playlists_page.load(playlists, on_open_playlist);
+                            playlists_page.load(playlists);
                         }
                         Err(err) => {
                             tracing::error!("Search failed: {err}");
