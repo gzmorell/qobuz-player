@@ -99,7 +99,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install system dependencies
-        run: dnf -y install rust-alsa-devel SDL2-devel rust-libadwaita-devel rust-openssl-devel
+        run: dnf -y install rust-alsa-devel rust-libadwaita-devel rust-openssl-devel
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
