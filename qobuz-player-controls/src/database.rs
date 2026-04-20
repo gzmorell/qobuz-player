@@ -50,7 +50,7 @@ impl Database {
 
     pub async fn set_user_auth_token(&self, token: String) -> AppResult<()> {
         sqlx::query!(
-            "UPDATE credentials SET user_auth_token = ? WHERE ROWID = 1",
+            "update credentials set user_auth_token = ? where rowid = 1",
             token
         )
         .execute(&self.pool)
@@ -59,7 +59,7 @@ impl Database {
     }
 
     pub async fn clear_user_auth_token(&self) -> AppResult<()> {
-        sqlx::query!("UPDATE credentials SET user_auth_token = NULL WHERE ROWID = 1")
+        sqlx::query!("update credentials set user_auth_token = null where rowid = 1")
             .execute(&self.pool)
             .await?;
         Ok(())
@@ -68,22 +68,13 @@ impl Database {
     pub async fn set_tracklist(&self, tracklist: &Tracklist) -> AppResult<()> {
         let serialized = to_string(&tracklist)?;
 
-        sqlx::query!(
-            r#"
-           delete from tracklist
-        "#
-        )
-        .execute(&self.pool)
-        .await?;
+        sqlx::query!("delete from tracklist")
+            .execute(&self.pool)
+            .await?;
 
-        sqlx::query!(
-            r#"
-            INSERT INTO tracklist (tracklist) VALUES (?1);
-        "#,
-            serialized
-        )
-        .execute(&self.pool)
-        .await?;
+        sqlx::query!("insert into tracklist (tracklist) values (?1)", serialized)
+            .execute(&self.pool)
+            .await?;
 
         Ok(())
     }
@@ -91,9 +82,7 @@ impl Database {
     pub async fn get_tracklist(&self) -> Option<Tracklist> {
         let row = sqlx::query_as!(
             TracklistDb,
-            r#"
-            SELECT tracklist as "tracklist: Json<Tracklist>" FROM tracklist
-        "#
+            r#"SELECT tracklist as "tracklist: Json<Tracklist>" FROM tracklist"#
         )
         .fetch_one(&self.pool)
         .await;
@@ -102,35 +91,21 @@ impl Database {
     }
 
     pub async fn set_volume(&self, volume: f32) -> AppResult<()> {
-        sqlx::query!(
-            r#"
-           delete from volume
-        "#
-        )
-        .execute(&self.pool)
-        .await?;
+        sqlx::query!("delete from volume")
+            .execute(&self.pool)
+            .await?;
 
-        sqlx::query!(
-            r#"
-            INSERT INTO volume (volume) VALUES (?1);
-        "#,
-            volume
-        )
-        .execute(&self.pool)
-        .await?;
+        sqlx::query!("insert into volume (volume) values (?1)", volume)
+            .execute(&self.pool)
+            .await?;
 
         Ok(())
     }
 
     pub async fn get_volume(&self) -> Option<f32> {
-        let row = sqlx::query_as!(
-            VolumeDb,
-            r#"
-            SELECT volume FROM volume
-        "#
-        )
-        .fetch_one(&self.pool)
-        .await;
+        let row = sqlx::query_as!(VolumeDb, "select volume from volume")
+            .fetch_one(&self.pool)
+            .await;
 
         row.ok().map(|x| x.volume as f32)
     }
@@ -140,9 +115,9 @@ impl Database {
 
         sqlx::query!(
             r#"
-            UPDATE configuration
-            SET max_audio_quality=?1
-            WHERE ROWID = 1
+            update configuration
+            set max_audio_quality=?1
+            where rowid = 1
             "#,
             quality_id
         )
@@ -155,10 +130,7 @@ impl Database {
     pub async fn get_credentials(&self) -> AppResult<DatabaseCredentials> {
         Ok(sqlx::query_as!(
             DatabaseCredentials,
-            r#"
-            SELECT * FROM credentials
-            WHERE ROWID = 1;
-            "#
+            "select * from credentials where rowid = 1;"
         )
         .fetch_one(&self.pool)
         .await?)
@@ -167,10 +139,7 @@ impl Database {
     pub async fn get_configuration(&self) -> AppResult<DatabaseConfiguration> {
         Ok(sqlx::query_as!(
             DatabaseConfiguration,
-            r#"
-            SELECT * FROM configuration
-            WHERE ROWID = 1;
-            "#
+            "select * from configuration where rowid = 1"
         )
         .fetch_one(&self.pool)
         .await?)
@@ -186,7 +155,7 @@ impl Database {
                 let id = Some(id);
 
                 sqlx::query!(
-                    "INSERT INTO rfid_references (id, reference_type, album_id, playlist_id) VALUES ($1, $2, $3, $4) ON CONFLICT(id) DO UPDATE SET reference_type = excluded.reference_type, album_id = excluded.album_id, playlist_id = excluded.playlist_id RETURNING *;",
+                    "insert into rfid_references (id, reference_type, album_id, playlist_id) values ($1, $2, $3, $4) on conflict(id) do update set reference_type = excluded.reference_type, album_id = excluded.album_id, playlist_id = excluded.playlist_id returning *",
                     rfid_id,
                     1,
                     id,
@@ -197,7 +166,7 @@ impl Database {
                 let id = Some(id);
 
                 sqlx::query!(
-                    "INSERT INTO rfid_references (id, reference_type, album_id, playlist_id) VALUES ($1, $2, $3, $4) ON CONFLICT(id) DO UPDATE SET reference_type = excluded.reference_type, album_id = excluded.album_id, playlist_id = excluded.playlist_id RETURNING *;",
+                    "insert into rfid_references (id, reference_type, album_id, playlist_id) values ($1, $2, $3, $4) on conflict(id) do update set reference_type = excluded.reference_type, album_id = excluded.album_id, playlist_id = excluded.playlist_id returning *",
                     rfid_id,
                     2,
                     None::<String>,
@@ -211,7 +180,7 @@ impl Database {
     pub async fn get_reference(&self, id: &str) -> Option<ReferenceType> {
         let db_reference = match sqlx::query_as!(
             RFIDReference,
-            "SELECT * FROM rfid_references WHERE ID = $1;",
+            "select * from rfid_references where id = $1",
             id
         )
         .fetch_one(&self.pool)
@@ -269,9 +238,9 @@ impl Database {
 
         sqlx::query!(
             r#"
-                INSERT INTO cache_entries (path, last_opened)
-                VALUES (?, ?)
-                ON CONFLICT(path) DO UPDATE SET
+                insert into cache_entries (path, last_opened)
+                values (?, ?)
+                on conflict(path) do update set
                     path = excluded.path,
                     last_opened = excluded.last_opened
             "#,
@@ -336,7 +305,7 @@ async fn create_credentials_row(pool: &Pool<Sqlite>) -> AppResult<()> {
     let rowid = 1;
 
     sqlx::query!(
-        "INSERT OR IGNORE INTO credentials (ROWID) VALUES (?1);",
+        "insert or ignore into credentials (rowid) values (?1)",
         rowid
     )
     .execute(pool)
@@ -347,7 +316,7 @@ async fn create_credentials_row(pool: &Pool<Sqlite>) -> AppResult<()> {
 async fn create_configuration(pool: &Pool<Sqlite>) -> AppResult<()> {
     let rowid = 1;
     sqlx::query!(
-        "INSERT OR IGNORE INTO configuration (ROWID) VALUES (?1);",
+        "insert or ignore into configuration (rowid) values (?1)",
         rowid
     )
     .execute(pool)
@@ -376,7 +345,7 @@ mod tests {
             .format(&time::format_description::well_known::Rfc3339)
             .unwrap();
 
-        sqlx::query("UPDATE cache_entries SET last_opened = ? WHERE path = ?")
+        sqlx::query("update cache_entries set last_opened = ? where path = ?")
             .bind(&old_time)
             .bind(old_path_str)
             .execute(&db.pool)
@@ -385,7 +354,7 @@ mod tests {
 
         let deleted = db.clean_up_cache_entries(Duration::days(5)).await.unwrap();
 
-        let remaining: Vec<_> = sqlx::query_scalar::<_, String>("SELECT path FROM cache_entries")
+        let remaining: Vec<_> = sqlx::query_scalar::<_, String>("select path from cache_entries")
             .fetch_all(&db.pool)
             .await
             .unwrap();

@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "select * from rfid_references where id = $1",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "reference_type",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "album_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "playlist_id",
+        "ordinal": 3,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "227e8d779a41e0bdcc5a2d7d70ca01d826e09245667115038641c30c83b5c990"
+}

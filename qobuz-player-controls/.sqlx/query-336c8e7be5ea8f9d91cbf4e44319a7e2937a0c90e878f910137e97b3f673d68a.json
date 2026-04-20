@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "select * from credentials where rowid = 1;",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_auth_token",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "336c8e7be5ea8f9d91cbf4e44319a7e2937a0c90e878f910137e97b3f673d68a"
+}

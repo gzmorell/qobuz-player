@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from tracklist",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "d9793a5025bd5eb21eb73144e410b60cc863085fd60954c1043d2595c7c610b3"
+}

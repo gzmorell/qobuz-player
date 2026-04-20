@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT tracklist as \"tracklist: Json<Tracklist>\" FROM tracklist",
+  "describe": {
+    "columns": [
+      {
+        "name": "tracklist: Json<Tracklist>",
+        "ordinal": 0,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6246bf2b0e9e08bdba7c807c38dbc79578c8a8d8957c5899b415965215cb8412"
+}

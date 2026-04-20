@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "insert into rfid_references (id, reference_type, album_id, playlist_id) values ($1, $2, $3, $4) on conflict(id) do update set reference_type = excluded.reference_type, album_id = excluded.album_id, playlist_id = excluded.playlist_id returning *",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "reference_type",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "album_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "playlist_id",
+        "ordinal": 3,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "9abba769f30b43bfa1ce232fe2b2cf99a03bab082300b1ff6acf4b17367e2745"
+}
