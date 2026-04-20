@@ -336,9 +336,7 @@ async fn create_credentials_row(pool: &Pool<Sqlite>) -> AppResult<()> {
     let rowid = 1;
 
     sqlx::query!(
-        r#"
-            INSERT OR IGNORE INTO credentials (ROWID) VALUES (?1);
-            "#,
+        "INSERT OR IGNORE INTO credentials (ROWID) VALUES (?1);",
         rowid
     )
     .execute(pool)
@@ -349,9 +347,7 @@ async fn create_credentials_row(pool: &Pool<Sqlite>) -> AppResult<()> {
 async fn create_configuration(pool: &Pool<Sqlite>) -> AppResult<()> {
     let rowid = 1;
     sqlx::query!(
-        r#"
-            INSERT OR IGNORE INTO configuration (ROWID) VALUES (?1);
-            "#,
+        "INSERT OR IGNORE INTO configuration (ROWID) VALUES (?1);",
         rowid
     )
     .execute(pool)
