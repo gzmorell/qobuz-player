@@ -1,5 +1,6 @@
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
+use async_channel::Sender;
 use gtk4::prelude::*;
 use libadwaita as adw;
 
@@ -9,9 +10,14 @@ use qobuz_player_controls::{
     models::{AlbumSimple, Artist},
 };
 
-use crate::ui::{
-    album_detail_page::AlbumHeaderInfo, build_album_tile, build_artist_tile, clickable_tile,
-    format_time, set_image_from_url,
+use crate::{
+    UiEvent,
+    ui::{
+        album_detail_page::AlbumHeaderInfo,
+        build_album_tile, build_artist_tile, clickable_tile,
+        favorites_button::{FavoriteButtonType, new_favorite_button},
+        format_time, set_image_from_url,
+    },
 };
 
 #[derive(Clone, Debug)]
@@ -47,6 +53,7 @@ impl ArtistDetailPage {
         client: Arc<Client>,
         on_open_album: Rc<dyn Fn(AlbumHeaderInfo)>,
         on_open_artist: Rc<dyn Fn(ArtistHeaderInfo)>,
+        library_tx: Sender<UiEvent>,
     ) -> Self {
         let empty_title = gtk4::Box::builder().hexpand(true).build();
 
@@ -93,8 +100,20 @@ impl ArtistDetailPage {
             });
         }
 
-        play_button.set_halign(gtk4::Align::Start);
-        header_text.append(&play_button);
+        let favorites_button = new_favorite_button(
+            client.clone(),
+            FavoriteButtonType::Artist(artist_id),
+            library_tx,
+        );
+
+        let button_box = gtk4::Box::builder()
+            .orientation(gtk4::Orientation::Horizontal)
+            .spacing(12)
+            .build();
+        button_box.append(&play_button);
+        button_box.append(&favorites_button);
+
+        header_text.append(&button_box);
 
         let header_section = gtk4::Box::builder()
             .orientation(gtk4::Orientation::Horizontal)
@@ -202,7 +221,7 @@ impl ArtistDetailPage {
 
         stack.set_visible_child_name("loading");
 
-        glib::spawn_future_local(async move {
+        glib::MainContext::default().spawn_local(async move {
             match client.artist_page(artist_id).await {
                 Ok(artist) => {
                     name.set_label(&artist.name);

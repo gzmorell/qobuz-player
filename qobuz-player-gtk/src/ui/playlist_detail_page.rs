@@ -1,11 +1,18 @@
 use std::{cell::RefCell, sync::Arc};
 
+use async_channel::Sender;
 use gtk4::prelude::*;
 use libadwaita as adw;
 
 use qobuz_player_controls::{client::Client, controls::Controls};
 
-use crate::ui::{format_time, set_image_from_url};
+use crate::{
+    UiEvent,
+    ui::{
+        favorites_button::{FavoriteButtonType, new_favorite_button},
+        format_time, set_image_from_url,
+    },
+};
 
 #[derive(Clone, Debug)]
 pub struct PlaylistHeaderInfo {
@@ -31,7 +38,12 @@ pub struct PlaylistDetailPage {
 }
 
 impl PlaylistDetailPage {
-    pub fn new(playlist_id: u32, controls: Controls, client: Arc<Client>) -> Self {
+    pub fn new(
+        playlist_id: u32,
+        controls: Controls,
+        client: Arc<Client>,
+        library_tx: Sender<UiEvent>,
+    ) -> Self {
         let empty_title = gtk4::Box::builder().hexpand(true).build();
 
         let nav_bar = adw::HeaderBar::builder().title_widget(&empty_title).build();
@@ -80,6 +92,18 @@ impl PlaylistDetailPage {
                 controls.play_playlist(playlist_id, 0, false); // TODO: Shuffle button
             });
         }
+        let favorites_button = new_favorite_button(
+            client.clone(),
+            FavoriteButtonType::Playlist(playlist_id),
+            library_tx,
+        );
+
+        let button_box = gtk4::Box::builder()
+            .orientation(gtk4::Orientation::Horizontal)
+            .spacing(12)
+            .build();
+        button_box.append(&play_button);
+        button_box.append(&favorites_button);
 
         let header_text = gtk4::Box::builder()
             .orientation(gtk4::Orientation::Vertical)
@@ -89,9 +113,7 @@ impl PlaylistDetailPage {
         header_text.append(&title);
         header_text.append(&artist);
         header_text.append(&meta);
-
-        play_button.set_halign(gtk4::Align::Start);
-        header_text.append(&play_button);
+        header_text.append(&button_box);
 
         let header_section = gtk4::Box::builder()
             .orientation(gtk4::Orientation::Horizontal)
@@ -190,7 +212,7 @@ impl PlaylistDetailPage {
 
         stack.set_visible_child_name("loading");
 
-        glib::spawn_future_local(async move {
+        glib::MainContext::default().spawn_local(async move {
             match client.playlist(playlist_id).await {
                 Ok(playlist) => {
                     title.set_label(&playlist.title);

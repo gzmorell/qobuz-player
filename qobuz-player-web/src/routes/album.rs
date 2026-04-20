@@ -73,34 +73,6 @@ async fn play_track(
     state.controls.play_album(&id, track_position);
 }
 
-// async fn play_next(State(state): State<Arc<AppState>>, Path(id): Path<String>) -> ResponseResult {
-//     let album_data = ok_or_send_error_toast(&state, state.get_album(&id).await)?;
-//     let track_ids = album_data.album.tracks.into_iter().map(|x| x.id).collect();
-
-//     state.controls.play_tracks_next(track_ids);
-//     Ok(
-//         state.send_toast(qobuz_player_controls::notification::Notification::Success(
-//             format!("Playing {} next", album_data.album.title),
-//         )),
-//     )
-// }
-
-// async fn add_to_queue(
-//     State(state): State<Arc<AppState>>,
-//     Path(id): Path<String>,
-// ) -> ResponseResult {
-//     let album_data = ok_or_send_error_toast(&state, state.get_album(&id).await)?;
-//     let track_ids = album_data.album.tracks.into_iter().map(|x| x.id).collect();
-
-//     state.controls.add_tracks_to_queue(track_ids);
-
-//     Ok(
-//         state.send_toast(qobuz_player_controls::notification::Notification::Success(
-//             format!("{} added to queue", album_data.album.title),
-//         )),
-//     )
-// }
-
 async fn set_favorite(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,

@@ -1,11 +1,18 @@
 use std::{cell::RefCell, sync::Arc};
 
+use async_channel::Sender;
 use gtk4::prelude::*;
 use libadwaita as adw;
 
 use qobuz_player_controls::{client::Client, controls::Controls};
 
-use crate::ui::{format_time, set_image_from_url};
+use crate::{
+    UiEvent,
+    ui::{
+        favorites_button::{FavoriteButtonType, new_favorite_button},
+        format_time, set_image_from_url,
+    },
+};
 
 #[derive(Clone, Debug)]
 pub struct AlbumHeaderInfo {
@@ -32,7 +39,12 @@ pub struct AlbumDetailPage {
 }
 
 impl AlbumDetailPage {
-    pub fn new(album_id: String, controls: Controls, client: Arc<Client>) -> Self {
+    pub fn new(
+        album_id: String,
+        controls: Controls,
+        client: Arc<Client>,
+        library_tx: Sender<UiEvent>,
+    ) -> Self {
         let empty_title = gtk4::Box::builder().hexpand(true).build();
 
         let nav_bar = adw::HeaderBar::builder().title_widget(&empty_title).build();
@@ -83,6 +95,19 @@ impl AlbumDetailPage {
             });
         }
 
+        let favorites_button = new_favorite_button(
+            client.clone(),
+            FavoriteButtonType::Album(album_id.clone()),
+            library_tx,
+        );
+
+        let button_box = gtk4::Box::builder()
+            .orientation(gtk4::Orientation::Horizontal)
+            .spacing(12)
+            .build();
+        button_box.append(&play_button);
+        button_box.append(&favorites_button);
+
         let header_text = gtk4::Box::builder()
             .orientation(gtk4::Orientation::Vertical)
             .spacing(12)
@@ -92,8 +117,7 @@ impl AlbumDetailPage {
         header_text.append(&artist);
         header_text.append(&meta);
 
-        play_button.set_halign(gtk4::Align::Start);
-        header_text.append(&play_button);
+        header_text.append(&button_box);
 
         let header_section = gtk4::Box::builder()
             .orientation(gtk4::Orientation::Horizontal)
@@ -194,7 +218,7 @@ impl AlbumDetailPage {
 
         stack.set_visible_child_name("loading");
 
-        glib::spawn_future_local(async move {
+        glib::MainContext::default().spawn_local(async move {
             match client.album(&album_id).await {
                 Ok(album) => {
                     title.set_label(&album.title);

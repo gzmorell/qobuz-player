@@ -1,6 +1,7 @@
 use std::{cell::RefCell, rc::Rc, sync::Arc, time::Duration};
 
 use adw::{Application, prelude::*};
+use async_channel::{Receiver, Sender};
 use glib::clone;
 use libadwaita as adw;
 use qobuz_player_controls::{
@@ -90,6 +91,9 @@ fn build_ui(
     let app_nav = adw::NavigationView::new();
     app_nav.add(&root_page);
 
+    let (sender, receiver) = async_channel::unbounded::<UiEvent>();
+
+    let sender_clone = sender.clone();
     let on_open_album: Rc<dyn Fn(AlbumHeaderInfo)> = Rc::new(clone!(
         #[weak]
         app_nav,
@@ -98,11 +102,17 @@ fn build_ui(
         #[strong]
         client,
         move |info: AlbumHeaderInfo| {
-            let detail = AlbumDetailPage::new(info.id, controls.clone(), client.clone());
+            let detail = AlbumDetailPage::new(
+                info.id,
+                controls.clone(),
+                client.clone(),
+                sender_clone.clone(),
+            );
             app_nav.push(detail.page());
         }
     ));
 
+    let sender_clone = sender.clone();
     let on_open_playlist: Rc<dyn Fn(PlaylistHeaderInfo)> = Rc::new(clone!(
         #[weak]
         app_nav,
@@ -111,16 +121,20 @@ fn build_ui(
         #[strong]
         client,
         move |info: PlaylistHeaderInfo| {
-            let detail = PlaylistDetailPage::new(info.id, controls.clone(), client.clone());
+            let detail = PlaylistDetailPage::new(
+                info.id,
+                controls.clone(),
+                client.clone(),
+                sender_clone.clone(),
+            );
             app_nav.push(detail.page());
         }
     ));
 
     let on_open_artist: OpenArtistDetailCallback = Rc::new(RefCell::new(None));
-
-    let on_open_artist_clone = on_open_artist.clone();
-
     let controls_clone = controls.clone();
+    let on_open_artist_clone = on_open_artist.clone();
+    let sender_clone = sender.clone();
     let callback: Rc<dyn Fn(ArtistHeaderInfo)> = Rc::new(clone!(
         #[weak]
         app_nav,
@@ -139,6 +153,7 @@ fn build_ui(
                     .as_ref()
                     .expect("on_open_artist not initialized")
                     .clone(),
+                sender_clone.clone(),
             );
 
             app_nav.push(detail.page());
@@ -186,21 +201,25 @@ fn build_ui(
     }
 
     setup_tracklist_listener(
+        sender,
+        receiver,
         tracklist_receiver,
         status_receiver,
         position_receiver,
         now_playing,
+        library_page,
     );
 }
 
 fn setup_tracklist_listener(
+    sender: Sender<UiEvent>,
+    receiver: Receiver<UiEvent>,
     mut tracklist_receiver: TracklistReceiver,
     mut status_receiver: StatusReceiver,
     mut position_receiver: PositionReceiver,
     now_playing_bar: NowPlayingBar,
+    library_page: LibraryPage,
 ) {
-    let (sender, receiver) = async_channel::unbounded::<UiEvent>();
-
     tokio::spawn(async move {
         loop {
             tokio::select! {
@@ -222,7 +241,7 @@ fn setup_tracklist_listener(
         }
     });
 
-    glib::spawn_future_local(async move {
+    glib::MainContext::default().spawn_local(async move {
         loop {
             match receiver.recv().await {
                 Ok(update) => match update {
@@ -237,6 +256,9 @@ fn setup_tracklist_listener(
                     UiEvent::Position(duration) => {
                         update_progress(&now_playing_bar, &duration);
                     }
+                    UiEvent::FavoritesChanged => {
+                        library_page.reload();
+                    }
                 },
                 Err(err) => {
                     tracing::error!("{err}");
@@ -250,4 +272,5 @@ enum UiEvent {
     Tracklist(Tracklist),
     Status(Status),
     Position(Duration),
+    FavoritesChanged,
 }

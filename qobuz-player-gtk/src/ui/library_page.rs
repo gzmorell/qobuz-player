@@ -1,13 +1,17 @@
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
+use gtk4::Spinner;
 use gtk4::glib;
 use gtk4::prelude::*;
 use libadwaita as adw;
 
 use qobuz_player_controls::client::Client;
 
+use crate::ui::albums_page::AlbumsPage;
 use crate::ui::albums_page::new_albums_page;
+use crate::ui::artists_page::ArtistsPage;
 use crate::ui::artists_page::new_artists_page;
+use crate::ui::playlists_page::PlaylistsPage;
 use crate::ui::playlists_page::new_playlists_page;
 use crate::ui::{
     album_detail_page::AlbumHeaderInfo, artist_detail_page::ArtistHeaderInfo,
@@ -16,6 +20,11 @@ use crate::ui::{
 
 pub struct LibraryPage {
     root: gtk4::Box,
+    client: Arc<Client>,
+    spinner: Spinner,
+    albums_page: Rc<RefCell<AlbumsPage>>,
+    artists_page: Rc<RefCell<ArtistsPage>>,
+    playlists_page: Rc<RefCell<PlaylistsPage>>,
 }
 
 impl LibraryPage {
@@ -96,39 +105,72 @@ impl LibraryPage {
         root.append(&top_box);
         root.append(&overlay);
 
-        glib::spawn_future_local({
-            let albums_page = albums_page.clone();
-            let artists_page = artists_page.clone();
-            let playlists_page = playlists_page.clone();
-            let spinner = spinner.clone();
+        reload(
+            client.clone(),
+            &spinner,
+            &albums_page,
+            &artists_page,
+            &playlists_page,
+        );
 
-            async move {
-                match client.favorites().await {
-                    Ok(favorites) => {
-                        spinner.set_visible(false);
-                        spinner.stop();
+        Self {
+            root,
+            client,
+            spinner,
+            albums_page,
+            artists_page,
+            playlists_page,
+        }
+    }
 
-                        albums_page.borrow_mut().load(favorites.albums);
-
-                        artists_page.borrow_mut().load(favorites.artists);
-
-                        playlists_page
-                            .borrow_mut()
-                            .load(favorites.playlists.into_iter().map(|x| x.into()).collect());
-                    }
-                    Err(err) => {
-                        spinner.set_visible(false);
-                        spinner.stop();
-                        tracing::error!("{err}");
-                    }
-                }
-            }
-        });
-
-        Self { root }
+    pub fn reload(&self) {
+        reload(
+            self.client.clone(),
+            &self.spinner,
+            &self.albums_page,
+            &self.artists_page,
+            &self.playlists_page,
+        )
     }
 
     pub fn widget(&self) -> &gtk4::Box {
         &self.root
     }
+}
+
+pub fn reload(
+    client: Arc<Client>,
+    spinner: &Spinner,
+    albums_page: &Rc<RefCell<AlbumsPage>>,
+    artists_page: &Rc<RefCell<ArtistsPage>>,
+    playlists_page: &Rc<RefCell<PlaylistsPage>>,
+) {
+    let albums_page = albums_page.clone();
+    let artists_page = artists_page.clone();
+    let playlists_page = playlists_page.clone();
+    let spinner = spinner.clone();
+
+    glib::MainContext::default().spawn_local({
+        async move {
+            match client.favorites().await {
+                Ok(favorites) => {
+                    spinner.set_visible(false);
+                    spinner.stop();
+
+                    albums_page.borrow_mut().load(favorites.albums);
+
+                    artists_page.borrow_mut().load(favorites.artists);
+
+                    playlists_page
+                        .borrow_mut()
+                        .load(favorites.playlists.into_iter().map(|x| x.into()).collect());
+                }
+                Err(err) => {
+                    spinner.set_visible(false);
+                    spinner.stop();
+                    tracing::error!("{err}");
+                }
+            }
+        }
+    });
 }
