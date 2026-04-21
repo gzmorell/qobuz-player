@@ -11,7 +11,7 @@ use qobuz_player_controls::{
 use crate::{
     UiEvent,
     ui::{
-        DetailPage, build_track_row,
+        DetailPage, DetailPageType, build_track_row,
         favorites_button::{FavoriteButtonType, new_favorite_button},
         format_time, set_image_from_url,
     },
@@ -296,6 +296,10 @@ impl DetailPage for PlaylistDetailPage {
             &self.current_selected_index,
             &self.tracks_list,
         );
+    }
+
+    fn detail_type(&self) -> DetailPageType {
+        DetailPageType::Playlist(self.playlist_id)
     }
 }
 

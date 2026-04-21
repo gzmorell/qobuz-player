@@ -2,26 +2,25 @@ use std::{cell::RefCell, rc::Rc, sync::Arc, time::Duration};
 
 use adw::{Application, prelude::*};
 use async_channel::{Receiver, Sender};
-use glib::clone;
 use libadwaita as adw;
 use qobuz_player_controls::{
     PositionReceiver, Status, StatusReceiver, TracklistReceiver, client::Client,
     controls::Controls, tracklist::Tracklist,
 };
 
-use crate::ui::{
-    DetailPage,
-    album_detail_page::{AlbumDetailPage, AlbumHeaderInfo},
-    artist_detail_page::{ArtistDetailPage, ArtistHeaderInfo},
-    library_page::LibraryPage,
-    now_playing_bar::{
-        NowPlayingBar, build_now_playing_bar, update_now_playing, update_now_playing_button_icon,
-        update_progress,
+use crate::{
+    callbacks::{CallbackHandles, build_callbacks},
+    ui::{
+        DetailPage,
+        library_page::LibraryPage,
+        now_playing_bar::{
+            NowPlayingBar, update_now_playing, update_now_playing_button_icon, update_progress,
+        },
+        search_page::SearchPage,
     },
-    playlist_detail_page::{PlaylistDetailPage, PlaylistHeaderInfo},
-    search_page::SearchPage,
 };
 
+mod callbacks;
 mod ui;
 
 pub fn init(
@@ -51,8 +50,6 @@ pub fn init(
     let args: &[&str] = &[];
     application.run_with_args(args);
 }
-
-type OpenArtistDetailCallback = Rc<RefCell<Option<Rc<dyn Fn(ArtistHeaderInfo) + 'static>>>>;
 
 fn build_ui(
     app: &Application,
@@ -108,83 +105,18 @@ fn build_ui(
 
     let (sender, receiver) = async_channel::unbounded::<UiEvent>();
 
-    let sender_clone = sender.clone();
-    let detail_pages_clone = detail_pages.clone();
-    let tracklist_receiver_clone = tracklist_receiver.clone();
-    let on_open_album: Rc<dyn Fn(AlbumHeaderInfo)> = Rc::new(clone!(
-        #[weak]
-        app_nav,
-        #[strong]
-        controls,
-        #[strong]
-        client,
-        move |info: AlbumHeaderInfo| {
-            let detail = AlbumDetailPage::new(
-                info.id,
-                controls.clone(),
-                client.clone(),
-                tracklist_receiver_clone.clone(),
-                sender_clone.clone(),
-            );
-            app_nav.push(&detail.page().clone());
-            detail_pages_clone.borrow_mut().push(Rc::new(detail));
-        }
+    let callback_handles = Rc::new(build_callbacks(
+        app_nav.clone(),
+        controls.clone(),
+        client.clone(),
+        detail_pages.clone(),
+        tracklist_receiver.clone(),
+        sender.clone(),
     ));
 
-    let sender_clone = sender.clone();
-    let tracklist_receiver_clone = tracklist_receiver.clone();
-    let on_open_playlist: Rc<dyn Fn(PlaylistHeaderInfo)> = Rc::new(clone!(
-        #[weak]
-        app_nav,
-        #[strong]
-        controls,
-        #[strong]
-        client,
-        move |info: PlaylistHeaderInfo| {
-            let detail = PlaylistDetailPage::new(
-                info.id,
-                controls.clone(),
-                client.clone(),
-                tracklist_receiver_clone.clone(),
-                sender_clone.clone(),
-            );
-            app_nav.push(detail.page());
-        }
-    ));
-
-    let on_open_artist: OpenArtistDetailCallback = Rc::new(RefCell::new(None));
-    let controls_clone = controls.clone();
-    let on_open_artist_clone = on_open_artist.clone();
-    let sender_clone = sender.clone();
-    let tracklist_receiver_clone = tracklist_receiver.clone();
-    let callback: Rc<dyn Fn(ArtistHeaderInfo)> = Rc::new(clone!(
-        #[weak]
-        app_nav,
-        #[strong]
-        client,
-        #[strong]
-        on_open_album,
-        move |info: ArtistHeaderInfo| {
-            let detail = ArtistDetailPage::new(
-                info.id,
-                controls_clone.clone(),
-                client.clone(),
-                tracklist_receiver_clone.clone(),
-                on_open_album.clone(),
-                on_open_artist_clone
-                    .borrow()
-                    .as_ref()
-                    .expect("on_open_artist not initialized")
-                    .clone(),
-                sender_clone.clone(),
-            );
-
-            app_nav.push(detail.page());
-        }
-    ));
-
-    *on_open_artist.borrow_mut() = Some(callback.clone());
-    let on_open_artist = on_open_artist.borrow().as_ref().unwrap().clone();
+    let on_open_album = callback_handles.open_album.clone();
+    let on_open_artist = callback_handles.open_artist.clone();
+    let on_open_playlist = callback_handles.open_playlist.clone();
 
     let library_page = LibraryPage::new(
         client.clone(),
@@ -206,7 +138,7 @@ fn build_ui(
     tabs.add_titled(search_page.widget(), Some("search"), "Search")
         .set_icon_name(Some("system-search-symbolic"));
 
-    let now_playing = build_now_playing_bar(controls);
+    let now_playing = NowPlayingBar::new(controls, on_open_album.clone(), on_open_artist.clone());
 
     let vbox = gtk4::Box::builder()
         .orientation(gtk4::Orientation::Vertical)
@@ -232,6 +164,7 @@ fn build_ui(
         now_playing,
         library_page,
         detail_pages,
+        callback_handles,
     );
 }
 
@@ -245,6 +178,7 @@ fn setup_tracklist_listener(
     now_playing_bar: NowPlayingBar,
     library_page: LibraryPage,
     detail_pages: Rc<RefCell<Vec<Rc<dyn DetailPage>>>>,
+    callback_handles: Rc<CallbackHandles>,
 ) {
     tokio::spawn(async move {
         loop {
@@ -268,6 +202,8 @@ fn setup_tracklist_listener(
     });
 
     glib::MainContext::default().spawn_local(async move {
+        let _keepalive = callback_handles;
+
         loop {
             match receiver.recv().await {
                 Ok(update) => match update {

@@ -157,9 +157,37 @@ pub fn format_time(seconds: u32) -> String {
     format!("{m}:{s:02}")
 }
 
+pub enum DetailPageType {
+    Album(String),
+    Artist(u32),
+    Playlist(u32),
+}
+
+impl DetailPageType {
+    pub fn is_album(&self, id: &str) -> bool {
+        match self {
+            DetailPageType::Album(test_id) => test_id == id,
+            _ => false,
+        }
+    }
+    pub fn is_artist(&self, id: u32) -> bool {
+        match self {
+            DetailPageType::Artist(test_id) => test_id == &id,
+            _ => false,
+        }
+    }
+    pub fn is_playlist(&self, id: u32) -> bool {
+        match self {
+            DetailPageType::Playlist(test_id) => test_id == &id,
+            _ => false,
+        }
+    }
+}
+
 pub trait DetailPage {
     fn page(&self) -> &NavigationPage;
     fn update_current_playing(&self, playing_entity: PlayingEntity);
+    fn detail_type(&self) -> DetailPageType;
 }
 
 pub fn build_track_row(

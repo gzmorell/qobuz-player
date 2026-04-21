@@ -12,7 +12,9 @@ use qobuz_player_controls::{
 use crate::{
     UiEvent,
     ui::{
-        DetailPage, build_track_row,
+        DetailPage, DetailPageType,
+        artist_detail_page::ArtistHeaderInfo,
+        build_track_row, clickable_tile,
         favorites_button::{FavoriteButtonType, new_favorite_button},
         format_time, set_image_from_url,
     },
@@ -36,14 +38,14 @@ pub struct AlbumDetailPage {
 
     cover: gtk4::Image,
     title: gtk4::Label,
-    artist: gtk4::Label,
+    artist_box: gtk4::Box,
     meta: gtk4::Label,
 
     tracks_list: gtk4::ListBox,
 
     track_rows: Rc<RefCell<HashMap<u32, WeakRef<gtk4::ListBoxRow>>>>,
     current_selected_id: Rc<RefCell<Option<u32>>>,
-
+    on_open_artist: Rc<dyn Fn(ArtistHeaderInfo)>,
     loaded: RefCell<bool>,
 }
 
@@ -54,6 +56,7 @@ impl AlbumDetailPage {
         client: Arc<Client>,
         tracklist_receiver: TracklistReceiver,
         library_tx: Sender<UiEvent>,
+        on_open_artist: Rc<dyn Fn(ArtistHeaderInfo)>,
     ) -> Self {
         let empty_title = gtk4::Box::builder().hexpand(true).build();
 
@@ -74,19 +77,16 @@ impl AlbumDetailPage {
         cover_frame.add_css_class("card");
 
         let title = gtk4::Label::builder()
-            .xalign(0.0)
             .wrap(true)
             .css_classes(vec!["title-1"])
             .build();
 
-        let artist = gtk4::Label::builder()
-            .xalign(0.0)
-            .wrap(true)
-            .css_classes(vec!["title-3"])
+        let artist_box = gtk4::Box::builder()
+            .orientation(gtk4::Orientation::Horizontal)
+            .halign(gtk4::Align::Center)
             .build();
 
         let meta = gtk4::Label::builder()
-            .xalign(0.0)
             .wrap(true)
             .css_classes(vec!["dim-label"])
             .build();
@@ -113,6 +113,7 @@ impl AlbumDetailPage {
 
         let button_box = gtk4::Box::builder()
             .orientation(gtk4::Orientation::Horizontal)
+            .halign(gtk4::Align::Center)
             .spacing(12)
             .build();
         button_box.append(&play_button);
@@ -120,11 +121,12 @@ impl AlbumDetailPage {
 
         let header_text = gtk4::Box::builder()
             .orientation(gtk4::Orientation::Vertical)
+            .halign(gtk4::Align::Center)
             .spacing(12)
             .hexpand(true)
             .build();
         header_text.append(&title);
-        header_text.append(&artist);
+        header_text.append(&artist_box);
         header_text.append(&meta);
 
         header_text.append(&button_box);
@@ -196,12 +198,13 @@ impl AlbumDetailPage {
             stack,
             cover,
             title,
-            artist,
+            artist_box,
             meta,
             tracks_list,
             loaded: RefCell::new(false),
             track_rows: Rc::new(RefCell::new(HashMap::new())),
             current_selected_id: Rc::new(RefCell::new(None)),
+            on_open_artist,
         };
 
         s.load_album();
@@ -223,11 +226,12 @@ impl AlbumDetailPage {
         let stack = self.stack.clone();
         let cover = self.cover.clone();
         let title = self.title.clone();
-        let artist = self.artist.clone();
+        let artist_box = self.artist_box.clone();
         let meta = self.meta.clone();
         let tracks_list = self.tracks_list.clone();
         let track_rows = self.track_rows.clone();
         let current_selected_id = self.current_selected_id.clone();
+        let on_open_artist = self.on_open_artist.clone();
 
         stack.set_visible_child_name("loading");
 
@@ -235,7 +239,23 @@ impl AlbumDetailPage {
             match client.album(&album_id).await {
                 Ok(album) => {
                     title.set_label(&album.title);
-                    artist.set_label(&album.artist.name);
+
+                    while let Some(child) = artist_box.first_child() {
+                        artist_box.remove(&child);
+                    }
+
+                    let artist_label = gtk4::Label::builder()
+                        .label(&album.artist.name)
+                        .wrap(true)
+                        .css_classes(vec!["title-3", "dim-label"])
+                        .build();
+
+                    let artist_id = album.artist.id;
+                    let button = clickable_tile(&artist_label.upcast(), move || {
+                        on_open_artist(ArtistHeaderInfo { id: artist_id });
+                    });
+
+                    artist_box.append(&button);
 
                     let year_str = album.release_year.to_string();
                     let dur_str = format_time(album.duration_seconds);
@@ -256,11 +276,11 @@ impl AlbumDetailPage {
 
                         let controls = controls.clone();
                         let album_id = album_id.clone();
-                        let click_index = idx as i32;
+                        let click_index = idx;
 
                         let click = gtk4::GestureClick::new();
                         click.connect_pressed(move |_, _, _, _| {
-                            controls.play_album(&album_id, click_index as usize);
+                            controls.play_album(&album_id, click_index);
                         });
 
                         row.add_controller(click);
@@ -282,20 +302,6 @@ impl AlbumDetailPage {
                     eprintln!("Failed to load album {album_id}: {err}");
 
                     clear_listbox(&tracks_list);
-
-                    let label = gtk4::Label::builder()
-                        .label("Failed to load album.")
-                        .xalign(0.0)
-                        .margin_top(12)
-                        .margin_bottom(12)
-                        .margin_start(12)
-                        .margin_end(12)
-                        .css_classes(vec!["dim-label"])
-                        .build();
-
-                    let row = adw::ActionRow::builder().child(&label).build();
-                    tracks_list.append(&row);
-
                     stack.set_visible_child_name("content");
                 }
             }
@@ -315,6 +321,10 @@ impl DetailPage for AlbumDetailPage {
             &self.tracks_list,
             &self.track_rows,
         );
+    }
+
+    fn detail_type(&self) -> DetailPageType {
+        DetailPageType::Album(self.album_id.clone())
     }
 }
 
