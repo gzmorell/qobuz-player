@@ -162,27 +162,12 @@ pub trait DetailPage {
     fn update_current_playing(&self, playing_entity: PlayingEntity);
 }
 
-pub fn build_track_row(track: &Track) -> gtk4::ListBoxRow {
-    let number_label = gtk4::Label::builder()
-        .label(format!("{:>2}", track.number))
-        .xalign(0.0)
-        .css_classes(vec!["dim-label"])
-        .width_chars(3)
-        .build();
-
-    let title_label = gtk4::Label::builder()
-        .label(track.title.clone())
-        .xalign(0.0)
-        .hexpand(true)
-        .ellipsize(gtk4::pango::EllipsizeMode::End)
-        .build();
-
-    let duration_label = gtk4::Label::builder()
-        .label(format_time(track.duration_seconds))
-        .xalign(1.0)
-        .css_classes(vec!["dim-label"])
-        .build();
-
+pub fn build_track_row(
+    track: &Track,
+    show_cover: bool,
+    show_artist: bool,
+    show_album: bool,
+) -> gtk4::ListBoxRow {
     let track_row_box = gtk4::Box::builder()
         .orientation(gtk4::Orientation::Horizontal)
         .spacing(12)
@@ -192,8 +177,76 @@ pub fn build_track_row(track: &Track) -> gtk4::ListBoxRow {
         .margin_end(12)
         .build();
 
-    track_row_box.append(&number_label);
-    track_row_box.append(&title_label);
+    match show_cover {
+        true => {
+            let cover = gtk4::Image::builder().pixel_size(50).build();
+            set_image_from_url(track.image.as_deref(), &cover);
+            let cover_frame = gtk4::Frame::builder().child(&cover).build();
+            cover_frame.add_css_class("card");
+
+            track_row_box.append(&cover_frame);
+        }
+        false => {
+            let number_label = gtk4::Label::builder()
+                .label(format!("{:>2}", track.number))
+                .xalign(0.0)
+                .css_classes(vec!["dim-label"])
+                .width_chars(3)
+                .build();
+            track_row_box.append(&number_label);
+        }
+    }
+
+    let title_label = gtk4::Label::builder()
+        .label(track.title.clone())
+        .xalign(0.0)
+        .hexpand(true)
+        .ellipsize(gtk4::pango::EllipsizeMode::End)
+        .build();
+    match show_artist || show_album {
+        true => {
+            let title_box = gtk4::Box::builder()
+                .orientation(gtk4::Orientation::Vertical)
+                .spacing(6)
+                .build();
+            title_box.append(&title_label);
+            if show_artist && let Some(artist_name) = &track.artist_name {
+                let artist_label = gtk4::Label::builder()
+                    .label(artist_name.clone())
+                    .css_classes(vec![String::from("dim-label")])
+                    .xalign(0.0)
+                    .hexpand(true)
+                    .ellipsize(gtk4::pango::EllipsizeMode::End)
+                    .build();
+
+                title_box.append(&artist_label);
+            }
+
+            if show_album && let Some(album_title) = &track.album_title {
+                let album_label = gtk4::Label::builder()
+                    .label(album_title.clone())
+                    .css_classes(vec![String::from("dim-label")])
+                    .xalign(0.0)
+                    .hexpand(true)
+                    .ellipsize(gtk4::pango::EllipsizeMode::End)
+                    .build();
+
+                title_box.append(&album_label);
+            }
+
+            track_row_box.append(&title_box);
+        }
+        false => {
+            track_row_box.append(&title_label);
+        }
+    }
+
+    let duration_label = gtk4::Label::builder()
+        .label(format_time(track.duration_seconds))
+        .xalign(1.0)
+        .css_classes(vec!["dim-label"])
+        .build();
+
     track_row_box.append(&duration_label);
 
     gtk4::ListBoxRow::builder().child(&track_row_box).build()

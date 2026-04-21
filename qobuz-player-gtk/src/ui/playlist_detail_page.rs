@@ -233,7 +233,7 @@ impl PlaylistDetailPage {
                     clear_listbox(&tracks_list);
 
                     for (idx, track) in playlist.tracks.iter().enumerate() {
-                        let row = build_track_row(track);
+                        let row = build_track_row(track, true, true, false);
 
                         let controls = controls.clone();
                         let playlist_id = playlist_id;

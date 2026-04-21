@@ -242,7 +242,7 @@ impl ArtistDetailPage {
                     clear_listbox(&tracks_list);
 
                     for (idx, track) in artist.top_tracks.iter().take(10).enumerate() {
-                        let row = build_track_row(track);
+                        let row = build_track_row(track, true, false, true);
 
                         let weak = glib::WeakRef::new();
                         weak.set(Some(&row));

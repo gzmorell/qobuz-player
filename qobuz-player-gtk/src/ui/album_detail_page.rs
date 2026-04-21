@@ -246,7 +246,7 @@ impl AlbumDetailPage {
                     clear_listbox(&tracks_list);
 
                     for (idx, track) in album.tracks.iter().enumerate() {
-                        let row = build_track_row(track);
+                        let row = build_track_row(track, false, false, false);
 
                         let weak = glib::WeakRef::new();
                         weak.set(Some(&row));
