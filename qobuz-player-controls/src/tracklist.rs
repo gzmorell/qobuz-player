@@ -38,10 +38,24 @@ pub struct Tracklist {
     list_type: TracklistType,
 }
 
+#[derive(Default, Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct Entity {
     pub title: Option<String>,
     pub link: Option<String>,
     pub cover_link: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize)]
+pub enum PlayingEntity {
+    Track(Track),
+    Playlist(PlayingPlaylist),
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize)]
+pub struct PlayingPlaylist {
+    pub track_id: u32,
+    pub index: usize,
+    pub playlist_id: u32,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize)]
@@ -88,6 +102,21 @@ impl Tracklist {
             .iter()
             .find(|t| t.track.status == TrackStatus::Playing)
             .map(|x| x.track.id)
+    }
+
+    pub fn current_playing_entity(&self) -> Option<PlayingEntity> {
+        let current_track = self.current_track();
+
+        current_track.map(|track| match &self.list_type {
+            TracklistType::Playlist(playlist_tracklist) => {
+                PlayingEntity::Playlist(PlayingPlaylist {
+                    track_id: track.id,
+                    index: self.current_position(),
+                    playlist_id: playlist_tracklist.id,
+                })
+            }
+            _ => PlayingEntity::Track(track.clone()),
+        })
     }
 
     pub fn next_track_id(&self) -> Option<u32> {

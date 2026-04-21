@@ -1,14 +1,17 @@
-use std::{cell::RefCell, sync::Arc};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use async_channel::Sender;
 use gtk4::prelude::*;
 use libadwaita as adw;
 
-use qobuz_player_controls::{client::Client, controls::Controls};
+use qobuz_player_controls::{
+    TracklistReceiver, client::Client, controls::Controls, tracklist::PlayingEntity,
+};
 
 use crate::{
     UiEvent,
     ui::{
+        DetailPage, build_track_row,
         favorites_button::{FavoriteButtonType, new_favorite_button},
         format_time, set_image_from_url,
     },
@@ -24,6 +27,7 @@ pub struct PlaylistDetailPage {
 
     client: Arc<Client>,
     controls: Controls,
+    tracklist_receiver: TracklistReceiver,
     playlist_id: u32,
 
     stack: gtk4::Stack,
@@ -34,6 +38,8 @@ pub struct PlaylistDetailPage {
 
     tracks_list: gtk4::ListBox,
 
+    current_selected_index: Rc<RefCell<Option<usize>>>,
+
     loaded: RefCell<bool>,
 }
 
@@ -42,6 +48,7 @@ impl PlaylistDetailPage {
         playlist_id: u32,
         controls: Controls,
         client: Arc<Client>,
+        tracklist_receiver: TracklistReceiver,
         library_tx: Sender<UiEvent>,
     ) -> Self {
         let empty_title = gtk4::Box::builder().hexpand(true).build();
@@ -128,7 +135,8 @@ impl PlaylistDetailPage {
         header_section.append(&header_text);
 
         let tracks_list = gtk4::ListBox::builder()
-            .selection_mode(gtk4::SelectionMode::None)
+            .selection_mode(gtk4::SelectionMode::Single)
+            .activate_on_single_click(true)
             .css_classes(vec!["boxed-list"])
             .margin_start(18)
             .margin_end(18)
@@ -176,6 +184,7 @@ impl PlaylistDetailPage {
             page,
             client,
             controls,
+            tracklist_receiver,
             playlist_id,
             stack,
             cover,
@@ -183,15 +192,12 @@ impl PlaylistDetailPage {
             meta,
             tracks_list,
             loaded: RefCell::new(false),
+            current_selected_index: Rc::new(RefCell::new(None)),
         };
 
         s.load_playlist();
 
         s
-    }
-
-    pub fn page(&self) -> &adw::NavigationPage {
-        &self.page
     }
 
     fn load_playlist(&self) {
@@ -209,6 +215,8 @@ impl PlaylistDetailPage {
         let title = self.title.clone();
         let meta = self.meta.clone();
         let tracks_list = self.tracks_list.clone();
+        let tracklist_receiver = self.tracklist_receiver.clone();
+        let current_playing_index = self.current_selected_index.clone();
 
         stack.set_visible_child_name("loading");
 
@@ -225,8 +233,7 @@ impl PlaylistDetailPage {
                     clear_listbox(&tracks_list);
 
                     for (idx, track) in playlist.tracks.iter().enumerate() {
-                        let row =
-                            build_track_row(track.number, &track.title, track.duration_seconds);
+                        let row = build_track_row(track);
 
                         let controls = controls.clone();
                         let playlist_id = playlist_id;
@@ -241,6 +248,15 @@ impl PlaylistDetailPage {
                         tracks_list.append(&row);
                     }
 
+                    let playing_entity = tracklist_receiver.borrow().current_playing_entity();
+                    if let Some(playing_entity) = playing_entity {
+                        update_current_playing(
+                            &playing_entity,
+                            playlist_id,
+                            &current_playing_index,
+                            &tracks_list,
+                        );
+                    }
                     stack.set_visible_child_name("content");
                 }
                 Err(err) => {
@@ -268,45 +284,50 @@ impl PlaylistDetailPage {
     }
 }
 
+impl DetailPage for PlaylistDetailPage {
+    fn page(&self) -> &adw::NavigationPage {
+        &self.page
+    }
+
+    fn update_current_playing(&self, playing_entity: PlayingEntity) {
+        update_current_playing(
+            &playing_entity,
+            self.playlist_id,
+            &self.current_selected_index,
+            &self.tracks_list,
+        );
+    }
+}
+
+fn update_current_playing(
+    playing_entity: &PlayingEntity,
+    playlist_id: u32,
+    current_selected_index: &Rc<RefCell<Option<usize>>>,
+    tracks_list: &gtk4::ListBox,
+) {
+    let playing = match playing_entity {
+        PlayingEntity::Playlist(p) => p,
+        _ => return,
+    };
+
+    if playing.playlist_id != playlist_id {
+        tracks_list.unselect_all();
+        *current_selected_index.borrow_mut() = None;
+        return;
+    }
+
+    let idx = playing.index;
+    *current_selected_index.borrow_mut() = Some(idx);
+
+    if let Some(row) = tracks_list.row_at_index(idx as i32) {
+        tracks_list.select_row(Some(&row));
+    } else {
+        tracks_list.unselect_all();
+    }
+}
+
 fn clear_listbox(list: &gtk4::ListBox) {
     while let Some(child) = list.first_child() {
         list.remove(&child);
     }
-}
-
-fn build_track_row(number: u32, title: &str, duration_secs: u32) -> gtk4::ListBoxRow {
-    let number_label = gtk4::Label::builder()
-        .label(format!("{number:>2}"))
-        .xalign(0.0)
-        .css_classes(vec!["dim-label"])
-        .width_chars(3)
-        .build();
-
-    let title_label = gtk4::Label::builder()
-        .label(title)
-        .xalign(0.0)
-        .hexpand(true)
-        .ellipsize(gtk4::pango::EllipsizeMode::End)
-        .build();
-
-    let duration_label = gtk4::Label::builder()
-        .label(format_time(duration_secs))
-        .xalign(1.0)
-        .css_classes(vec!["dim-label"])
-        .build();
-
-    let track_row_box = gtk4::Box::builder()
-        .orientation(gtk4::Orientation::Horizontal)
-        .spacing(12)
-        .margin_top(10)
-        .margin_bottom(10)
-        .margin_start(12)
-        .margin_end(12)
-        .build();
-
-    track_row_box.append(&number_label);
-    track_row_box.append(&title_label);
-    track_row_box.append(&duration_label);
-
-    gtk4::ListBoxRow::builder().child(&track_row_box).build()
 }

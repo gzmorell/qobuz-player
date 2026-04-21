@@ -10,6 +10,7 @@ use qobuz_player_controls::{
 };
 
 use crate::ui::{
+    DetailPage,
     album_detail_page::{AlbumDetailPage, AlbumHeaderInfo},
     artist_detail_page::{ArtistDetailPage, ArtistHeaderInfo},
     library_page::LibraryPage,
@@ -91,9 +92,25 @@ fn build_ui(
     let app_nav = adw::NavigationView::new();
     app_nav.add(&root_page);
 
+    let detail_pages: Rc<RefCell<Vec<Rc<dyn DetailPage>>>> = Rc::new(RefCell::new(Vec::new()));
+
+    {
+        let detail_pages = detail_pages.clone();
+        app_nav.connect_popped(move |_nav, popped_page| {
+            let popped_ptr = popped_page.as_ptr() as usize;
+
+            detail_pages.borrow_mut().retain(|p| {
+                let page_ptr = p.page().as_ptr() as usize;
+                page_ptr != popped_ptr
+            });
+        });
+    }
+
     let (sender, receiver) = async_channel::unbounded::<UiEvent>();
 
     let sender_clone = sender.clone();
+    let detail_pages_clone = detail_pages.clone();
+    let tracklist_receiver_clone = tracklist_receiver.clone();
     let on_open_album: Rc<dyn Fn(AlbumHeaderInfo)> = Rc::new(clone!(
         #[weak]
         app_nav,
@@ -106,13 +123,16 @@ fn build_ui(
                 info.id,
                 controls.clone(),
                 client.clone(),
+                tracklist_receiver_clone.clone(),
                 sender_clone.clone(),
             );
-            app_nav.push(detail.page());
+            app_nav.push(&detail.page().clone());
+            detail_pages_clone.borrow_mut().push(Rc::new(detail));
         }
     ));
 
     let sender_clone = sender.clone();
+    let tracklist_receiver_clone = tracklist_receiver.clone();
     let on_open_playlist: Rc<dyn Fn(PlaylistHeaderInfo)> = Rc::new(clone!(
         #[weak]
         app_nav,
@@ -125,6 +145,7 @@ fn build_ui(
                 info.id,
                 controls.clone(),
                 client.clone(),
+                tracklist_receiver_clone.clone(),
                 sender_clone.clone(),
             );
             app_nav.push(detail.page());
@@ -135,6 +156,7 @@ fn build_ui(
     let controls_clone = controls.clone();
     let on_open_artist_clone = on_open_artist.clone();
     let sender_clone = sender.clone();
+    let tracklist_receiver_clone = tracklist_receiver.clone();
     let callback: Rc<dyn Fn(ArtistHeaderInfo)> = Rc::new(clone!(
         #[weak]
         app_nav,
@@ -147,6 +169,7 @@ fn build_ui(
                 info.id,
                 controls_clone.clone(),
                 client.clone(),
+                tracklist_receiver_clone.clone(),
                 on_open_album.clone(),
                 on_open_artist_clone
                     .borrow()
@@ -208,9 +231,11 @@ fn build_ui(
         position_receiver,
         now_playing,
         library_page,
+        detail_pages,
     );
 }
 
+#[allow(clippy::too_many_arguments)]
 fn setup_tracklist_listener(
     sender: Sender<UiEvent>,
     receiver: Receiver<UiEvent>,
@@ -219,6 +244,7 @@ fn setup_tracklist_listener(
     mut position_receiver: PositionReceiver,
     now_playing_bar: NowPlayingBar,
     library_page: LibraryPage,
+    detail_pages: Rc<RefCell<Vec<Rc<dyn DetailPage>>>>,
 ) {
     tokio::spawn(async move {
         loop {
@@ -248,6 +274,12 @@ fn setup_tracklist_listener(
                     UiEvent::Tracklist(tracklist) => {
                         if let Some(track) = tracklist.current_track() {
                             update_now_playing(&now_playing_bar, track);
+                        }
+
+                        if let Some(entity) = tracklist.current_playing_entity() {
+                            for page in detail_pages.borrow().iter() {
+                                page.update_current_playing(entity.clone());
+                            }
                         }
                     }
                     UiEvent::Status(status) => {

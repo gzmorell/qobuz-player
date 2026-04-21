@@ -1,6 +1,9 @@
 use gtk4::{Image, gdk, gio, prelude::*};
-use libadwaita as adw;
-use qobuz_player_controls::models::{AlbumSimple, Artist, PlaylistSimple};
+use libadwaita::{self as adw, NavigationPage};
+use qobuz_player_controls::{
+    models::{AlbumSimple, Artist, PlaylistSimple, Track},
+    tracklist::PlayingEntity,
+};
 
 pub mod album_detail_page;
 pub mod albums_page;
@@ -152,4 +155,46 @@ pub fn format_time(seconds: u32) -> String {
     let m = seconds / 60;
     let s = seconds % 60;
     format!("{m}:{s:02}")
+}
+
+pub trait DetailPage {
+    fn page(&self) -> &NavigationPage;
+    fn update_current_playing(&self, playing_entity: PlayingEntity);
+}
+
+pub fn build_track_row(track: &Track) -> gtk4::ListBoxRow {
+    let number_label = gtk4::Label::builder()
+        .label(format!("{:>2}", track.number))
+        .xalign(0.0)
+        .css_classes(vec!["dim-label"])
+        .width_chars(3)
+        .build();
+
+    let title_label = gtk4::Label::builder()
+        .label(track.title.clone())
+        .xalign(0.0)
+        .hexpand(true)
+        .ellipsize(gtk4::pango::EllipsizeMode::End)
+        .build();
+
+    let duration_label = gtk4::Label::builder()
+        .label(format_time(track.duration_seconds))
+        .xalign(1.0)
+        .css_classes(vec!["dim-label"])
+        .build();
+
+    let track_row_box = gtk4::Box::builder()
+        .orientation(gtk4::Orientation::Horizontal)
+        .spacing(12)
+        .margin_top(10)
+        .margin_bottom(10)
+        .margin_start(12)
+        .margin_end(12)
+        .build();
+
+    track_row_box.append(&number_label);
+    track_row_box.append(&title_label);
+    track_row_box.append(&duration_label);
+
+    gtk4::ListBoxRow::builder().child(&track_row_box).build()
 }

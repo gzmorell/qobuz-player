@@ -1,14 +1,18 @@
-use std::{cell::RefCell, sync::Arc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::Arc};
 
 use async_channel::Sender;
+use glib::WeakRef;
 use gtk4::prelude::*;
 use libadwaita as adw;
 
-use qobuz_player_controls::{client::Client, controls::Controls};
+use qobuz_player_controls::{
+    TracklistReceiver, client::Client, controls::Controls, tracklist::PlayingEntity,
+};
 
 use crate::{
     UiEvent,
     ui::{
+        DetailPage, build_track_row,
         favorites_button::{FavoriteButtonType, new_favorite_button},
         format_time, set_image_from_url,
     },
@@ -24,6 +28,8 @@ pub struct AlbumDetailPage {
 
     client: Arc<Client>,
     controls: Controls,
+    tracklist_receiver: TracklistReceiver,
+
     album_id: String,
 
     stack: gtk4::Stack,
@@ -35,6 +41,9 @@ pub struct AlbumDetailPage {
 
     tracks_list: gtk4::ListBox,
 
+    track_rows: Rc<RefCell<HashMap<u32, WeakRef<gtk4::ListBoxRow>>>>,
+    current_selected_id: Rc<RefCell<Option<u32>>>,
+
     loaded: RefCell<bool>,
 }
 
@@ -43,6 +52,7 @@ impl AlbumDetailPage {
         album_id: String,
         controls: Controls,
         client: Arc<Client>,
+        tracklist_receiver: TracklistReceiver,
         library_tx: Sender<UiEvent>,
     ) -> Self {
         let empty_title = gtk4::Box::builder().hexpand(true).build();
@@ -132,7 +142,8 @@ impl AlbumDetailPage {
         header_section.append(&header_text);
 
         let tracks_list = gtk4::ListBox::builder()
-            .selection_mode(gtk4::SelectionMode::None)
+            .selection_mode(gtk4::SelectionMode::Single)
+            .activate_on_single_click(true)
             .css_classes(vec!["boxed-list"])
             .margin_start(18)
             .margin_end(18)
@@ -180,6 +191,7 @@ impl AlbumDetailPage {
             page,
             client,
             controls,
+            tracklist_receiver,
             album_id,
             stack,
             cover,
@@ -188,15 +200,13 @@ impl AlbumDetailPage {
             meta,
             tracks_list,
             loaded: RefCell::new(false),
+            track_rows: Rc::new(RefCell::new(HashMap::new())),
+            current_selected_id: Rc::new(RefCell::new(None)),
         };
 
         s.load_album();
 
         s
-    }
-
-    pub fn page(&self) -> &adw::NavigationPage {
-        &self.page
     }
 
     fn load_album(&self) {
@@ -207,6 +217,7 @@ impl AlbumDetailPage {
 
         let client = self.client.clone();
         let controls = self.controls.clone();
+        let tracklist_receiver = self.tracklist_receiver.clone();
         let album_id = self.album_id.clone();
 
         let stack = self.stack.clone();
@@ -215,6 +226,8 @@ impl AlbumDetailPage {
         let artist = self.artist.clone();
         let meta = self.meta.clone();
         let tracks_list = self.tracks_list.clone();
+        let track_rows = self.track_rows.clone();
+        let current_selected_id = self.current_selected_id.clone();
 
         stack.set_visible_child_name("loading");
 
@@ -233,8 +246,13 @@ impl AlbumDetailPage {
                     clear_listbox(&tracks_list);
 
                     for (idx, track) in album.tracks.iter().enumerate() {
-                        let row =
-                            build_track_row(track.number, &track.title, track.duration_seconds);
+                        let row = build_track_row(track);
+
+                        let weak = glib::WeakRef::new();
+                        weak.set(Some(&row));
+
+                        weak.set(Some(&row));
+                        track_rows.borrow_mut().insert(track.id, weak);
 
                         let controls = controls.clone();
                         let album_id = album_id.clone();
@@ -249,6 +267,15 @@ impl AlbumDetailPage {
                         tracks_list.append(&row);
                     }
 
+                    let playing_entity = tracklist_receiver.borrow().current_playing_entity();
+                    if let Some(playing_entity) = playing_entity {
+                        update_current_playing(
+                            &playing_entity,
+                            &current_selected_id,
+                            &tracks_list,
+                            &track_rows,
+                        );
+                    }
                     stack.set_visible_child_name("content");
                 }
                 Err(err) => {
@@ -276,45 +303,52 @@ impl AlbumDetailPage {
     }
 }
 
+impl DetailPage for AlbumDetailPage {
+    fn page(&self) -> &adw::NavigationPage {
+        &self.page
+    }
+
+    fn update_current_playing(&self, playing_entity: PlayingEntity) {
+        update_current_playing(
+            &playing_entity,
+            &self.current_selected_id,
+            &self.tracks_list,
+            &self.track_rows,
+        );
+    }
+}
+
+fn update_current_playing(
+    playing_entity: &PlayingEntity,
+    current_selected_id: &Rc<RefCell<Option<u32>>>,
+    tracks_list: &gtk4::ListBox,
+    track_rows: &Rc<RefCell<HashMap<u32, WeakRef<gtk4::ListBoxRow>>>>,
+) {
+    let track_id = match playing_entity {
+        PlayingEntity::Track(t) => Some(t.id),
+        PlayingEntity::Playlist(p) => Some(p.track_id),
+    };
+
+    *current_selected_id.borrow_mut() = track_id;
+
+    let Some(track_id) = track_id else {
+        tracks_list.unselect_all();
+        return;
+    };
+
+    if let Some(weak) = track_rows.borrow().get(&track_id) {
+        if let Some(row) = weak.upgrade() {
+            tracks_list.select_row(Some(&row));
+        } else {
+            tracks_list.unselect_all();
+        }
+    } else {
+        tracks_list.unselect_all();
+    }
+}
+
 fn clear_listbox(list: &gtk4::ListBox) {
     while let Some(child) = list.first_child() {
         list.remove(&child);
     }
-}
-
-fn build_track_row(number: u32, title: &str, duration_secs: u32) -> gtk4::ListBoxRow {
-    let number_label = gtk4::Label::builder()
-        .label(format!("{number:>2}"))
-        .xalign(0.0)
-        .css_classes(vec!["dim-label"])
-        .width_chars(3)
-        .build();
-
-    let title_label = gtk4::Label::builder()
-        .label(title)
-        .xalign(0.0)
-        .hexpand(true)
-        .ellipsize(gtk4::pango::EllipsizeMode::End)
-        .build();
-
-    let duration_label = gtk4::Label::builder()
-        .label(format_time(duration_secs))
-        .xalign(1.0)
-        .css_classes(vec!["dim-label"])
-        .build();
-
-    let track_row_box = gtk4::Box::builder()
-        .orientation(gtk4::Orientation::Horizontal)
-        .spacing(12)
-        .margin_top(10)
-        .margin_bottom(10)
-        .margin_start(12)
-        .margin_end(12)
-        .build();
-
-    track_row_box.append(&number_label);
-    track_row_box.append(&title_label);
-    track_row_box.append(&duration_label);
-
-    gtk4::ListBoxRow::builder().child(&track_row_box).build()
 }
