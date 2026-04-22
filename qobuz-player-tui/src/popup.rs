@@ -355,7 +355,7 @@ impl Popup {
             Popup::Playlist(playlist_state) => {
                 let visible_rows = playlist_state.tracks.filter().len().min(15) as u16;
 
-                let inner_content_height = visible_rows + 2;
+                let inner_content_height = visible_rows + 3;
                 let block_border_height = 2;
 
                 let popup_height = (inner_content_height + block_border_height)

@@ -232,7 +232,7 @@ impl Display for Endpoint {
     }
 }
 
-pub async fn browser_oauth_login() -> Result<String> {
+pub async fn browser_oauth_login() -> Result<OAuthResult> {
     let app_id = get_app_id().await.map_err(|_| Error::Login)?;
 
     let listener = TcpListener::bind("127.0.0.1:0").map_err(|_| Error::Login)?;
@@ -313,7 +313,7 @@ pub async fn browser_oauth_login() -> Result<String> {
         Error::Login
     })?;
 
-    Ok(result.user_auth_token)
+    Ok(result)
 }
 
 async fn read_code_from_stdin() -> Result<String, Error> {
@@ -340,7 +340,11 @@ async fn read_code_from_stdin() -> Result<String, Error> {
 }
 
 impl Client {
-    pub async fn new(user_auth_token: &str, max_audio_quality: AudioQuality) -> Result<Client> {
+    pub async fn new(
+        user_auth_token: &str,
+        user_id: i64,
+        max_audio_quality: AudioQuality,
+    ) -> Result<Client> {
         let http_client = reqwest::Client::builder()
             .cookie_store(true)
             .build()
@@ -356,7 +360,7 @@ impl Client {
             http_client,
             session: None,
             user_token: user_auth_token.to_string(),
-            user_id: 0,
+            user_id,
             app_id,
             base_url,
             max_audio_quality,
@@ -1080,6 +1084,7 @@ fn client_headers(app_id: &str, user_token: Option<&str>) -> HeaderMap {
 
 const OAUTH_PRIVATE_KEY: &str = "6lz8C03UDIC7";
 
+#[derive(Debug, Clone)]
 pub struct OAuthResult {
     pub user_auth_token: String,
     pub user_id: i64,

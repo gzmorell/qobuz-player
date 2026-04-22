@@ -48,10 +48,11 @@ impl Database {
         Ok(Self { pool })
     }
 
-    pub async fn set_user_auth_token(&self, token: String) -> AppResult<()> {
+    pub async fn set_user_auth_token(&self, token: String, user_id: i64) -> AppResult<()> {
         sqlx::query!(
-            "update credentials set user_auth_token = ? where rowid = 1",
-            token
+            "update credentials set user_auth_token = ?, user_id = ? where rowid = 1",
+            token,
+            user_id
         )
         .execute(&self.pool)
         .await?;
@@ -285,6 +286,7 @@ impl From<i64> for ReferenceTypeDatabase {
 
 pub struct DatabaseCredentials {
     pub user_auth_token: Option<String>,
+    pub user_id: Option<i64>,
 }
 
 pub struct DatabaseConfiguration {

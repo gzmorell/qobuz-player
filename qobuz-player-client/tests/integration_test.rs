@@ -3,20 +3,25 @@ use qobuz_player_client::client::{
 };
 use qobuz_player_controls::database::Database;
 
-async fn get_token() -> Option<String> {
+async fn get_token() -> Option<(String, i64)> {
     let database = Database::new().await.unwrap();
     let credentials = database.get_credentials().await.unwrap();
     let token = credentials.user_auth_token?;
+    let user_id = credentials.user_id?;
 
-    Some(token)
+    Some((token, user_id))
 }
 
 async fn get_client() -> Option<Client> {
-    let token = get_token().await?;
+    let (token, user_id) = get_token().await?;
 
-    qobuz_player_client::client::Client::new(&token, qobuz_player_client::client::AudioQuality::Mp3)
-        .await
-        .ok()
+    qobuz_player_client::client::Client::new(
+        &token,
+        user_id,
+        qobuz_player_client::client::AudioQuality::Mp3,
+    )
+    .await
+    .ok()
 }
 
 #[tokio::test]

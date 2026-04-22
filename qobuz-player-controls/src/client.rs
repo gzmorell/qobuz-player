@@ -5,15 +5,15 @@ use crate::models::{
     Track,
     mapper::{
         parse_album, parse_album_simple, parse_artist, parse_artist_page, parse_featured_album,
-        parse_genre, parse_playlist, parse_playlist_simple, parse_track,
+        parse_genre, parse_playlist, parse_playlist_simple, parse_search_results, parse_track,
     },
 };
 use futures::future::join_all;
 use moka::future::Cache;
 use qobuz_player_client::{
     client::{
-        AudioQuality, FeaturedAlbumType, FeaturedGenreAlbumType, FeaturedPlaylistType, ReleaseType,
-        browser_oauth_login,
+        AudioQuality, FeaturedAlbumType, FeaturedGenreAlbumType, FeaturedPlaylistType, OAuthResult,
+        ReleaseType, browser_oauth_login,
     },
     qobuz_models::TrackInfo,
     stream::flac_source_stream::SeekableStreamReader,
@@ -33,6 +33,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 pub struct Client {
     qobuz_client: OnceCell<RwLock<QobuzClient>>,
     user_auth_token: String,
+    user_id: i64,
     max_audio_quality: AudioQuality,
     favorites_cache: SimpleCache<Favorites>,
     featured_albums_cache: SimpleCache<Vec<(String, Vec<AlbumSimple>)>>,
@@ -53,14 +54,20 @@ impl Client {
         Ok(client.app_id().to_string())
     }
 
-    pub async fn new_with_oauth_login(max_audio_quality: AudioQuality) -> Result<(Self, String)> {
-        let token = browser_oauth_login().await?;
-        let client = Self::new(token.clone(), max_audio_quality);
+    pub async fn new_with_oauth_login(
+        max_audio_quality: AudioQuality,
+    ) -> Result<(Self, OAuthResult)> {
+        let oauth_result = browser_oauth_login().await?;
+        let client = Self::new(
+            oauth_result.user_auth_token.clone(),
+            oauth_result.user_id,
+            max_audio_quality,
+        );
 
-        Ok((client, token))
+        Ok((client, oauth_result))
     }
 
-    pub fn new(user_auth_token: String, max_audio_quality: AudioQuality) -> Self {
+    pub fn new(user_auth_token: String, user_id: i64, max_audio_quality: AudioQuality) -> Self {
         let album_cache = moka::future::CacheBuilder::new(1000)
             .time_to_live(std::time::Duration::from_secs(60 * 60 * 24 * 7))
             .build();
@@ -92,6 +99,7 @@ impl Client {
         Self {
             qobuz_client: Default::default(),
             user_auth_token,
+            user_id,
             max_audio_quality,
             favorites_cache: SimpleCache::new(Duration::days(1)),
             featured_albums_cache: SimpleCache::new(Duration::days(1)),
@@ -108,7 +116,8 @@ impl Client {
     }
 
     async fn init_client(&self) -> Result<QobuzClient> {
-        let client = QobuzClient::new(&self.user_auth_token, self.max_audio_quality).await?;
+        let client =
+            QobuzClient::new(&self.user_auth_token, self.user_id, self.max_audio_quality).await?;
 
         Ok(client)
     }
@@ -176,33 +185,7 @@ impl Client {
         let results = client.search_all(&query, 20).await?;
         let user_id = self.get_client().await?.user_id();
 
-        let out = SearchResults {
-            query: results.query,
-            albums: results
-                .albums
-                .items
-                .into_iter()
-                .map(|x| parse_album(x, &self.max_audio_quality))
-                .collect(),
-            artists: results
-                .artists
-                .items
-                .into_iter()
-                .map(parse_artist)
-                .collect(),
-            playlists: results
-                .playlists
-                .items
-                .into_iter()
-                .map(|x| parse_playlist(x, user_id, &self.max_audio_quality))
-                .collect(),
-            tracks: results
-                .tracks
-                .items
-                .into_iter()
-                .map(|x| parse_track(x, &self.max_audio_quality))
-                .collect(),
-        };
+        let out = parse_search_results(results, user_id, &self.max_audio_quality);
 
         self.search_cache.insert(query, out.clone()).await;
         Ok(out)
