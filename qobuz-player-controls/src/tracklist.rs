@@ -226,12 +226,12 @@ impl Tracklist {
             TracklistType::Playlist(tracklist) => Entity {
                 title: Some(tracklist.title.clone()),
                 link: Some(format!("/playlist/{}", tracklist.id)),
-                cover_link: tracklist.image.clone().or(track_image),
+                cover_link: track_image,
             },
             TracklistType::TopTracks(tracklist) => Entity {
                 title: Some(tracklist.artist_name.clone()),
                 link: Some(format!("/artist/{}", tracklist.id)),
-                cover_link: tracklist.image.clone().or(track_image),
+                cover_link: track_image,
             },
             TracklistType::Tracks => Entity {
                 title: current_track
