@@ -38,13 +38,6 @@ pub struct Tracklist {
     list_type: TracklistType,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize)]
-pub struct Entity {
-    pub title: Option<String>,
-    pub link: Option<String>,
-    pub cover_link: Option<String>,
-}
-
 #[derive(Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize)]
 pub enum PlayingEntity {
     Track(Track),
@@ -211,38 +204,6 @@ impl Tracklist {
             .iter()
             .map(|x| &x.track)
             .find(|t| t.status == TrackStatus::Playing)
-    }
-
-    pub fn entity_playing(&self) -> Entity {
-        let current_track = self.current_track();
-        let track_image = current_track.as_ref().and_then(|track| track.image.clone());
-
-        match self.list_type() {
-            TracklistType::Album(tracklist) => Entity {
-                title: Some(tracklist.title.clone()),
-                link: Some(format!("/album/{}", tracklist.id)),
-                cover_link: tracklist.image.clone().or(track_image),
-            },
-            TracklistType::Playlist(tracklist) => Entity {
-                title: Some(tracklist.title.clone()),
-                link: Some(format!("/playlist/{}", tracklist.id)),
-                cover_link: track_image,
-            },
-            TracklistType::TopTracks(tracklist) => Entity {
-                title: Some(tracklist.artist_name.clone()),
-                link: Some(format!("/artist/{}", tracklist.id)),
-                cover_link: track_image,
-            },
-            TracklistType::Tracks => Entity {
-                title: current_track
-                    .as_ref()
-                    .and_then(|track| track.album_title.clone()),
-                link: current_track
-                    .as_ref()
-                    .and_then(|track| track.album_id.as_ref().map(|id| format!("/album/{id}"))),
-                cover_link: track_image,
-            },
-        }
     }
 
     pub fn skip_to_track(&mut self, new_position: i32) -> Option<&Track> {

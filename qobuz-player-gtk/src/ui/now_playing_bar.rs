@@ -1,11 +1,15 @@
 use std::{rc::Rc, time::Duration};
 
 use libadwaita::prelude::*;
-use qobuz_player_controls::{Status, controls::Controls, models::Track};
+use qobuz_player_controls::{
+    Status,
+    controls::Controls,
+    tracklist::{Tracklist, TracklistType},
+};
 
 use crate::ui::{
     album_detail_page::AlbumHeaderInfo, artist_detail_page::ArtistHeaderInfo, clickable_tile,
-    format_time, set_image_from_url,
+    format_time, playlist_detail_page::PlaylistHeaderInfo, set_image_from_url,
 };
 
 #[derive(Clone)]
@@ -21,6 +25,7 @@ pub struct NowPlayingBar {
     progress_total_label: gtk4::Label,
     on_open_album: Rc<dyn Fn(AlbumHeaderInfo)>,
     on_open_artist: Rc<dyn Fn(ArtistHeaderInfo)>,
+    on_open_playlist: Rc<dyn Fn(PlaylistHeaderInfo)>,
 }
 
 impl NowPlayingBar {
@@ -28,6 +33,7 @@ impl NowPlayingBar {
         controls: Controls,
         on_open_album: Rc<dyn Fn(AlbumHeaderInfo)>,
         on_open_artist: Rc<dyn Fn(ArtistHeaderInfo)>,
+        on_open_playlist: Rc<dyn Fn(PlaylistHeaderInfo)>,
     ) -> Self {
         let title_label = gtk4::Label::builder()
             .halign(gtk4::Align::Center)
@@ -162,52 +168,118 @@ impl NowPlayingBar {
             progress_total_label,
             on_open_album,
             on_open_artist,
+            on_open_playlist,
         }
     }
 }
 
-pub fn update_now_playing(bar: &NowPlayingBar, track: &Track) {
+pub fn update_now_playing(bar: &NowPlayingBar, tracklist: &Tracklist) {
+    let Some(track) = tracklist.current_track() else {
+        return;
+    };
+
+    let make_label = |text: &str| {
+        let l = gtk4::Label::builder()
+            .label(text)
+            .ellipsize(gtk4::pango::EllipsizeMode::End)
+            .build();
+        l.add_css_class("dim-label");
+        l
+    };
+
+    let append_sep = || {
+        let sep = make_label("·");
+        bar.subtitle_box.append(&sep);
+    };
+
+    let image = match tracklist.list_type() {
+        TracklistType::Album(a) => a.image.as_ref().or(track.image.as_ref()),
+        _ => track.image.as_ref(),
+    }
+    .cloned();
+
     bar.track_title_label.set_text(&track.title);
 
     while let Some(child) = bar.subtitle_box.first_child() {
         bar.subtitle_box.remove(&child);
     }
 
-    if let Some(album_title) = &track.album_title
-        && let Some(album_id) = &track.album_id
-    {
-        let label = gtk4::Label::builder()
-            .label(album_title)
-            .ellipsize(gtk4::pango::EllipsizeMode::End)
-            .build();
-        label.add_css_class("dim-label");
-        let on_open = bar.on_open_album.clone();
-        let id = album_id.clone();
-        let button = clickable_tile(&label.upcast(), move || {
-            on_open(AlbumHeaderInfo { id: id.clone() });
-        });
-        bar.subtitle_box.append(&button);
-    }
+    match tracklist.list_type() {
+        TracklistType::Album(album) => {
+            let label = make_label(&album.title);
+            let on_open = bar.on_open_album.clone();
+            let id = album.id.clone();
 
-    if track.album_title.is_some() && track.artist_name.is_some() {
-        let sep = gtk4::Label::builder().label("·").build();
-        sep.add_css_class("dim-label");
-        bar.subtitle_box.append(&sep);
-    }
+            let button = clickable_tile(&label.upcast(), move || {
+                on_open(AlbumHeaderInfo { id: id.clone() })
+            });
+            bar.subtitle_box.append(&button);
 
-    if let Some(artist_name) = &track.artist_name
-        && let Some(artist_id) = track.artist_id
-    {
-        let label = gtk4::Label::builder()
-            .label(artist_name)
-            .ellipsize(gtk4::pango::EllipsizeMode::End)
-            .build();
-        label.add_css_class("dim-label");
-        let on_open = bar.on_open_artist.clone();
-        let button = clickable_tile(&label.upcast(), move || {
-            on_open(ArtistHeaderInfo { id: artist_id });
-        });
-        bar.subtitle_box.append(&button);
+            if let (Some(name), Some(artist_id)) = (&track.artist_name, track.artist_id) {
+                append_sep();
+                let label = make_label(name);
+                let on_open = bar.on_open_artist.clone();
+
+                let button = clickable_tile(&label.upcast(), move || {
+                    on_open(ArtistHeaderInfo { id: artist_id })
+                });
+                bar.subtitle_box.append(&button);
+            }
+        }
+
+        TracklistType::Playlist(playlist) => {
+            let label = make_label(&playlist.title);
+            let on_open = bar.on_open_playlist.clone();
+            let id = playlist.id;
+
+            let button = clickable_tile(&label.upcast(), move || {
+                on_open(PlaylistHeaderInfo { id });
+            });
+            bar.subtitle_box.append(&button);
+
+            if let (Some(name), Some(artist_id)) = (&track.artist_name, track.artist_id) {
+                append_sep();
+                let label = make_label(name);
+                let on_open = bar.on_open_artist.clone();
+
+                let button = clickable_tile(&label.upcast(), move || {
+                    on_open(ArtistHeaderInfo { id: artist_id });
+                });
+                bar.subtitle_box.append(&button);
+            }
+        }
+
+        TracklistType::TopTracks(top) => {
+            let label = make_label(&top.artist_name);
+            let id = top.id;
+            let on_open = bar.on_open_artist.clone();
+            let button = clickable_tile(&label.upcast(), move || {
+                on_open(ArtistHeaderInfo { id });
+            });
+            bar.subtitle_box.append(&button);
+        }
+
+        TracklistType::Tracks => {
+            if let (Some(title), Some(album_id)) = (&track.album_title, &track.album_id) {
+                let label = make_label(title);
+                let on_open = bar.on_open_album.clone();
+                let id = album_id.clone();
+                let button = clickable_tile(&label.upcast(), move || {
+                    on_open(AlbumHeaderInfo { id: id.clone() });
+                });
+                bar.subtitle_box.append(&button);
+            }
+
+            if let (Some(name), Some(artist_id)) = (&track.artist_name, track.artist_id) {
+                append_sep();
+                let label = make_label(name);
+                let on_open = bar.on_open_artist.clone();
+                let button = clickable_tile(&label.upcast(), move || {
+                    on_open(ArtistHeaderInfo { id: artist_id });
+                });
+                bar.subtitle_box.append(&button);
+            }
+        }
     }
 
     bar.progress_scale
@@ -215,7 +287,7 @@ pub fn update_now_playing(bar: &NowPlayingBar, track: &Track) {
     bar.progress_total_label
         .set_text(&format_time(track.duration_seconds));
 
-    set_image_from_url(track.image.as_deref(), &bar.cover);
+    set_image_from_url(image.as_deref(), &bar.cover);
 
     bar.revealer.set_reveal_child(true);
 }

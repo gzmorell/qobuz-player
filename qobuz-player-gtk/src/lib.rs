@@ -138,7 +138,12 @@ fn build_ui(
     tabs.add_titled(search_page.widget(), Some("search"), "Search")
         .set_icon_name(Some("system-search-symbolic"));
 
-    let now_playing = NowPlayingBar::new(controls, on_open_album.clone(), on_open_artist.clone());
+    let now_playing = NowPlayingBar::new(
+        controls,
+        on_open_album.clone(),
+        on_open_artist.clone(),
+        on_open_playlist.clone(),
+    );
 
     let vbox = gtk4::Box::builder()
         .orientation(gtk4::Orientation::Vertical)
@@ -151,9 +156,7 @@ fn build_ui(
     window.present();
 
     let tracklist_value = tracklist_receiver.borrow().clone();
-    if let Some(track) = tracklist_value.current_track() {
-        update_now_playing(&now_playing, track);
-    }
+    update_now_playing(&now_playing, &tracklist_value);
 
     setup_tracklist_listener(
         sender,
@@ -208,9 +211,7 @@ fn setup_tracklist_listener(
             match receiver.recv().await {
                 Ok(update) => match update {
                     UiEvent::Tracklist(tracklist) => {
-                        if let Some(track) = tracklist.current_track() {
-                            update_now_playing(&now_playing_bar, track);
-                        }
+                        update_now_playing(&now_playing_bar, &tracklist);
 
                         if let Some(entity) = tracklist.current_playing_entity() {
                             for page in detail_pages.borrow().iter() {

@@ -5,8 +5,9 @@ use qobuz_player_controls::{
     client::Client,
     controls::Controls,
     database::Database,
-    models::Favorites,
+    models::{Favorites, Track},
     notification::{Notification, NotificationBroadcast},
+    tracklist::{Tracklist, TracklistType},
 };
 use qobuz_player_rfid::RfidState;
 use serde_json::json;
@@ -64,7 +65,7 @@ impl AppState {
                 },
             );
 
-        let entity = tracklist.entity_playing();
+        let entity = entity_playing(&tracklist, current_track.as_ref());
         let now_playing_id = tracklist.currently_playing();
 
         let position_ms = self.position_receiver.borrow().as_millis() as u32;
@@ -90,6 +91,7 @@ impl AppState {
             position_ms,
         }
     }
+
     pub fn render<T>(&self, view: &str, context: &T) -> Response
     where
         T: serde::Serialize,
@@ -143,6 +145,44 @@ impl AppState {
     pub async fn is_album_favorite(&self, id: &str) -> AppResult<bool> {
         let favorites = self.get_favorites().await?;
         Ok(favorites.albums.iter().any(|album| album.id == id))
+    }
+}
+
+#[derive(Default, Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize)]
+struct Entity {
+    title: Option<String>,
+    link: Option<String>,
+    cover_link: Option<String>,
+}
+
+fn entity_playing(tracklist: &Tracklist, current_track: Option<&Track>) -> Entity {
+    let track_image = current_track.and_then(|track| track.image.clone());
+
+    match tracklist.list_type() {
+        TracklistType::Album(tracklist) => Entity {
+            title: Some(tracklist.title.clone()),
+            link: Some(format!("/album/{}", tracklist.id)),
+            cover_link: tracklist.image.clone().or(track_image),
+        },
+        TracklistType::Playlist(tracklist) => Entity {
+            title: Some(tracklist.title.clone()),
+            link: Some(format!("/playlist/{}", tracklist.id)),
+            cover_link: track_image,
+        },
+        TracklistType::TopTracks(tracklist) => Entity {
+            title: Some(tracklist.artist_name.clone()),
+            link: Some(format!("/artist/{}", tracklist.id)),
+            cover_link: track_image,
+        },
+        TracklistType::Tracks => Entity {
+            title: current_track
+                .as_ref()
+                .and_then(|track| track.album_title.clone()),
+            link: current_track
+                .as_ref()
+                .and_then(|track| track.album_id.as_ref().map(|id| format!("/album/{id}"))),
+            cover_link: track_image,
+        },
     }
 }
 

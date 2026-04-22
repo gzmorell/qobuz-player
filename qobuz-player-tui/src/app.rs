@@ -17,7 +17,7 @@ use qobuz_player_controls::{
     controls::Controls,
     models::{Album, Track},
     notification::{Notification, NotificationBroadcast},
-    tracklist::Tracklist,
+    tracklist::{Tracklist, TracklistType},
 };
 use ratatui::{DefaultTerminal, widgets::*};
 use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
@@ -566,13 +566,28 @@ pub fn get_current_state_without_image(
     tracklist: &Tracklist,
     status: Status,
 ) -> (NowPlayingState, Option<String>) {
-    let entity = tracklist.entity_playing();
     let track = tracklist.current_track().cloned();
-    let image_url = entity.cover_link.clone();
+    let track_image = track.as_ref().and_then(|track| track.image.as_ref());
+    let tracklist_type = tracklist.list_type();
+
+    let (title, image) = match tracklist_type {
+        TracklistType::Album(tracklist) => (
+            Some(tracklist.title.clone()),
+            tracklist.image.as_ref().or(track_image).cloned(),
+        ),
+        TracklistType::Playlist(tracklist) => (Some(tracklist.title.clone()), track_image.cloned()),
+        TracklistType::TopTracks(tracklist) => {
+            (Some(tracklist.artist_name.clone()), track_image.cloned())
+        }
+        TracklistType::Tracks => (
+            track.as_ref().map(|x| x.title.clone()),
+            track_image.cloned(),
+        ),
+    };
 
     let state = NowPlayingState {
         image: None,
-        entity_title: entity.title,
+        entity_title: title,
         playing_track: track,
         tracklist_length: tracklist.total(),
         status,
@@ -580,5 +595,5 @@ pub fn get_current_state_without_image(
         duration_ms: 0,
     };
 
-    (state, image_url)
+    (state, image)
 }
