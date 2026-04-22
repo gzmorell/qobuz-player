@@ -7,7 +7,7 @@ use axum::{
     routing::{get, post, put},
 };
 use axum_extra::extract::Form;
-use qobuz_player_controls::{error::Error, notification::Notification};
+use qobuz_player_controls::{error::Error, notification::Notification, tracklist::PlayingEntity};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -262,6 +262,9 @@ async fn content(State(state): State<Arc<AppState>>, Path(id): Path<u32>) -> Res
     let duration = playlist.duration_seconds / 60;
     let click_string = format!("/playlist/{}/play/", playlist.id);
 
+    let playing_entity = &state.tracklist_receiver.borrow().current_playing_entity();
+    let playing_index = index_if_playlist(playing_entity, id);
+
     Ok(state.render(
         "playlist.html",
         &json!({
@@ -269,7 +272,8 @@ async fn content(State(state): State<Arc<AppState>>, Path(id): Path<u32>) -> Res
             "duration": duration,
             "is_favorite": is_favorite,
             "rfid": state.rfid_state.is_some(),
-            "click": click_string
+            "click": click_string,
+            "playing_index": playing_index
         }),
     ))
 }
@@ -278,13 +282,27 @@ async fn tracks_partial(State(state): State<Arc<AppState>>, Path(id): Path<u32>)
     let playlist = ok_or_send_error_toast(&state, state.client.playlist(id).await)?;
     let click_string = format!("/playlist/{}/play/", playlist.id);
 
+    let playing_entity = &state.tracklist_receiver.borrow().current_playing_entity();
+    let playing_index = index_if_playlist(playing_entity, id);
+
     Ok(state.render(
         "playlist-tracks.html",
         &json!({
             "playlist": playlist,
-            "click": click_string
+            "click": click_string,
+            "playing_index": playing_index
         }),
     ))
+}
+
+fn index_if_playlist(playing_entity: &Option<PlayingEntity>, id: u32) -> Option<usize> {
+    playing_entity.as_ref().and_then(|x| match x {
+        PlayingEntity::Playlist(playing_playlist) => match playing_playlist.playlist_id == id {
+            true => Some(playing_playlist.index),
+            false => None,
+        },
+        _ => None,
+    })
 }
 
 async fn edit_tracks_partial(
