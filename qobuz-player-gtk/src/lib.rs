@@ -4,7 +4,7 @@ use adw::{Application, prelude::*};
 use async_channel::{Receiver, Sender};
 use libadwaita as adw;
 use qobuz_player_controls::{
-    PositionReceiver, Status, StatusReceiver, TracklistReceiver, client::Client,
+    ExitSender, PositionReceiver, Status, StatusReceiver, TracklistReceiver, client::Client,
     controls::Controls, tracklist::Tracklist,
 };
 
@@ -29,6 +29,7 @@ pub fn init(
     status_receiver: StatusReceiver,
     position_receiver: PositionReceiver,
     controls: Controls,
+    exit_sender: ExitSender,
 ) {
     libadwaita::init().unwrap();
 
@@ -36,6 +37,7 @@ pub fn init(
         .application_id("com.github.sofusa.qobuz-player")
         .build();
 
+    let exit_sender_clone = exit_sender.clone();
     application.connect_activate(move |app| {
         build_ui(
             app,
@@ -44,11 +46,13 @@ pub fn init(
             position_receiver.clone(),
             controls.clone(),
             client.clone(),
+            exit_sender_clone.clone(),
         );
     });
 
     let args: &[&str] = &[];
     application.run_with_args(args);
+    exit_sender.send(true).unwrap();
 }
 
 fn build_ui(
@@ -58,6 +62,7 @@ fn build_ui(
     position_receiver: PositionReceiver,
     controls: Controls,
     client: Arc<Client>,
+    exit_sender: ExitSender,
 ) {
     let window = adw::ApplicationWindow::builder()
         .application(app)
@@ -168,6 +173,7 @@ fn build_ui(
         library_page,
         detail_pages,
         callback_handles,
+        exit_sender,
     );
 }
 
@@ -182,7 +188,9 @@ fn setup_tracklist_listener(
     library_page: LibraryPage,
     detail_pages: Rc<RefCell<Vec<Rc<dyn DetailPage>>>>,
     callback_handles: Rc<CallbackHandles>,
+    exit_sender: ExitSender,
 ) {
+    let mut exit_receiver = exit_sender.subscribe();
     tokio::spawn(async move {
         loop {
             tokio::select! {
@@ -199,6 +207,11 @@ fn setup_tracklist_listener(
                 Ok(_) = position_receiver.changed() => {
                     let position = *position_receiver.borrow_and_update();
                     sender.send(UiEvent::Position(position)).await.unwrap();
+                }
+                Ok(exit) = exit_receiver.recv() => {
+                    if exit {
+                        break;
+                    }
                 }
             }
         }

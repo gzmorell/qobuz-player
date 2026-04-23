@@ -125,6 +125,7 @@ pub async fn run() -> AppResult<()> {
             status_receiver,
             position_receiver,
             controls,
+            exit_sender,
         );
     });
 
