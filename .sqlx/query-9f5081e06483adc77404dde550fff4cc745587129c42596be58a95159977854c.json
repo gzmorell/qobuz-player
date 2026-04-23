@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "select * from credentials where rowid = 1;",
+  "query": "select user_auth_token, user_id from credentials where rowid = 1",
   "describe": {
     "columns": [
       {
@@ -22,5 +22,5 @@
       true
     ]
   },
-  "hash": "336c8e7be5ea8f9d91cbf4e44319a7e2937a0c90e878f910137e97b3f673d68a"
+  "hash": "9f5081e06483adc77404dde550fff4cc745587129c42596be58a95159977854c"
 }

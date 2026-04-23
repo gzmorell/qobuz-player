@@ -131,7 +131,7 @@ impl Database {
     pub async fn get_credentials(&self) -> AppResult<DatabaseCredentials> {
         Ok(sqlx::query_as!(
             DatabaseCredentials,
-            "select * from credentials where rowid = 1;"
+            "select user_auth_token, user_id from credentials where rowid = 1"
         )
         .fetch_one(&self.pool)
         .await?)
