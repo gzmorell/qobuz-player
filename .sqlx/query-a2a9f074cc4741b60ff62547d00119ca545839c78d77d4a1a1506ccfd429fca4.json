@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert or ignore into configuration (rowid) values (?1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "a2a9f074cc4741b60ff62547d00119ca545839c78d77d4a1a1506ccfd429fca4"
+}

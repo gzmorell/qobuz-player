@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert into tracklist (tracklist) values (?1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "d6b648c894ab262a13498385b665a99f44bfb74f38fadff502c3d5c87e9ec184"
+}

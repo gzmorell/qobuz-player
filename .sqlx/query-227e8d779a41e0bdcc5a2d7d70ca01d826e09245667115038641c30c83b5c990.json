@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM rfid_references WHERE ID = $1;",
+  "query": "select * from rfid_references where id = $1",
   "describe": {
     "columns": [
       {
@@ -34,5 +34,5 @@
       true
     ]
   },
-  "hash": "5ee85b4dd34f1c12cc191dba32983951c27f5f8be590430f3bf07ad9f4bddfda"
+  "hash": "227e8d779a41e0bdcc5a2d7d70ca01d826e09245667115038641c30c83b5c990"
 }

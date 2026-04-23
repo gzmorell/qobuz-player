@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            SELECT * FROM configuration\n            WHERE ROWID = 1;\n            ",
+  "query": "select * from configuration where rowid = 1",
   "describe": {
     "columns": [
       {
@@ -13,8 +13,8 @@
       "Right": 0
     },
     "nullable": [
-      false
+      true
     ]
   },
-  "hash": "682de554897593722ce2a8ff4d0dc9675a0a212077aeea1563a64b7608bee483"
+  "hash": "8b8d58b1d9b18b784771acbbc25df873139ad8a67270c3e92a2e8043d738143c"
 }
