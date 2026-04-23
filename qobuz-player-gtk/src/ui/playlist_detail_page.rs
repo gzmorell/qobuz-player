@@ -96,9 +96,23 @@ impl PlaylistDetailPage {
         {
             let controls = controls.clone();
             play_button.connect_clicked(move |_| {
-                controls.play_playlist(playlist_id, 0, false); // TODO: Shuffle button
+                controls.play_playlist(playlist_id, 0, false);
             });
         }
+
+        let shuffle_button = gtk4::Button::builder()
+            .label("Shuffle")
+            .icon_name("media-playlist-shuffle-symbolic")
+            .css_classes(vec!["pill"])
+            .build();
+
+        {
+            let controls = controls.clone();
+            shuffle_button.connect_clicked(move |_| {
+                controls.play_playlist(playlist_id, 0, true);
+            });
+        }
+
         let favorites_button = new_favorite_button(
             client.clone(),
             FavoriteButtonType::Playlist(playlist_id),
@@ -110,6 +124,7 @@ impl PlaylistDetailPage {
             .spacing(12)
             .build();
         button_box.append(&play_button);
+        button_box.append(&shuffle_button);
         button_box.append(&favorites_button);
 
         let header_text = gtk4::Box::builder()
