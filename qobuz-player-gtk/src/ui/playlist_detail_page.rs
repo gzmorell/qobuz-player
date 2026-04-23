@@ -275,7 +275,7 @@ impl PlaylistDetailPage {
                     stack.set_visible_child_name("content");
                 }
                 Err(err) => {
-                    eprintln!("Failed to load playlist {playlist_id}: {err}");
+                    tracing::error!("Failed to load playlist {playlist_id}: {err}");
 
                     clear_listbox(&tracks_list);
 

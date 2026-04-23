@@ -132,8 +132,6 @@ impl Player {
     }
 
     async fn play(&mut self) -> AppResult<()> {
-        tracing::info!("Play");
-
         self.wait_for_state_change_delay().await;
         let track = self.tracklist_rx.borrow().current_track().cloned();
 
@@ -456,12 +454,15 @@ impl Player {
     ) -> AppResult<()> {
         let playlist = self.client.playlist(playlist_id).await?;
 
-        let unstreamable_tracks_to_index = playlist
-            .tracks
-            .iter()
-            .take(index)
-            .filter(|t| !t.available)
-            .count() as i32;
+        let unstreamable_tracks_to_index = match shuffle {
+            true => 0,
+            false => playlist
+                .tracks
+                .iter()
+                .take(index)
+                .filter(|t| !t.available)
+                .count() as i32,
+        };
 
         let mut queue: Vec<QueueItem> = tracks_to_queue_items(
             playlist
@@ -484,9 +485,7 @@ impl Player {
             queue,
         );
 
-        if !shuffle {
-            tracklist.skip_to_track(index as i32 - unstreamable_tracks_to_index);
-        }
+        tracklist.skip_to_track(index as i32 - unstreamable_tracks_to_index);
 
         self.new_queue(tracklist).await
     }

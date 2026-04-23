@@ -2,6 +2,8 @@ use qobuz_player_cli::{
     ConnectArgs, SharedArgs, SharedCommands, create_player, default_audio_quality, get_client,
     handle_shared_commands, spawn_clean_up,
 };
+#[cfg(any(windows, target_os = "linux", target_os = "macos"))]
+use qobuz_player_controls::StatusReceiver;
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
@@ -34,6 +36,8 @@ async fn main() {
 }
 
 pub async fn run() -> AppResult<()> {
+    tracing_subscriber::fmt().compact().init();
+
     let args = Arguments::parse();
 
     let database = Arc::new(Database::new().await?);
@@ -84,6 +88,12 @@ pub async fn run() -> AppResult<()> {
                 error_exit(e);
             }
         });
+    }
+
+    #[cfg(any(windows, target_os = "linux", target_os = "macos"))]
+    {
+        let status_receiver = player.status();
+        sleep_inhibitor(status_receiver);
     }
 
     let client = client.clone();
@@ -138,4 +148,59 @@ pub async fn run() -> AppResult<()> {
 fn error_exit(error: Error) {
     eprintln!("{error}");
     std::process::exit(1);
+}
+
+#[cfg(any(windows, target_os = "linux", target_os = "macos"))]
+fn sleep_inhibitor(mut status_receiver: StatusReceiver) {
+    std::thread::spawn(move || {
+        let mut sleep_inhibitor = SleepInhibitor::new();
+
+        loop {
+            use futures::executor::block_on;
+            use qobuz_player_controls::Status;
+
+            let changed = block_on(async { status_receiver.changed().await });
+            if changed.is_err() {
+                sleep_inhibitor.restore_sleep();
+                break;
+            }
+
+            let status = *status_receiver.borrow_and_update();
+            match status {
+                Status::Paused => sleep_inhibitor.restore_sleep(),
+                Status::Playing | Status::Buffering => sleep_inhibitor.block_sleep(),
+            }
+        }
+    });
+}
+
+#[cfg(any(windows, target_os = "linux", target_os = "macos"))]
+struct SleepInhibitor {
+    awake: Option<keepawake::KeepAwake>,
+}
+
+#[cfg(any(windows, target_os = "linux", target_os = "macos"))]
+impl SleepInhibitor {
+    fn new() -> Self {
+        Self { awake: None }
+    }
+
+    fn block_sleep(&mut self) {
+        if self.awake.is_none() {
+            let mut builder = keepawake::Builder::default();
+            builder
+                .idle(true)
+                .sleep(true)
+                .reason("Audio playback")
+                .app_name("qobuz-player");
+
+            if let Ok(awake) = builder.create() {
+                self.awake = Some(awake);
+            }
+        }
+    }
+
+    fn restore_sleep(&mut self) {
+        let _ = self.awake.take();
+    }
 }

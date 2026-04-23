@@ -23,6 +23,11 @@ async-channel = "2.5"
 
 tokio.workspace = true
 futures.workspace = true
-snafu.workspace = true 
+
+# binary dependencies
 clap.workspace = true
 tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[target.'cfg(any(windows, target_os = "linux", target_os = "macos"))'.dependencies]
+keepawake = { workspace = true }

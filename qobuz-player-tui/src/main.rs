@@ -160,7 +160,7 @@ fn error_exit(error: Error) {
 }
 
 #[cfg(any(windows, target_os = "linux", target_os = "macos"))]
-pub fn sleep_inhibitor(mut status_receiver: StatusReceiver) {
+fn sleep_inhibitor(mut status_receiver: StatusReceiver) {
     std::thread::spawn(move || {
         let mut sleep_inhibitor = SleepInhibitor::new();
 

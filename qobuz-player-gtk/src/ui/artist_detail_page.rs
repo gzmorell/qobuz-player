@@ -310,7 +310,7 @@ impl ArtistDetailPage {
                     stack.set_visible_child_name("content");
                 }
                 Err(err) => {
-                    eprintln!("Failed to load artist {artist_id}: {err}");
+                    tracing::error!("Failed to load artist {artist_id}: {err}");
                     stack.set_visible_child_name("content");
                 }
             }

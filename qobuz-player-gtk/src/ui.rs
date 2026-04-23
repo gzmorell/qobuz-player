@@ -32,7 +32,7 @@ pub fn set_image_from_url(url: Option<&str>, image: &Image) {
             }
         }
         Err(err) => {
-            eprintln!("Failed to load image: {err}");
+            tracing::error!("Failed to load image: {err}");
             image.set_icon_name(Some("image-missing"));
         }
     });

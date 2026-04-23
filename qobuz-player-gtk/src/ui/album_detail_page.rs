@@ -299,7 +299,7 @@ impl AlbumDetailPage {
                     stack.set_visible_child_name("content");
                 }
                 Err(err) => {
-                    eprintln!("Failed to load album {album_id}: {err}");
+                    tracing::error!("Failed to load album {album_id}: {err}");
 
                     clear_listbox(&tracks_list);
                     stack.set_visible_child_name("content");
