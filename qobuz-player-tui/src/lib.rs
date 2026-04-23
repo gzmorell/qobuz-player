@@ -39,7 +39,11 @@ pub async fn init(
 
     let tracklist_value = tracklist_receiver.borrow().clone();
     let status_value = *status_receiver.borrow();
-    let queue = tracklist_value.queue().into_iter().cloned().collect();
+    let queue_tracks = tracklist_value
+        .queue()
+        .into_iter()
+        .map(|x| x.track.clone())
+        .collect();
     let (now_playing, current_image_url) =
         get_current_state_without_image(&tracklist_value, status_value);
 
@@ -60,7 +64,7 @@ pub async fn init(
         current_image_url,
         favorites: FavoritesState::new(&client).await?,
         search: Default::default(),
-        queue: QueueState::new(queue),
+        queue: QueueState::new(queue_tracks),
         discover: discover::DiscoverState::new(&client).await?,
         genres: genres::GenresState::new(&client).await?,
         client,

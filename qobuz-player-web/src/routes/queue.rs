@@ -13,7 +13,11 @@ pub fn routes() -> Router<std::sync::Arc<crate::AppState>> {
 
 async fn index(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let tracklist = state.tracklist_receiver.borrow();
-    let tracks = tracklist.queue().to_vec();
+    let tracks = tracklist
+        .queue()
+        .into_iter()
+        .map(|x| x.track.clone())
+        .collect::<Vec<_>>();
     let currently_playing_position = tracklist.current_position();
 
     state.render(
@@ -27,7 +31,11 @@ async fn index(State(state): State<Arc<AppState>>) -> impl IntoResponse {
 
 async fn queue_partial(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let tracklist = state.tracklist_receiver.borrow();
-    let tracks = tracklist.queue().to_vec();
+    let tracks = tracklist
+        .queue()
+        .into_iter()
+        .map(|x| x.track.clone())
+        .collect::<Vec<_>>();
     let currently_playing_position = tracklist.current_position();
 
     state.render(

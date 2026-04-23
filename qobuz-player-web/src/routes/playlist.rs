@@ -263,7 +263,7 @@ async fn content(State(state): State<Arc<AppState>>, Path(id): Path<u32>) -> Res
     let click_string = format!("/playlist/{}/play/", playlist.id);
 
     let playing_entity = &state.tracklist_receiver.borrow().current_playing_entity();
-    let playing_index = index_if_playlist(playing_entity, id);
+    let playing_queue_id = queue_id_if_playlist(playing_entity, id);
 
     Ok(state.render(
         "playlist.html",
@@ -273,7 +273,7 @@ async fn content(State(state): State<Arc<AppState>>, Path(id): Path<u32>) -> Res
             "is_favorite": is_favorite,
             "rfid": state.rfid_state.is_some(),
             "click": click_string,
-            "playing_index": playing_index
+            "playing_queue_id": playing_queue_id
         }),
     ))
 }
@@ -283,7 +283,7 @@ async fn tracks_partial(State(state): State<Arc<AppState>>, Path(id): Path<u32>)
     let click_string = format!("/playlist/{}/play/", playlist.id);
 
     let playing_entity = &state.tracklist_receiver.borrow().current_playing_entity();
-    let playing_index = index_if_playlist(playing_entity, id);
+    let playing_index = queue_id_if_playlist(playing_entity, id);
 
     Ok(state.render(
         "playlist-tracks.html",
@@ -295,10 +295,10 @@ async fn tracks_partial(State(state): State<Arc<AppState>>, Path(id): Path<u32>)
     ))
 }
 
-fn index_if_playlist(playing_entity: &Option<PlayingEntity>, id: u32) -> Option<usize> {
+fn queue_id_if_playlist(playing_entity: &Option<PlayingEntity>, id: u32) -> Option<u64> {
     playing_entity.as_ref().and_then(|x| match x {
         PlayingEntity::Playlist(playing_playlist) => match playing_playlist.playlist_id == id {
-            true => Some(playing_playlist.index),
+            true => Some(playing_playlist.queue_id),
             false => None,
         },
         _ => None,

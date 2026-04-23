@@ -1,4 +1,7 @@
-use crate::models::{Album, Track, TrackStatus};
+use crate::{
+    controls::NewQueueItem,
+    models::{Album, Track, TrackStatus},
+};
 use rand::seq::SliceRandom;
 use tokio::{
     select,
@@ -12,7 +15,7 @@ use tokio::{
 use crate::{
     AppResult, ExitReceiver, PositionReceiver, Status, StatusReceiver, TracklistReceiver,
     VolumeReceiver,
-    controls::{ControlCommand, Controls, NewQueueItem},
+    controls::{ControlCommand, Controls},
     database::Database,
     downloader::{DownloadResult, Downloader},
     notification::{Notification, NotificationBroadcast},
@@ -331,11 +334,12 @@ impl Player {
         self.next_track_in_sink_queue = false;
 
         let mut queue_items = vec![];
-        for item in items {
+        for (index, item) in items.iter().enumerate() {
             let track = self.client.track(item.track_id).await?;
             let queue_item = QueueItem {
                 track,
-                id: item.queue_id,
+                queue_id: item.queue_id,
+                index,
             };
             queue_items.push(queue_item);
         }
@@ -378,7 +382,7 @@ impl Player {
         let mut track: Track = self.client.track(track_id).await?;
         track.status = TrackStatus::Playing;
 
-        let tracklist = Tracklist::new(TracklistType::Tracks, vec![track]);
+        let tracklist = Tracklist::new(TracklistType::Tracks, tracks_to_queue_items(vec![track]));
 
         self.new_queue(tracklist).await
     }
@@ -399,7 +403,7 @@ impl Player {
                 id: album.id,
                 image: Some(album.image),
             }),
-            album.tracks.into_iter().filter(|t| t.available).collect(),
+            tracks_to_queue_items(album.tracks.into_iter().filter(|t| t.available).collect()),
         );
 
         tracklist.skip_to_track(index as i32 - unstreamable_tracks_to_index);
@@ -418,7 +422,7 @@ impl Player {
                 id: artist_id,
                 image: artist.image,
             }),
-            tracks.into_iter().filter(|t| t.available).collect(),
+            tracks_to_queue_items(tracks.into_iter().filter(|t| t.available).collect()),
         );
 
         tracklist.skip_to_track(index as i32 - unstreamable_tracks_to_index);
@@ -438,7 +442,7 @@ impl Player {
             tracks.shuffle(&mut rand::rng());
         }
 
-        let mut tracklist = Tracklist::new(TracklistType::Tracks, tracks);
+        let mut tracklist = Tracklist::new(TracklistType::Tracks, tracks_to_queue_items(tracks));
 
         tracklist.skip_to_track(0);
         self.new_queue(tracklist).await
@@ -459,14 +463,16 @@ impl Player {
             .filter(|t| !t.available)
             .count() as i32;
 
-        let mut tracks: Vec<Track> = playlist
-            .tracks
-            .into_iter()
-            .filter(|t| t.available)
-            .collect();
+        let mut queue: Vec<QueueItem> = tracks_to_queue_items(
+            playlist
+                .tracks
+                .into_iter()
+                .filter(|t| t.available)
+                .collect(),
+        );
 
         if shuffle {
-            tracks.shuffle(&mut rand::rng());
+            queue.shuffle(&mut rand::rng());
         }
 
         let mut tracklist = Tracklist::new(
@@ -475,10 +481,13 @@ impl Player {
                 id: playlist.id,
                 image: playlist.image,
             }),
-            tracks,
+            queue,
         );
 
-        tracklist.skip_to_track(index as i32 - unstreamable_tracks_to_index);
+        if !shuffle {
+            tracklist.skip_to_track(index as i32 - unstreamable_tracks_to_index);
+        }
+
         self.new_queue(tracklist).await
     }
 
@@ -706,4 +715,16 @@ impl Player {
             }
         }
     }
+}
+
+fn tracks_to_queue_items(tracks: Vec<Track>) -> Vec<QueueItem> {
+    tracks
+        .into_iter()
+        .enumerate()
+        .map(|(i, track)| QueueItem {
+            track,
+            queue_id: i as u64,
+            index: i,
+        })
+        .collect()
 }

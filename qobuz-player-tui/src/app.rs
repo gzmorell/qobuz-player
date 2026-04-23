@@ -193,7 +193,11 @@ impl App {
 
                 Ok(_) = self.tracklist.changed() => {
                     let tracklist = self.tracklist.borrow_and_update().clone();
-                    self.queue.set_items(tracklist.queue().into_iter().cloned().collect());
+                    self.queue.set_items(tracklist
+                        .queue()
+                        .into_iter()
+                        .map(|x| x.track.clone())
+                        .collect());
                     let status = self.now_playing.status;
                     let (mut new_state, image_url) = get_current_state_without_image(&tracklist, status);
 

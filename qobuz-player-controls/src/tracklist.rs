@@ -47,6 +47,7 @@ pub enum PlayingEntity {
 #[derive(Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct PlayingPlaylist {
     pub track_id: u32,
+    pub queue_id: u64,
     pub index: usize,
     pub playlist_id: u32,
 }
@@ -54,19 +55,21 @@ pub struct PlayingPlaylist {
 #[derive(Default, Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct QueueItem {
     pub track: Track,
-    pub id: u64,
+    pub queue_id: u64,
+    pub index: usize,
 }
 
 impl Tracklist {
-    pub fn new(list_type: TracklistType, tracks: Vec<Track>) -> Self {
-        let queue = tracks
-            .into_iter()
-            .enumerate()
-            .map(|(i, track)| QueueItem {
-                track,
-                id: i as u64,
-            })
-            .collect();
+    pub fn new(list_type: TracklistType, queue: Vec<QueueItem>) -> Self {
+        // let queue = tracks
+        //     .into_iter()
+        //     .enumerate()
+        //     .map(|(i, track)| QueueItem {
+        //         track,
+        //         queue_id: i as u64,
+        //         index: i,
+        //     })
+        //     .collect();
 
         Self { queue, list_type }
     }
@@ -82,8 +85,8 @@ impl Tracklist {
         }
     }
 
-    pub fn queue(&self) -> Vec<&Track> {
-        self.queue.iter().map(|x| &x.track).collect()
+    pub fn queue(&self) -> Vec<&QueueItem> {
+        self.queue.iter().collect()
     }
 
     pub fn total(&self) -> usize {
@@ -98,17 +101,21 @@ impl Tracklist {
     }
 
     pub fn current_playing_entity(&self) -> Option<PlayingEntity> {
-        let current_track = self.current_track();
+        let current_queue_item = self
+            .queue
+            .iter()
+            .find(|q| q.track.status == TrackStatus::Playing);
 
-        current_track.map(|track| match &self.list_type {
+        current_queue_item.map(|queue_item| match &self.list_type {
             TracklistType::Playlist(playlist_tracklist) => {
                 PlayingEntity::Playlist(PlayingPlaylist {
-                    track_id: track.id,
-                    index: self.current_position(),
+                    track_id: queue_item.track.id,
+                    queue_id: queue_item.queue_id,
+                    index: queue_item.index,
                     playlist_id: playlist_tracklist.id,
                 })
             }
-            _ => PlayingEntity::Track(track.clone()),
+            _ => PlayingEntity::Track(queue_item.track.clone()),
         })
     }
 
@@ -121,14 +128,22 @@ impl Tracklist {
     }
 
     pub fn push_track(&mut self, track: Track) {
-        let id = (self.total() + 1) as u64;
-        let item = QueueItem { track, id };
+        let id = self.total() + 1;
+        let item = QueueItem {
+            track,
+            queue_id: id as u64,
+            index: id,
+        };
         self.queue.push(item);
     }
 
     pub fn insert_track(&mut self, index: usize, track: Track) {
-        let id = (self.total() + 1) as u64;
-        let item = QueueItem { track, id };
+        let id = self.total() + 1;
+        let item = QueueItem {
+            track,
+            queue_id: id as u64,
+            index: id,
+        };
         self.queue.insert(index, item);
     }
 
@@ -155,7 +170,7 @@ impl Tracklist {
         self.queue
             .iter()
             .find(|t| t.track.status == TrackStatus::Playing)
-            .map(|x| x.id)
+            .map(|x| x.queue_id)
     }
 
     pub fn next_track_queue_id(&self) -> Option<u64> {
@@ -166,7 +181,7 @@ impl Tracklist {
         }
 
         let next = self.queue.get(current + 1);
-        next.map(|x| x.id)
+        next.map(|x| x.queue_id)
     }
 
     pub fn list_type(&self) -> &TracklistType {
