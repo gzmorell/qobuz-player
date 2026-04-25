@@ -60,19 +60,20 @@ async fn main() {
 
 pub async fn run() -> AppResult<()> {
     tracing_subscriber::fmt().compact().init();
+    let headless = true;
 
     let args = Arguments::parse();
     let database = Arc::new(Database::new().await?);
 
     if let Some(command) = args.command {
-        handle_shared_commands(command, &database).await?;
+        handle_shared_commands(command, &database, headless).await?;
         return Ok(());
     }
 
     let (_, exit_receiver) = broadcast::channel(5);
 
     let max_audio_quality = default_audio_quality(&database, args.shared.max_audio_quality).await?;
-    let client = get_client(&database, max_audio_quality).await?;
+    let client = get_client(&database, max_audio_quality, headless).await?;
     let client = Arc::new(client);
 
     let broadcast = Arc::new(NotificationBroadcast::new());
@@ -133,14 +134,12 @@ pub async fn run() -> AppResult<()> {
     }
 
     if let Some(rfid_state) = rfid_state {
-        let tracklist_receiver = player.tracklist();
         let controls = player.controls();
         let database = database.clone();
 
         tokio::spawn(async move {
             if let Err(e) = qobuz_player_rfid::init(
                 rfid_state,
-                tracklist_receiver,
                 controls,
                 database,
                 broadcast,
